@@ -18,6 +18,8 @@ enum View { CHASE, COCKPIT }
 @export var cockpit_fov := 76.0
 @export var shake_scale := 1.0
 @export var cockpit_eye_offset := Vector3(0.0, 0.18, 0.0)
+## Cockpit near plane (scaled space needs near >= 0.1 for a good depth range, see wave2_system).
+@export var cockpit_near := 0.1
 
 var ship: Ship
 var view: int = View.CHASE
@@ -138,7 +140,7 @@ func _process(dt: float) -> void:
 	chase.far = far
 	if cockpit:
 		cockpit.fov = cockpit_fov + (_fov - base_fov) * 0.6
-		cockpit.near = 0.05 if far < 1.0e7 else 0.3
+		cockpit.near = cockpit_near if far < 1.0e7 else 0.3
 		cockpit.far = 5.0e5 if far < 1.0e7 else 3.0e6
 		var eye: Node3D = ship.visual.get_marker("PilotEye") if ship.visual else null
 		var ep := eye.position if eye else Vector3(0, 1.12, -3.8)

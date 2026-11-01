@@ -51,7 +51,7 @@ shape = SubResource("Shape_spine")
 [node name="CockpitCamera" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.12, -3.8)
 fov = 76.0
-near = 0.05
+near = 0.1
 far = 500000.0
 
 [node name="CameraRig" type="Node3D" parent="."]

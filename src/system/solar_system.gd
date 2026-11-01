@@ -68,6 +68,25 @@ const PRESET_DIR := "res://src/planets/presets/"
 @export var shadow_max := 200000.0
 @export var glow_threshold := 2.5
 
+@export_group("Ship / player light")
+## Ambient (Environment, used by the ship, player, vegetation, props) in deep space and the
+## starlit floor near a planet's night side; plus the sky light of the focus atmosphere
+## (radiance of the atmosphere model, refreshed every `ambient_interval` s).
+@export var ambient_space := Color(0.013, 0.0145, 0.019)
+@export var ambient_night := Color(0.025, 0.032, 0.055)
+@export var ambient_sky_scale := 0.9
+## Sunlit ground bounce near a surface (albedo-ish factor on the sun irradiance).
+@export var ambient_ground_bounce := 0.07
+@export var ambient_interval := 0.12
+## Tint the shared main light by the atmosphere / planet shadow at the camera (the terrain
+## shader undoes it, see planet_terrain.gdshader `light_unattenuate`).
+@export var tint_main_light := true
+
+@export_group("Vegetation")
+## Attach PlanetScatter (src/planets/scatter, preset per planet) to every planet; only the
+## focus planet scatters (the others are idle / cleared).
+@export var scatter_enabled := true
+
 @export_group("Exposure")
 @export var auto_exposure := true
 @export var exposure_space := 1.0
@@ -78,8 +97,14 @@ const PRESET_DIR := "res://src/planets/presets/"
 ## Exposure adaptation speed (1/s); capture snaps instantly.
 @export var adapt_speed := 1.5
 
-## Optional explicit camera (else the viewport's current camera).
+## Optional explicit camera (else — or when it is not current — the viewport's current camera).
 var camera: Camera3D
+## Gameplay body (ship / player): the planet under it also builds fine LOD + collision there
+## when the camera is elsewhere (free camera, far chase views).
+var gameplay_body: Node3D
+## Main-light tint at the camera (atmosphere transmittance x planet shadow), RGB.
+var light_tint := Vector3.ONE
+var ambient_color := Color(0.013, 0.0145, 0.019)
 var environment: Environment
 
 var star: Star
@@ -100,6 +125,8 @@ var _exposure := 1.0
 var _sky_energy := 1.0
 var _sky_applied := -1.0
 var _snap := true
+var _ambient_t := 0.0
+var _unatt_applied: Dictionary = {}   # terrain material -> Vector3 applied
 
 
 ## Runtime record of one body.
@@ -114,6 +141,7 @@ class BodyRec:
 	var atmo: AtmosphereLayer
 	var clouds: CloudLayer
 	var ocean: OceanLayer
+	var scatter: PlanetScatter
 	var pos := Vector3.ZERO          # true system-frame position (exact float32 constant)
 	var radius := 0.0
 	var bound := 0.0                 # radius of everything drawn (atmosphere shell, rings)
@@ -269,6 +297,19 @@ func _build_planet(d: Dictionary) -> void:
 		rec.sun_mats.append(clouds.material)
 	rec.sun_mats.append(p.terrain_material)
 	p.terrain.set_render_layers(group_layer(rec.group))
+	# gameplay atmosphere (density, heating, cruise block) = the visible shell
+	if rec.atmo:
+		var ah := rec.atmo.get_top_radius() - cfg.radius
+		if absf(cfg.atmosphere_height - ah) > 0.05 * ah:
+			push_warning("SolarSystem: %s atmosphere_height %.0f != visible %.0f, using the visible" % [
+				rec.name, cfg.atmosphere_height, ah])
+			cfg.atmosphere_height = ah
+	if scatter_enabled and PlanetScatter._find_rules(cfg) != null:
+		var sc := PlanetScatter.new()
+		sc.name = "Scatter"
+		sc.enabled = false
+		p.add_component(sc)
+		rec.scatter = sc
 	rec.visuals = [p.terrain, p.components]
 	_register(rec)
 
@@ -372,6 +413,9 @@ func build_terrain_now(cam: Camera3D = null) -> void:
 	for r in bodies:
 		if r.planet:
 			r.planet.terrain.build_until_stable(60.0 if r == focus else 20.0)
+	_update_scatter()
+	if focus and focus.scatter:
+		focus.scatter.build_until_stable(60.0)
 	_snap = true
 
 
@@ -392,16 +436,28 @@ func _update_positions() -> void:
 func _process(dt: float) -> void:
 	if Engine.is_editor_hint():
 		return
-	var cam := camera if camera and camera.is_inside_tree() else get_viewport().get_camera_3d()
+	_frame_cam(dt)
+
+
+func _frame_cam(dt: float) -> void:
+	var cam := active_camera()
 	if cam == null:
 		return
 	_frame(cam, dt)
 
 
+## The camera the frame is computed for: `camera` while it is current, else the viewport's.
+func active_camera() -> Camera3D:
+	if camera and is_instance_valid(camera) and camera.is_inside_tree() and camera.current:
+		return camera
+	var vc := get_viewport().get_camera_3d()
+	return vc if vc else (camera if camera and is_instance_valid(camera) and camera.is_inside_tree() else null)
+
+
 ## Runs one update with an explicit camera (used by capture presets before building LOD).
 func process_frame(cam: Camera3D = null) -> void:
 	if cam == null:
-		cam = camera if camera else get_viewport().get_camera_3d()
+		cam = active_camera()
 	if cam:
 		_frame(cam, 0.0)
 
@@ -420,6 +476,8 @@ func _frame(cam: Camera3D, dt: float) -> void:
 	_update_scaled_space(cam)
 	_update_lights(cam)
 	_update_terrain(cam)
+	_update_scatter()
+	_update_ambient(cam, dt)
 	_update_exposure(cam, dt)
 	_snap = false
 	var ms := float(Time.get_ticks_usec() - t0) / 1000.0
@@ -533,7 +591,9 @@ func _update_lights(cam: Camera3D) -> void:
 	var to_sun := (sp - cp).normalized()
 	sun_dir = to_sun
 	SunGlobals.aim_light(main_light, to_sun)
-	main_light.light_color = star.light_color
+	light_tint = _sun_tint_at(cp, to_sun) if tint_main_light else Vector3.ONE
+	main_light.light_color = Color(star.light_color.r * light_tint.x, star.light_color.g * light_tint.y,
+		star.light_color.b * light_tint.z)
 	main_light.light_energy = star.light_energy
 	SunGlobals.set_sun(to_sun, star.light_color, star.light_energy)
 	main_light.light_cull_mask = 1 | (group_layer(focus_group) if focus_group > 0 else 0)
@@ -542,9 +602,17 @@ func _update_lights(cam: Camera3D) -> void:
 		l.visible = g != focus_group
 		l.light_color = star.light_color
 		l.light_energy = star.light_energy
+	var unatt := Vector3(1.0 / maxf(light_tint.x, 1e-3), 1.0 / maxf(light_tint.y, 1e-3),
+		1.0 / maxf(light_tint.z, 1e-3))
 	for r in bodies:
 		if r.kind == SystemDef.Kind.STAR:
 			continue
+		if r.planet:
+			var u := unatt if r.group == focus_group else Vector3.ONE
+			var prev: Vector3 = _unatt_applied.get(r.planet.terrain_material, Vector3(-1, -1, -1))
+			if not u.is_equal_approx(prev):
+				_unatt_applied[r.planet.terrain_material] = u
+				r.planet.terrain_material.set_shader_parameter("light_unattenuate", u)
 		var want := Vector3.ZERO
 		if r.group != focus_group:
 			want = (star_pos() - _group_primary_pos(r.group)).normalized()
@@ -588,6 +656,13 @@ func _update_terrain(cam: Camera3D) -> void:
 			continue
 		var cam_local := r.node.to_local(cam.global_position)
 		r.planet.set_focus(cam_local)
+		# the gameplay body keeps fine LOD + collision under it when the camera is elsewhere
+		var f2 := false
+		var gl := Vector3.ZERO
+		if gameplay_body and is_instance_valid(gameplay_body) and gameplay_body.is_inside_tree():
+			gl = r.node.to_local(gameplay_body.global_position)
+			f2 = gl.length() - r.radius < 20000.0 and gl.distance_to(cam_local) > 60.0
+		r.planet.terrain.set_focus2(gl, f2)
 		var lvl := 2
 		if r != focus:
 			var d := maxf(cam_local.length(), r.radius * 1.01)
@@ -595,6 +670,84 @@ func _update_terrain(cam: Camera3D) -> void:
 			lvl = 0 if px < 120.0 else (1 if px < 450.0 else 2)
 		r.planet.terrain.set_min_level(lvl)
 		r.planet.terrain.set_cast_shadows(r == focus)
+
+
+## Only the focus planet scatters vegetation; others are idle (and cleared once they leave).
+func _update_scatter() -> void:
+	for r in bodies:
+		if r.scatter == null:
+			continue
+		var on := r == focus
+		if on != r.scatter.enabled:
+			r.scatter.enabled = on
+			if not on:
+				r.scatter.clear(false)
+
+
+## Sunlight reaching world point `p` (RGB): the focus atmosphere's transmittance and the
+## shadow of every body of the focus group (soft edge = the star's penumbra).
+func _sun_tint_at(p: Vector3, to_sun: Vector3) -> Vector3:
+	var t := Vector3.ONE
+	if focus == null:
+		return t
+	if focus.atmo and focus.planet:
+		t = focus.atmo.sun_transmittance(p - focus.node.global_position, to_sun)
+	var sr: BodyRec = by_name[SystemDef.STAR["name"]]
+	var star_ang := sr.radius / maxf((star.global_position - p).length(), 1.0)
+	for r in bodies:
+		if r.group != focus_group or r.kind == SystemDef.Kind.STAR:
+			continue
+		var c := r.node.global_position - p
+		var along := c.dot(to_sun)
+		if along <= 0.0:
+			continue
+		var perp := (c - to_sun * along).length()
+		var w := maxf(along * star_ang, r.radius * 0.002)
+		var sh := smoothstep(r.radius - w, r.radius + w, perp)
+		t *= sh
+	return t
+
+
+## Environment ambient (ship, player, vegetation): space / starlit floor + the sky radiance
+## of the focus atmosphere + sunlit ground bounce near a surface.
+func _update_ambient(cam: Camera3D, dt: float) -> void:
+	if environment == null:
+		return
+	_ambient_t -= dt
+	if _ambient_t > 0.0 and not _snap and not Capture.active:
+		return
+	_ambient_t = ambient_interval
+	var amb := Vector3(ambient_space.r, ambient_space.g, ambient_space.b)
+	if focus and focus.kind == SystemDef.Kind.PLANET:
+		var cp := cam.global_position
+		var lp := cp - focus.node.global_position
+		var up := lp.normalized()
+		var alt := _altitude(focus, cp)
+		var h := 20000.0
+		if focus.atmo:
+			h = focus.atmo.get_top_radius() - focus.radius
+		var inside := 1.0 - smoothstep(0.15 * h, 1.0 * h, alt)
+		var night := Vector3(ambient_night.r, ambient_night.g, ambient_night.b)
+		amb = amb.lerp(night, inside if focus.atmo else inside * 0.5)
+		var l := sun_dir
+		if focus.atmo:
+			var side := up.cross(l)
+			if side.length_squared() < 1e-6:
+				side = up.cross(Vector3.RIGHT)
+			side = side.normalized()
+			var fw := side.cross(up)
+			var sky := Vector3.ZERO
+			for d: Vector3 in [up, (fw + up * 0.2).normalized(), (-fw + up * 0.2).normalized(),
+					(side + up * 0.2).normalized()]:
+				sky += focus.atmo.sky_radiance(lp, d, l, star.light_color, star.light_energy, 8)
+			amb += sky * 0.25 * ambient_sky_scale
+		var near := 1.0 - smoothstep(500.0, 5000.0, alt)
+		var sun := Vector3(star.light_color.r, star.light_color.g, star.light_color.b) * star.light_energy
+		amb += sun * light_tint * maxf(up.dot(l), 0.0) * ambient_ground_bounce * near
+	ambient_color = Color(amb.x, amb.y, amb.z)
+	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	environment.ambient_light_color = ambient_color
+	environment.ambient_light_energy = 1.0
 
 
 ## Exposure + star-field dimming: brighter on a night side near the ground, slightly darker in

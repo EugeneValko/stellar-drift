@@ -26,11 +26,17 @@ const FREECAM_SCRIPT := "res://src/core/free_camera.gd"
 @export var ship_path: NodePath
 @export var player_path: NodePath
 @export var hud_path: NodePath
+## Optional existing free camera (e.g. Main/World/FreeCamera); otherwise free_camera.gd is
+## instantiated on the first V.
+@export var free_camera_path: NodePath
 @export var start_state: State = State.ON_FOOT
 @export var interact_distance := 4.0
 @export var hatch_open_distance := 10.0
 @export var fade_time := 0.35
 @export var capture_mouse := true
+## When false the deferred start-up does not run; the scene calls ensure_started() itself
+## (main.tscn: after placing the ship; capture presets of the bare system never start it).
+@export var auto_start := true
 
 var state: State = State.ON_FOOT
 var ship: Node3D
@@ -48,14 +54,16 @@ func _ready() -> void:
 	_start.call_deferred()
 
 
-func _start() -> void:
-	if _started:
+func _start(forced := false) -> void:
+	if _started or not (auto_start or forced):
 		return
 	ship = get_node_or_null(ship_path) as Node3D
 	if ship == null:
 		var ships := get_tree().get_nodes_in_group("player_ship")
 		ship = ships[0] as Node3D if not ships.is_empty() else null
 	hud = get_node_or_null(hud_path) as Hud
+	if free_camera == null and not free_camera_path.is_empty():
+		free_camera = get_node_or_null(free_camera_path) as Node3D
 	player = get_node_or_null(player_path) as Player
 	if player == null:
 		player = (load(PLAYER_SCENE) as PackedScene).instantiate() as Player
@@ -107,6 +115,10 @@ func exit_ship() -> void:
 	if ship.has_method("can_exit") and not bool(ship.call("can_exit")):
 		if hud:
 			hud.flash_message("Сначала посадите корабль")
+		return
+	if _over_water():
+		if hud:
+			hud.flash_message("Под кораблём вода — выйти нельзя")
 		return
 	busy = true
 	_set_hatch(true)
@@ -160,7 +172,7 @@ func toggle_freecam() -> void:
 
 ## Runs the deferred start-up now (scenes that position things in their own _ready).
 func ensure_started() -> void:
-	_start()
+	_start(true)
 
 
 ## Instant switch to ON_FOOT without fades (loading, capture presets, tests).
@@ -321,6 +333,17 @@ func _set_hatch(open: bool) -> void:
 	_hatch_open = open
 
 
+func _over_water() -> bool:
+	return ship != null and ship.has_method("is_over_water") and bool(ship.call("is_over_water"))
+
+
+## The node that carries the gameplay (floating-origin focus outside the free camera).
+func get_gameplay_body() -> Node3D:
+	if state == State.FREECAM:
+		return ship if _freecam_prev == State.SHIP else player
+	return ship if state == State.SHIP else player
+
+
 func _on_ship_pilot_exited(xf: Transform3D) -> void:
 	# The ship ejected the pilot by itself (not through exit_ship()).
 	if state == State.SHIP and not busy:
@@ -340,7 +363,7 @@ func _process(_dt: float) -> void:
 			else:
 				hud.clear_prompt()
 		State.SHIP:
-			if not busy and ship.has_method("can_exit") and bool(ship.call("can_exit")):
+			if not busy and ship.has_method("can_exit") and bool(ship.call("can_exit")) and not _over_water():
 				hud.set_prompt("Выйти из корабля")
 			else:
 				hud.clear_prompt()
@@ -362,6 +385,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("pause_menu"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED \
 			else Input.MOUSE_MODE_CAPTURED
+		get_viewport().set_input_as_handled()   # the free camera / ship must not toggle it back
 	elif event is InputEventMouseButton and (event as InputEventMouseButton).pressed \
 			and capture_mouse and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not Capture.active:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
