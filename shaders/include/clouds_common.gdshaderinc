@@ -179,6 +179,13 @@ float cloud_density_at(vec3 pl, float r, vec2 w, int lod) {
 			float pw = clamp((pf - (1.0 - wv) * 0.7) / max(1.0 - (1.0 - wv) * 0.7, 0.05), 0.0, 1.0);
 			s = mix(s, clamp((pw - 0.08) * 1.7, 0.0, 1.0), cloud_billow);
 		}
+		// cloud streets: in patches (low-frequency noise) the cumulus line up in rolls along the
+		// zonal wind (parallels), ~4 km apart, slightly wavy
+		float streets = smoothstep(0.56, 0.68, p2) * (1.0 - smoothstep(0.55, 0.8, cov));
+		if (streets > 0.0) {
+			float roll = sin(pl.y * (6.2831853 / 4200.0) + p1 * 5.0);
+			s *= mix(1.0, 0.45 + 0.75 * smoothstep(-0.3, 0.8, roll), streets);
+		}
 		s = mix(s, 1.0, smoothstep(0.6, 1.0, cov) * 0.4);         // dense weather -> continuous
 		// vertical profile (wave 4): flat base, widest low down, narrowing upward -> the noise
 		// cores rise into rounded domes instead of extruded boxes with vertical walls

@@ -17,6 +17,7 @@ extends Node
 ##   night_milky       night side, sun -30 deg, looking up at the Milky Way
 ##   orbit_sunrise     orbital sunrise over the limb (close, telephoto)
 ##   orbit_terminator  terminator from 900 km (sunset band on the clouds)
+##   aurelion_eclipse  Aurelion in front of the star, rings back-lit (forward-scattering dust)
 ## Modifiers: --yaw=<deg> (turn around the local up), --pitch=<deg>, --sun_elev=<deg> (for the
 ## sunset/blue hour presets), --alt=<m>, --fly=<m/s> (movie: camera moves along its forward
 ## horizon direction, keeping its height; `orbit_sunrise` moves along the orbit).
@@ -36,6 +37,22 @@ func _ready() -> void:
 	main.remove_from_group("capture_target")
 	add_to_group("capture_target")
 	process_priority = -2000   # before FreeCamera / SolarSystem
+	# grading experiments: --tonemap=0..4 --tm_white=x --agx_contrast=x --sat=x --contrast=x
+	var env: Environment = main.backdrop.environment
+	if Capture.args.has("tonemap"):
+		env.tonemap_mode = int(Capture.args["tonemap"]) as Environment.ToneMapper
+	if Capture.args.has("tm_white"):
+		env.tonemap_white = float(Capture.args["tm_white"])
+		env.tonemap_agx_white = float(Capture.args["tm_white"])
+	if Capture.args.has("agx_contrast"):
+		env.tonemap_agx_contrast = float(Capture.args["agx_contrast"])
+	if Capture.args.has("sat") or Capture.args.has("contrast"):
+		env.adjustment_enabled = true
+		env.adjustment_saturation = float(Capture.args.get("sat", "1.0"))
+		env.adjustment_contrast = float(Capture.args.get("contrast", "1.0"))
+	# movie mode (tools/movie.sh ... --no_game --cam=<preset>): no Capture run, apply it here
+	if not Capture.active and Capture.args.has("cam"):
+		(func() -> void: apply_capture_preset(String(Capture.args["cam"]))).call_deferred()
 
 
 func apply_capture_preset(preset: String) -> void:
@@ -44,7 +61,7 @@ func apply_capture_preset(preset: String) -> void:
 	_fly = 0.0
 	if preset in ["sunset_sun", "sunset_anti", "blue_hour", "blue_hour_anti", "sunrise_clouds",
 			"golden_clouds", "cloud_field", "day_sky", "day_zenith", "night_milky",
-			"orbit_sunrise", "orbit_terminator"]:
+			"orbit_sunrise", "orbit_terminator", "aurelion_eclipse"]:
 		await main.apply_capture_preset("terra_orbit")   # resets weather / camera state
 		_custom(preset)
 		sys.build_terrain_now(cam)
@@ -187,6 +204,16 @@ func _custom(preset: String) -> void:
 			var look := (hz - c * 0.02).normalized()
 			main._place_space(t, off, off + look * 1000.0, c)
 			cam.fov = float(Capture.args.get("fov", "60"))
+		"aurelion_eclipse":
+			var a: SolarSystem.BodyRec = main._rec("Aurelion")
+			var sa: Vector3 = sys.sun_dir_from("Aurelion")
+			var nrm := SystemDef.aurelion_ring_normal()
+			var sgn := -signf(nrm.dot(sa))   # unlit side of the ring plane
+			var off3 := -sa * float(Capture.args.get("dist", "1500000")) + nrm * sgn * 170000.0
+			var w3 := sa.cross(nrm).normalized()
+			off3 += w3 * 90000.0
+			main._place_space(a, off3, Vector3.ZERO, nrm)
+			cam.fov = 72.0
 		"orbit_terminator":
 			var w2 := s.cross(Vector3.UP).normalized()
 			var c2 := (w2 * 0.9 + s * 0.25 + Vector3.UP * 0.3).normalized()
