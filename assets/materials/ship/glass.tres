@@ -1,0 +1,13 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://shaders/ship_glass.gdshader" id="1"]
+
+[resource]
+resource_name = "ShipGlass"
+render_priority = 1
+shader = ExtResource("1")
+shader_parameter/tint = Color(0.02, 0.028, 0.038, 1)
+shader_parameter/coating = Color(0.85, 0.62, 0.32, 1)
+shader_parameter/coating_strength = 0.18
+shader_parameter/base_alpha = 0.5
+shader_parameter/roughness = 0.03
