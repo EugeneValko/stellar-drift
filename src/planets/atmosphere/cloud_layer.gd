@@ -44,6 +44,8 @@ var _bake_mat: ShaderMaterial
 var _weather_img: Image
 var _weather_ready := false
 var _bake_serial := 0
+## Materials that got the shadow uniforms through set_atmosphere() (kept in sync on rotation).
+var _shadow_receivers: Array[ShaderMaterial] = []
 
 
 func setup(cfg: Variant = null) -> void:
@@ -69,6 +71,7 @@ func setup(cfg: Variant = null) -> void:
 		"cloud_cyclone_strength": float(params.get("cyclone_strength", 1.0)),
 		"cloud_stratus": float(params.get("stratus", 0.6)),
 		"cloud_weather_contrast": float(params.get("weather_contrast", 1.0)),
+		"cloud_billow": float(params.get("billow", 0.0)),
 	}
 	var cirrus_alt: float = float(params.get("cirrus_altitude", 3500.0))
 	_ensure_nodes(top + (cirrus_alt if float(params.get("cirrus_opacity", 0.4)) > 0.0 else 0.0))
@@ -184,6 +187,8 @@ func set_rotation_offset(a: float, receivers: Array = []) -> void:
 	material.set_shader_parameter("cloud_rot_offset", a)
 	for m: ShaderMaterial in receivers:
 		m.set_shader_parameter("cloud_rot_offset", a)
+	for m: ShaderMaterial in _shadow_receivers:
+		m.set_shader_parameter("cloud_rot_offset", a)
 
 
 func set_atmosphere(a: Variant) -> void:
@@ -193,6 +198,14 @@ func set_atmosphere(a: Variant) -> void:
 		return
 	var u: Dictionary = a.uniforms if a is AtmosphereLayer else a
 	LayerParams.apply_uniforms(material, u)
+	# wave 4: cloud shadows inside the atmosphere's in-scattering (crepuscular rays)
+	if a is AtmosphereLayer and (a as AtmosphereLayer).mat_scatter:
+		var m: ShaderMaterial = (a as AtmosphereLayer).mat_scatter
+		var su := get_shadow_uniforms()
+		su["cloud_shadow_strength"] = float(params.get("air_shadow_strength", 0.85))
+		LayerParams.apply_uniforms(m, su)
+		if not _shadow_receivers.has(m):
+			_shadow_receivers.append(m)
 
 
 ## Uniforms a receiver shader (including clouds_common.gdshaderinc) needs for cloud_shadow_*().

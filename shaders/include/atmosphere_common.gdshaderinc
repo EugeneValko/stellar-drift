@@ -26,7 +26,32 @@ uniform float atmo_multi_scatter = 0.35;     // cheap isotropic multiple-scatter
 uniform float atmo_shadow_soft = 0.6;        // planet shadow softness, in rayleigh heights
 uniform float atmo_sun_path_scale = 2.2;     // >1 = redder sunsets (grazing sun paths only)
 uniform int atmo_steps = 14;                 // view-ray samples (quality knob)
+// wave 4 (beauty): ozone on its own, taller profile (absorbs the long grazing twilight paths high
+// up -> blue hour / purple twilight instead of olive); <= 0 = on the Rayleigh profile (old look)
+uniform float atmo_ozone_height = 0.0;
+// multiple scattering: light that reached the air from the whole lit sky (not only straight from
+// the sun). Brighter, bluer horizon by day; survives a few degrees after sunset (twilight glow).
+// Colour = the column's own scattering (1 - exp(-tau_vertical)); `lift` softens / extends it past
+// the terminator (cos of the extra sun elevation the diffuse light behaves as if it had).
+uniform float atmo_ms_strength = 0.0;        // 0 = old isotropic term only (atmo_multi_scatter)
+uniform float atmo_ms_lift = 0.07;
+uniform float atmo_ms_path = 0.55;           // optical depth scale of the diffuse sun paths
+uniform vec3 atmo_ground_albedo = vec3(0.12, 0.13, 0.12);
+// art direction: per-channel gain on the in-scattered light of a low sun (saturated sunsets,
+// pink Belt of Venus) and an overall day-sky gain; 1 = physical
+uniform vec3 atmo_twilight_tint = vec3(1.0);       // Rayleigh (sky colour)
+uniform vec3 atmo_twilight_tint_mie = vec3(1.0);   // Mie (glow around the sun, haze)
+uniform float atmo_sky_gain = 1.0;
+// planet identities: ice-crystal halos (22 / 46 deg rings around the sun, strength relative to
+// the Mie phase) and a self-lit haze (volcanic glow of the lower dust, radiance per unit Mie
+// density per metre; visible mostly at night)
+uniform float atmo_halo = 0.0;
+uniform vec3 atmo_emission = vec3(0.0);
 group_uniforms;
+
+float atmo_ozone_h() {
+	return atmo_ozone_height > 0.0 ? atmo_ozone_height : atmo_rayleigh_height;
+}
 
 // Optical column (density-weighted length, density 1 at planet radius) from radius r toward
 // direction with cos(zenith)=mu, to infinity. Chapman approximation with the grazing identity.
@@ -54,10 +79,11 @@ float atmo_planet_shadow(float r, float mus) {
 vec3 atmo_sun_optical_depth(float r, float mus) {
 	float cr = min(atmo_chapman(r, mus, atmo_rayleigh_height), 1e9);
 	float cm = min(atmo_chapman(r, mus, atmo_mie_height), 1e9);
+	float co = atmo_ozone_height > 0.0 ? min(atmo_chapman(r, mus, atmo_ozone_height), 1e9) : cr;
 	// artistic: compressed planets have short grazing paths; lengthen them near the horizon so
 	// sunsets get Earth-like reddening without making the daytime sky denser
 	float k = 1.0 + (atmo_sun_path_scale - 1.0) * (1.0 - clamp(mus * 3.0, 0.0, 1.0));
-	return ((atmo_rayleigh + atmo_ozone) * cr + (atmo_mie + atmo_mie_absorb) * cm) * k;
+	return (atmo_rayleigh * cr + atmo_ozone * co + (atmo_mie + atmo_mie_absorb) * cm) * k;
 }
 
 // Transmittance of sunlight arriving at point p (planet-centred). Includes planet shadow.
@@ -111,7 +137,40 @@ vec3 atmo_extinction(float r, out float dr, out float dm) {
 	float h = r - atmo_planet_radius;
 	dr = exp(-h / atmo_rayleigh_height);
 	dm = exp(-h / atmo_mie_height);
-	return dr * (atmo_rayleigh + atmo_ozone) + dm * (atmo_mie + atmo_mie_absorb);
+	float dz = atmo_ozone_height > 0.0 ? exp(-h / atmo_ozone_height) : dr;
+	return dr * atmo_rayleigh + dz * atmo_ozone + dm * (atmo_mie + atmo_mie_absorb);
+}
+
+// Sun elevation raised by atmo_ms_lift (radians): direction the diffuse (multiply scattered)
+// sky light behaves as coming from.
+float atmo_ms_mus(float mus) {
+	float c = cos(atmo_ms_lift);
+	float s = sin(atmo_ms_lift);
+	return max(mus, mus * c + sqrt(max(1.0 - mus * mus, 0.0)) * s);
+}
+
+// Soft planet shadow for the diffuse light (wider penumbra than the direct sun).
+float atmo_planet_shadow_ms(float r, float mus) {
+	if (mus >= 0.0) return 1.0;
+	float d = r * sqrt(max(1.0 - mus * mus, 0.0));
+	float w = atmo_rayleigh_height * (atmo_shadow_soft + 1.2);
+	return smoothstep(atmo_planet_radius - w, atmo_planet_radius + w * 0.5, d);
+}
+
+// Isotropic multiple-scattering source (per unit sun irradiance and per unit scattering
+// coefficient) for a sample at radius r with cos(sun zenith) mus. Colour: the scattering of the
+// whole column (bluish by day), lit by diffuse sun paths; plus a little ground bounce.
+vec3 atmo_ms_source(float r, float mus) {
+	float m2 = atmo_ms_mus(mus);
+	vec3 T = exp(-atmo_sun_optical_depth(r, m2) * atmo_ms_path) * atmo_planet_shadow_ms(r, m2);
+	vec3 tau_col = atmo_rayleigh * atmo_rayleigh_height + atmo_mie * atmo_mie_height;
+	vec3 sky = 1.0 - exp(-tau_col);
+	return T * (sky * 2.0 + atmo_ground_albedo * max(m2, 0.0));
+}
+
+// Art-directed weight of a low sun at a sample (1 = sun on the horizon, 0 = high sun).
+float atmo_low_sun(float mus) {
+	return 1.0 - smoothstep(-0.02, 0.32, mus);
 }
 
 // Single scattering along ro + rd*t, t in [0, t_max]. Returns in-scattered radiance (same
@@ -126,6 +185,11 @@ vec3 atmo_scatter(vec3 ro, vec3 rd, float t_max, int steps, float jitter, out ve
 	vec3 od = vec3(0.0);
 	vec3 sum_r = vec3(0.0);
 	vec3 sum_m = vec3(0.0);
+	vec3 ms_r = vec3(0.0);
+	vec3 ms_m = vec3(0.0);
+	vec3 em = vec3(0.0);
+	bool ms = atmo_ms_strength > 0.0;
+	bool emit = dot(atmo_emission, atmo_emission) > 0.0;
 	for (int i = 0; i < steps; i++) {
 		float t, ds;
 		atmo_segment(i, steps, t0, len, k, jitter, t, ds);
@@ -136,17 +200,42 @@ vec3 atmo_scatter(vec3 ro, vec3 rd, float t_max, int steps, float jitter, out ve
 		vec3 od_here = od + ext * (ds * jitter);
 		od += ext * ds;
 		float mus = dot(p, L) / r;
+		float lo = atmo_low_sun(mus);
+		vec3 gr = mix(vec3(1.0), atmo_twilight_tint, lo);
+		vec3 tv = exp(-od_here) * gr;
 		vec3 tr = exp(-(od_here + atmo_sun_optical_depth(r, mus))) * atmo_planet_shadow(r, mus);
-		sum_r += tr * (dr * ds);
-		sum_m += tr * (dm * ds);
+#ifdef ATMO_CLOUD_SHADOWS
+		// volumetric cloud shadows in the air (crepuscular rays, dim air under overcast); the
+		// planet is not rotated, so world-oriented == planet-local here
+		if (r < cloud_top) tr *= cloud_shadow_local(p, L);
+#endif
+		sum_r += tr * gr * (dr * ds);
+		sum_m += tr * mix(vec3(1.0), atmo_twilight_tint_mie, lo) * (dm * ds);
+		if (emit) em += exp(-od_here) * atmo_emission * (dm * ds);
+		if (ms) {
+			vec3 src = tv * atmo_ms_source(r, mus);
+			ms_r += src * (dr * ds);
+			ms_m += src * (dm * ds);
+		}
 	}
 	T = exp(-od);
 	float mu = dot(rd, L);
-	vec3 E_sun = sun_color.rgb * sun_intensity * atmo_intensity;
+	vec3 E_sun = sun_color.rgb * sun_intensity * atmo_intensity * atmo_sky_gain;
 	vec3 sr = sum_r * atmo_rayleigh;
 	vec3 sm = sum_m * atmo_mie;
-	return E_sun * (sr * atmo_phase_rayleigh(mu) + sm * atmo_phase_mie(mu, atmo_mie_g)
-		+ (sr + sm) * (atmo_multi_scatter * SD_INV_4PI));
+	vec3 ph_m = vec3(atmo_phase_mie(mu, atmo_mie_g));
+	if (atmo_halo > 0.0) {
+		// ice crystals: 22 deg halo (reddish sharp inner edge, bluish-white outer fade) + faint
+		// 46 deg ring, relative to the Mie phase
+		float ang = acos(clamp(mu, -1.0, 1.0)) * 57.29578;
+		vec3 h22 = vec3(1.0, 0.85, 0.7) * exp(-pow((ang - 22.3) / 0.7, 2.0))
+			+ vec3(0.75, 0.9, 1.0) * exp(-max(ang - 22.6, 0.0) / 3.5) * step(22.0, ang) * 0.35;
+		vec3 h46 = vec3(0.9, 0.95, 1.0) * exp(-pow((ang - 46.0) / 1.2, 2.0)) * 0.3;
+		ph_m += (h22 + h46) * atmo_halo * 0.08;
+	}
+	vec3 Lms = (ms_r * atmo_rayleigh + ms_m * atmo_mie) * (atmo_ms_strength * SD_INV_4PI);
+	return E_sun * (sr * atmo_phase_rayleigh(mu) + sm * ph_m
+		+ (sr + sm) * (atmo_multi_scatter * SD_INV_4PI) + Lms) + em;
 }
 
 // View transmittance only (cheap; no light term). Must use the same sampling as atmo_scatter.
@@ -199,7 +288,11 @@ vec3 atmo_sky_ambient(vec3 p) {
 	vec3 up = normalize(p);
 	vec3 T;
 	vec3 zen = atmo_scatter(p, up, 1e30, 4, 0.5, T);
-	vec3 hor = atmo_scatter(p, normalize(up * 0.25 + normalize(sd_sun_dir() - up * dot(sd_sun_dir(), up) + vec3(1e-4))), 1e30, 4, 0.5, T);
+	// wave 4: the low sample looks across the sun azimuth (90 deg off), not into the sunset glow:
+	// representative of the whole sky dome (sunset ambient was the glow colour only)
+	vec3 sh = sd_sun_dir() - up * dot(sd_sun_dir(), up);
+	vec3 side = normalize(cross(up, sh + vec3(1e-4, 2e-4, 0.0)));
+	vec3 hor = atmo_scatter(p, normalize(up * 0.3 + side + normalize(sh + vec3(1e-4)) * 0.35), 1e30, 4, 0.5, T);
 	return (zen + hor) * 0.5 * SD_PI;
 }
 

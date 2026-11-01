@@ -43,7 +43,7 @@ static func bodies() -> Array[Dictionary]:
 	out.append({
 		"name": "Terra Nova", "kind": Kind.PLANET, "group": 2, "preset": "terra_nova",
 		"pos": terra, "gravity": 9.81,
-		"atmosphere": {"preset": "terra_nova", "sun_path_scale": 2.8, "mie_density": 0.8},
+		"atmosphere": {"preset": "terra_nova"},   # look: AtmosphereLayer.PRESETS (wave 4 sky)
 		"ocean": {},
 		"clouds": {"bottom": 1800.0, "top": 4600.0, "coverage": 0.33, "brightness": 2.2,
 			"cyclones": 5, "seed": 3.0, "shape_size": 7000.0, "detail_size": 1300.0,

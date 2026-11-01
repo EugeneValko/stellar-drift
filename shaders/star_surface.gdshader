@@ -68,10 +68,16 @@ void fragment() {
 	float gran = 0.0;
 	if (g_fade > 0.0) {
 		vec3 gp = n * granule_scale + so;
+		// wave 4: domain-warped cells -> organic, irregular granules (not a Voronoi mosaic)
+		vec3 gw = gp * 0.42 + vec3(0.0, t * 0.03, 0.0);
+		gp += vec3(sn_gnoise(gw), sn_gnoise(gw + 17.3), sn_gnoise(gw + 41.7)) * 0.55;
 		vec3 v = cells(gp, t * 0.35);
-		float lane = smoothstep(0.0, 0.45, v.y - v.x);
+		float lw = 0.32 + 0.3 * fract(v.z * 13.7);            // lane width varies per granule
+		float lane = smoothstep(0.0, lw, v.y - v.x);
 		float cellb = 1.0 - smoothstep(0.1, 1.0, v.x);
-		gran = (lane * 0.55 + cellb * 0.45) * (0.65 + 0.7 * v.z) - 0.62;
+		// some large "exploding" granules with a darker centre
+		float expl = smoothstep(0.82, 0.95, v.z) * (1.0 - smoothstep(0.0, 0.35, v.x)) * 0.45;
+		gran = (lane * 0.55 + cellb * 0.45 - expl) * (0.65 + 0.7 * v.z) - 0.62;
 		// fine sub-granular texture
 		float fine_fade = 1.0 - smoothstep(0.25, 0.6, fw * granule_scale * 3.0);
 		gran += 0.18 * fine_fade * sn_gnoise(gp * 3.0 + vec3(0.0, t * 0.2, 0.0));
@@ -97,12 +103,29 @@ void fragment() {
 	float sn2 = sn_fbm(n * spot_scale * 4.0 + so, 4, 0.5);
 	float act = belt * spot_amount;
 	float spot_f = (sn1 * 0.8 + sn2 * 0.35) - (0.44 - 0.30 * act);
-	float pen = smoothstep(0.0, 0.035, spot_f) * step(0.001, act);
-	float umb = smoothstep(0.05, 0.08, spot_f) * step(0.001, act);
-	// filamentary penumbra: radial-ish streaks from noise on the spot field gradient direction
-	float fil = sn_gnoise(n * spot_scale * 60.0 + so) * 0.5 + 0.5;
-	float spot_mul = mix(1.0, mix(0.55, 0.78, fil), pen);
-	spot_mul = mix(spot_mul, 0.12, umb);
+	// wave 4: soft, wide penumbra and a gradual umbra edge
+	float pen = smoothstep(-0.012, 0.05, spot_f) * step(0.001, act);
+	float umb = smoothstep(0.05, 0.1, spot_f) * step(0.001, act);
+	float fil = 0.5;
+	if (pen > 0.001) {
+		// filaments run radially out of the spot: streak noise aligned with the gradient of the
+		// spot field (finite differences on the sphere)
+		vec3 e1 = normalize(cross(n, abs(n.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0)));
+		vec3 e2 = cross(n, e1);
+		float h = 0.004;
+		vec3 n1 = normalize(n + e1 * h);
+		vec3 n2 = normalize(n + e2 * h);
+		float f1 = sn_fbm(n1 * spot_scale + so * 1.3, 4, 0.5) * 0.8 + sn_fbm(n1 * spot_scale * 4.0 + so, 4, 0.5) * 0.35;
+		float f2 = sn_fbm(n2 * spot_scale + so * 1.3, 4, 0.5) * 0.8 + sn_fbm(n2 * spot_scale * 4.0 + so, 4, 0.5) * 0.35;
+		vec2 g = vec2(f1 - (sn1 * 0.8 + sn2 * 0.35), f2 - (sn1 * 0.8 + sn2 * 0.35));
+		// direction to the spot centre (gradient) as an angle on a smooth frame -> radial streaks
+		vec2 gd = g / max(length(g), 1e-6);
+		fil = sn_gnoise(vec3(gd * 9.0, spot_f * 14.0 + float(seed))) * 0.5 + 0.5;
+		fil = fil * 0.6 + (sn_gnoise(vec3(gd * 23.0, spot_f * 30.0 + 3.0)) * 0.5 + 0.5) * 0.4;
+		fil = mix(fil, sn_gnoise(n * spot_scale * 90.0 + so) * 0.5 + 0.5, 0.25);
+	}
+	float spot_mul = mix(1.0, mix(0.5, 0.85, fil), pen);
+	spot_mul = mix(spot_mul, 0.1, umb);
 	// faculae: bright plage around active regions, much more visible toward the limb
 	float plage = smoothstep(-0.12, -0.02, spot_f) * (1.0 - pen) * act;
 

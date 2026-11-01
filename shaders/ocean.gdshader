@@ -17,9 +17,10 @@ uniform sampler2D screen_tex : hint_screen_texture, filter_linear, repeat_disabl
 group_uniforms ocean;
 uniform float ocean_radius = 60000.0;
 uniform vec3 ocean_scatter_color : source_color = vec3(0.015, 0.06, 0.09);  // deep water body albedo
-uniform vec3 ocean_shallow_tint : source_color = vec3(0.10, 0.55, 0.50);   // in-scatter in shallows
-uniform vec3 ocean_absorption = vec3(0.35, 0.065, 0.045);                  // 1/m (red absorbed first)
-uniform float ocean_turbidity = 0.08;           // extra scattering in shallows (1/m)
+uniform vec3 ocean_shallow_tint : source_color = vec3(0.05, 0.62, 0.56);   // in-scatter in shallows
+uniform vec3 ocean_absorption = vec3(0.42, 0.05, 0.03);                    // 1/m (red absorbed first)
+uniform float ocean_turbidity = 0.05;           // extra scattering in shallows (1/m)
+uniform float ocean_sss = 1.0;                  // light through backlit wave crests (wave 4)
 uniform float ocean_wave_length = 45.0;         // longest wave, m
 uniform float ocean_wave_min = 0.3;             // shortest wave, m
 uniform float ocean_steepness = 0.38;          // overall slope scale
@@ -59,14 +60,16 @@ vec3 ocean_slope(vec3 q, vec3 n, float footprint, out float var) {
 		float omega = sqrt(9.81 * kl);
 		float ph = dot(k, q) + omega * t + o_hash(fi + 5.5) * 6.2831853;
 		float lam_t = 6.2831853 / max(length(kt), 1e-5);
-		float res = clamp((lam_t / max(footprint, 1e-4) - 2.0) / 4.0, 0.0, 1.0);
+		// wave 4: resolve a wave only from ~3 px (fully at 9 px): fewer near-Nyquist sparkles
+		// (grainy far field); the rest becomes roughness
+		float res = clamp((lam_t / max(footprint, 1e-4) - 3.0) / 6.0, 0.0, 1.0);
 		g += (kt / max(kl, 1e-6)) * s * cos(ph) * res;
 		var += 0.5 * s * s * (1.0 - res * res) * dot(kt, kt) / max(kl * kl, 1e-9);
 	}
 	// irregular chop from tileable 3D noise (periods divide ocean_tile -> seamless anchoring)
 	for (int o = 0; o < 2; o++) {
 		float sc = o == 0 ? 32.0 : 8.0;
-		float res = clamp((sc / max(footprint, 1e-4) - 2.0) / 4.0, 0.0, 1.0);
+		float res = clamp((sc / max(footprint, 1e-4) - 3.0) / 6.0, 0.0, 1.0);
 		float amp = ocean_steepness * 0.22;
 		if (res > 0.0) {
 			vec3 c = q / sc + vec3(t * 0.03, 0.0, t * 0.02) * (o == 0 ? 1.0 : 2.0);
@@ -171,6 +174,14 @@ void fragment() {
 	}
 
 	vec3 col = mix(under, sky, fres) + spec;
+	// subsurface glow: sunlight passing through the wave crests toward the viewer (turquoise
+	// on backlit seas, strongest with a low sun in front)
+	if (ocean_sss > 0.0) {
+		float back = pow(max(dot(-V, L) * 0.5 + 0.5, 0.0), 6.0);
+		float crest = clamp(dot(n - N, -rd) * 6.0 + 0.15, 0.0, 1.0);
+		col += ocean_shallow_tint * Esun * back * crest * (1.0 - fres) * 0.012 * ocean_sss
+			* smoothstep(-0.02, 0.08, dot(N, L));
+	}
 
 	// ---- shore foam
 	if (ocean_foam_amount > 0.0 && sd < 1e29) {

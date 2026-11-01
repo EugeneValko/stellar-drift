@@ -58,6 +58,15 @@ void fragment() {
 	vec3 col = (lit_side > 0.0 ? c_front : c_back) * Esun * sh * ring_brightness;
 	// faint planetshine/ambient on the dark side
 	col += albedo * 0.004;
+	// wave 4: fine dust (thin rings, gaps, the F ring) forward-scatters strongly when the sun is
+	// behind the rings: a narrow bright halo that makes the faint parts glow. Added as light
+	// (divided by alpha so the mix blend does not hide it in the transparent parts).
+	float dusty = 1.0 - smoothstep(0.05, 0.6, tau_n);
+	float glow_a = (1.0 - exp(-tau * 0.8 / max(nv, 0.03))) * (0.25 + dusty);
+	vec3 dust = vec3(1.0, 0.9, 0.78) * sd_hg(mu, 0.9) * 4.0 * SD_PI * 0.12 * glow_a
+		* ring_forward_scatter * Esun * sh * ring_brightness;
+	float a_out = max(alpha, 0.02);
+	col = (col * alpha + dust) / max(a_out, 1e-3);
 	ALBEDO = col;
-	ALPHA = alpha;
+	ALPHA = a_out;
 }

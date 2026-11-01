@@ -41,6 +41,16 @@ uniform vec3 nebula_b_inner : source_color = vec3(0.40, 0.78, 1.00);
 // palette C: outer crimson, inner amber
 uniform vec3 nebula_c_outer : source_color = vec3(0.85, 0.10, 0.12);
 uniform vec3 nebula_c_inner : source_color = vec3(1.00, 0.62, 0.30);
+// wave 4: two extra hand-placed complexes with their own palettes so every part of the sky
+// has something (D: violet veil with an emerald OIII core, E: rose HII with a pale gold core)
+uniform vec3 nebula_d_outer : source_color = vec3(0.36, 0.22, 0.85);
+uniform vec3 nebula_d_inner : source_color = vec3(0.25, 0.85, 0.66);
+uniform vec3 nebula_d_dir = vec3(0.807, -0.574, 0.142);    // below Aurelion seen from Terra
+uniform float nebula_d_size : hint_range(0.0, 1.5) = 0.34;  // angular radius (rad), 0 = off
+uniform vec3 nebula_e_outer : source_color = vec3(0.95, 0.26, 0.45);
+uniform vec3 nebula_e_inner : source_color = vec3(0.55, 0.75, 1.00);
+uniform vec3 nebula_e_dir = vec3(0.760, 0.545, -0.355);    // Terra's evening / night sky
+uniform float nebula_e_size : hint_range(0.0, 1.5) = 0.27;
 uniform float nebula_brightness : hint_range(0.0, 4.0) = 1.4;
 uniform float nebula_coverage : hint_range(0.0, 1.0) = 0.40;
 uniform float nebula_dust : hint_range(0.0, 4.0) = 1.4;
@@ -205,6 +215,25 @@ vec4 sb_backdrop(vec3 d, int face, vec2 st, float texel_cells) {
 	float region_n = sn_fbm(q * 0.95 + 3.3, 6, 0.55) * 0.5 + 0.5;
 	float region = smoothstep(1.0 - nebula_coverage, 1.0 - nebula_coverage + 0.30, region_n);
 	region = region * region * (3.0 - 2.0 * region);
+	// hand-placed complexes: ragged angular masks (noise-broken edges, not discs)
+	float md = 0.0;
+	float me = 0.0;
+	if (nebula_d_size > 0.0 || nebula_e_size > 0.0) {
+		// ragged, lobed outlines (strong low-frequency warp) and a clumpy, filamentary interior
+		float edge_n = sn_fbm(q * 1.9 + 51.0, 5, 0.6);
+		float clump = sn_fbm(q * 4.2 + 13.0, 5, 0.6) * 0.5 + 0.5;
+		if (nebula_d_size > 0.0) {
+			float a = acos(clamp(dot(d, normalize(nebula_d_dir)), -1.0, 1.0)) / nebula_d_size;
+			md = smoothstep(1.15, 0.15, a + edge_n * 1.3);
+			md *= smoothstep(0.32, 0.7, clump + (1.0 - a) * 0.25);
+		}
+		if (nebula_e_size > 0.0) {
+			float a = acos(clamp(dot(d, normalize(nebula_e_dir)), -1.0, 1.0)) / nebula_e_size;
+			me = smoothstep(1.15, 0.15, a + edge_n * 1.3);
+			me *= smoothstep(0.32, 0.7, clump + (1.0 - a) * 0.25);
+		}
+	}
+	region = max(region, max(md, me) * 0.85);
 	vec3 neb = vec3(0.0);
 	float Tn = 1.0;
 	if (region > 0.0005) {
@@ -215,6 +244,10 @@ vec4 sb_backdrop(vec3 d, int face, vec2 st, float texel_cells) {
 		float wb = max(1.0 - wa - wc, 0.0);
 		vec3 outer = nebula_a_outer * wa + nebula_b_outer * wb + nebula_c_outer * wc;
 		vec3 inner = nebula_a_inner * wa + nebula_b_inner * wb + nebula_c_inner * wc;
+		float kd = smoothstep(0.0, 0.6, md);
+		float ke = smoothstep(0.0, 0.6, me);
+		outer = mix(mix(outer, nebula_d_outer, kd), nebula_e_outer, ke);
+		inner = mix(mix(inner, nebula_d_inner, kd), nebula_e_inner, ke);
 
 		vec3 w1 = vec3(sn_fbm(q * 2.0 + 1.7, 4, 0.5), sn_fbm(q * 2.0 + 9.2, 4, 0.5), sn_fbm(q * 2.0 + 4.1, 4, 0.5));
 		vec3 base = q * nebula_scale + w1 * nebula_warp;

@@ -92,8 +92,14 @@ const PRESET_DIR := "res://src/planets/presets/"
 @export var exposure_space := 1.0
 @export var exposure_day_surface := 1.05
 @export var exposure_night_surface := 2.6
+## Wave 4 grading: exposure with the sun near the horizon (sunset / sunrise): the eye adapts to
+## the dimmer sky so the colours read (curve: day -> golden hour -> twilight -> night).
+@export var exposure_golden_surface := 1.35
+@export var exposure_twilight_surface := 2.1
 ## Background (stars, Milky Way) energy in a daylight sky (1 = space).
-@export var sky_day_energy := 0.006
+@export var sky_day_energy := 0.0015
+## Stars near a sunlit planet seen from space (glare of the bright disc; 1 = no dimming).
+@export var sky_dayside_energy := 0.45
 ## Exposure adaptation speed (1/s); capture snaps instantly.
 @export var adapt_speed := 1.5
 
@@ -774,13 +780,22 @@ func _update_exposure(cam: Camera3D, dt: float) -> void:
 		if focus.atmo:
 			h = focus.atmo.get_top_radius() - focus.radius
 		var inside := 1.0 - smoothstep(0.15 * h, 1.0 * h, alt)
-		var night := 1.0 - smoothstep(-0.18, 0.06, sun_up)
-		var day_surface := exposure_day_surface if focus.atmo else exposure_space
-		target = lerpf(exposure_space, lerpf(day_surface, exposure_night_surface, night), inside)
+		var surf := exposure_space
+		if focus.atmo:
+			# day -> golden hour (sun < ~12 deg) -> twilight (sun below the horizon) -> night
+			surf = lerpf(exposure_day_surface, exposure_golden_surface, 1.0 - smoothstep(0.02, 0.21, sun_up))
+			surf = lerpf(surf, exposure_twilight_surface, 1.0 - smoothstep(-0.09, 0.02, sun_up))
+			surf = lerpf(surf, exposure_night_surface, 1.0 - smoothstep(-0.26, -0.09, sun_up))
+		else:
+			surf = lerpf(exposure_space, exposure_night_surface, 1.0 - smoothstep(-0.18, 0.06, sun_up))
+		target = lerpf(exposure_space, surf, inside)
 		if focus.atmo:
 			var day := smoothstep(-0.2, 0.03, sun_up)   # stars appear only after dusk
 			var dense := 1.0 - smoothstep(0.05 * h, 0.6 * h, alt)
 			sky = lerpf(1.0, sky_day_energy, day * dense)
+		# glare of a sunlit planet filling the view from orbit: fewer, fainter stars
+		var lit := smoothstep(-0.05, 0.35, sun_up) * (1.0 - smoothstep(focus.radius * 1.5, focus.radius * 5.0, alt))
+		sky = minf(sky, lerpf(1.0, sky_dayside_energy, lit))
 	if not auto_exposure:
 		target = exposure_space
 	var a := 1.0 if _snap or Capture.active else 1.0 - exp(-dt * adapt_speed)

@@ -32,23 +32,35 @@ const EARTH_MIE := 3.996e-6                                      # at H = 1.2 km
 const EARTH_OZONE := Vector3(0.650e-6, 1.881e-6, 0.085e-6)
 
 const PRESETS := {
+	# wave 4: warm haze, tall strong ozone layer (blue hour, purple twilight), multiple scattering
+	# (bright horizon), art-directed low-sun tints (orange glow around the sun, pink sky)
 	"terra_nova": {
 		"radius": 60000.0, "height": 24000.0, "rayleigh_height": 2600.0, "mie_height": 750.0,
 		"rayleigh_density": 1.5, "rayleigh_tint": Vector3(1, 1, 1),
-		"mie_density": 1.0, "mie_color": Color(1, 1, 1), "mie_absorb": Vector3(0.1, 0.1, 0.1),
-		"mie_g": 0.78, "ozone_density": 1.0, "intensity": PI, "multi_scatter": 0.35,
+		"mie_density": 3.0, "mie_color": Color(1, 0.9, 0.75), "mie_absorb": Vector3(0.1, 0.1, 0.1),
+		"mie_g": 0.8, "ozone_density": 2.5, "ozone_height": 7000.0, "intensity": PI,
+		"multi_scatter": 0.0, "ms_strength": 1.2, "ms_lift_deg": 4.0, "sun_path_scale": 3.0,
+		"twilight_tint": Vector3(1.25, 0.9, 0.95), "twilight_tint_mie": Vector3(1.8, 0.85, 0.3),
 	},
-	"ignis": {  # thin dusty orange-red (Mars-like: dust absorbs blue)
+	# thin dusty orange-red (Mars-like: dust absorbs blue); wave 4: Mars-like BLUE glow around a
+	# low sun (fine dust forward-scatters blue), red volcanic glow of the lower haze at night
+	"ignis": {
 		"radius": 30000.0, "height": 12000.0, "rayleigh_height": 1400.0, "mie_height": 1600.0,
 		"rayleigh_density": 0.12, "rayleigh_tint": Vector3(1, 1, 1),
 		"mie_density": 45.0, "mie_color": Color(1.0, 0.6, 0.36), "mie_absorb": Vector3(0.15, 0.45, 0.9),
-		"mie_g": 0.6, "ozone_density": 0.0, "intensity": PI, "multi_scatter": 0.6,
+		"mie_g": 0.6, "ozone_density": 0.0, "intensity": PI, "multi_scatter": 0.3,
+		"ms_strength": 0.9, "ms_lift_deg": 6.0,
+		"twilight_tint": Vector3(1.15, 0.9, 0.8), "twilight_tint_mie": Vector3(0.55, 0.9, 2.2),
+		"emission": Vector3(1.3e-5, 3.6e-6, 0.7e-6),
 	},
-	"glacia": {  # teal / cyan
+	# teal / cyan; wave 4: ice-crystal haze (22/46 deg halos), cold multiple scattering
+	"glacia": {
 		"radius": 45000.0, "height": 11000.0, "rayleigh_height": 1400.0, "mie_height": 450.0,
 		"rayleigh_density": 1.4, "rayleigh_tint": Vector3(0.45, 1.2, 1.0),
-		"mie_density": 0.7, "mie_color": Color(0.85, 1.0, 1.0), "mie_absorb": Vector3(0.1, 0.1, 0.1),
-		"mie_g": 0.8, "ozone_density": 0.6, "intensity": PI, "multi_scatter": 0.4,
+		"mie_density": 1.4, "mie_color": Color(0.85, 1.0, 1.0), "mie_absorb": Vector3(0.1, 0.1, 0.1),
+		"mie_g": 0.8, "ozone_density": 0.6, "intensity": PI, "multi_scatter": 0.0,
+		"ms_strength": 1.1, "halo": 1.3,
+		"twilight_tint": Vector3(1.05, 1.0, 1.15), "twilight_tint_mie": Vector3(1.35, 1.0, 0.85),
 	},
 	"aurelion": {  # gas giant haze: warm, thick high haze
 		"radius": 300000.0, "height": 40000.0, "rayleigh_height": 6000.0, "mie_height": 4000.0,
@@ -103,7 +115,9 @@ static func make_uniforms(p: Dictionary) -> Dictionary:
 	var mie := LayerParams.col3(p.get("mie_color", Color.WHITE)) * EARTH_MIE \
 		* float(p.get("mie_density", 1.0)) * (1200.0 / hm)
 	var mie_abs := mie * LayerParams.col3(p.get("mie_absorb", Vector3(0.1, 0.1, 0.1)))
-	var oz := EARTH_OZONE * 1.9 * float(p.get("ozone_density", 1.0)) * (8000.0 / hr)
+	# ozone: Earth-like vertical column x ozone_density, on its own profile when ozone_height > 0
+	var hz: float = float(p.get("ozone_height", 0.0))
+	var oz := EARTH_OZONE * 1.9 * float(p.get("ozone_density", 1.0)) * (8000.0 / (hz if hz > 0.0 else hr))
 	var q: int = int(p.get("quality", 1))
 	var steps: int = int(p.get("steps", [8, 12, 16][clampi(q, 0, 2)]))
 	return {
@@ -121,6 +135,16 @@ static func make_uniforms(p: Dictionary) -> Dictionary:
 		"atmo_multi_scatter": float(p.get("multi_scatter", 0.35)),
 		"atmo_steps": steps,
 		"atmo_sun_path_scale": float(p.get("sun_path_scale", 2.2)),
+		"atmo_ozone_height": hz,
+		"atmo_ms_strength": float(p.get("ms_strength", 0.0)),
+		"atmo_ms_lift": deg_to_rad(float(p.get("ms_lift_deg", 4.0))),
+		"atmo_ms_path": float(p.get("ms_path", 0.55)),
+		"atmo_ground_albedo": LayerParams.col3(p.get("ground_albedo", Vector3(0.12, 0.13, 0.12))),
+		"atmo_twilight_tint": LayerParams.col3(p.get("twilight_tint", Vector3.ONE)),
+		"atmo_twilight_tint_mie": LayerParams.col3(p.get("twilight_tint_mie", Vector3.ONE)),
+		"atmo_sky_gain": float(p.get("sky_gain", 1.0)),
+		"atmo_halo": float(p.get("halo", 0.0)),
+		"atmo_emission": LayerParams.col3(p.get("emission", Vector3.ZERO)),
 	}
 
 
@@ -156,8 +180,10 @@ func sun_transmittance(p: Vector3, l: Vector3) -> Vector3:
 	var mus := p.dot(l) / r
 	var cr := minf(_chapman(u, r, mus, u["atmo_rayleigh_height"]), 1e9)
 	var cm := minf(_chapman(u, r, mus, u["atmo_mie_height"]), 1e9)
+	var hz: float = u.get("atmo_ozone_height", 0.0)
+	var co := minf(_chapman(u, r, mus, hz), 1e9) if hz > 0.0 else cr
 	var kk := 1.0 + (float(u["atmo_sun_path_scale"]) - 1.0) * (1.0 - clampf(mus * 3.0, 0.0, 1.0))
-	var od: Vector3 = ((u["atmo_rayleigh"] + u["atmo_ozone"]) * cr + (u["atmo_mie"] + u["atmo_mie_absorb"]) * cm) * kk
+	var od: Vector3 = (u["atmo_rayleigh"] * cr + u["atmo_ozone"] * co + (u["atmo_mie"] + u["atmo_mie_absorb"]) * cm) * kk
 	var sh := 1.0
 	if mus < 0.0:
 		var d := r * sqrt(1.0 - mus * mus)
@@ -185,23 +211,39 @@ func sky_radiance(p: Vector3, dir: Vector3, l: Vector3, sun_col: Color, sun_int:
 	var sm := Vector3.ZERO
 	var ray: Vector3 = u["atmo_rayleigh"]
 	var mie: Vector3 = u["atmo_mie"]
-	var ext_r: Vector3 = ray + u["atmo_ozone"]
+	var oz: Vector3 = u["atmo_ozone"]
+	var hz: float = u.get("atmo_ozone_height", 0.0)
 	var ext_m: Vector3 = mie + u["atmo_mie_absorb"]
+	# multiple scattering (same approximation as atmo_ms_source in the shader, no lift)
+	var ms_k: float = u.get("atmo_ms_strength", 0.0)
+	var tau_col: Vector3 = ray * float(u["atmo_rayleigh_height"]) + mie * float(u["atmo_mie_height"])
+	var col_sky := (Vector3.ONE - Vector3(exp(-tau_col.x), exp(-tau_col.y), exp(-tau_col.z))) * 2.0
+	var msr := Vector3.ZERO
+	var msm := Vector3.ZERO
 	for i in steps:
 		var q := p + dir * (t0 + (i + 0.5) * ds)
 		var h := q.length() - float(u["atmo_planet_radius"])
 		var dr := exp(-h / float(u["atmo_rayleigh_height"]))
 		var dm := exp(-h / float(u["atmo_mie_height"]))
-		var here := od + (ext_r * dr + ext_m * dm) * (0.5 * ds)
-		od += (ext_r * dr + ext_m * dm) * ds
+		var dz := exp(-h / hz) if hz > 0.0 else dr
+		var ext := ray * dr + oz * dz + ext_m * dm
+		var here := od + ext * (0.5 * ds)
+		od += ext * ds
 		var ts := sun_transmittance(q, l)
-		var tr := Vector3(exp(-here.x), exp(-here.y), exp(-here.z)) * ts
+		var tv := Vector3(exp(-here.x), exp(-here.y), exp(-here.z))
+		var tr := tv * ts
 		sr += tr * dr * ds
 		sm += tr * dm * ds
+		if ms_k > 0.0:
+			var mp: float = u.get("atmo_ms_path", 0.55)
+			var src := tv * col_sky * Vector3(pow(ts.x, mp), pow(ts.y, mp), pow(ts.z, mp))
+			msr += src * dr * ds
+			msm += src * dm * ds
 	var mu := dir.dot(l)
 	var pr := 0.0596831 * (1.0 + mu * mu)
 	var g: float = u["atmo_mie_g"]
 	var pm := 0.1193662 * (1.0 - g * g) * (1.0 + mu * mu) / ((2.0 + g * g) * pow(1.0 + g * g - 2.0 * g * mu, 1.5))
 	var ms: float = u["atmo_multi_scatter"] * 0.0795775
-	var e := Vector3(sun_col.r, sun_col.g, sun_col.b) * sun_int * float(u["atmo_intensity"])
-	return e * (sr * ray * (pr + ms) + sm * mie * (pm + ms))
+	var e := Vector3(sun_col.r, sun_col.g, sun_col.b) * sun_int * float(u["atmo_intensity"]) \
+		* float(u.get("atmo_sky_gain", 1.0))
+	return e * (sr * ray * (pr + ms) + sm * mie * (pm + ms) + (msr * ray + msm * mie) * (ms_k * 0.0795775))

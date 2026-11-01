@@ -100,7 +100,9 @@ void fragment() {
 	// results after the loop: ~half the march cost per pixel, slightly softer cloud image.
 	float px = mod(floor(FRAGCOORD.x), 2.0);
 	float py = mod(floor(FRAGCOORD.y), 2.0);
-	float jit = fract(sin(dot(floor(FRAGCOORD.xy), vec2(12.9898, 78.233))) * 43758.5453);
+	// R2 low-discrepancy jitter (wave 4): evenly spread offsets read as fine, even grain instead
+	// of white-noise clumps
+	float jit = sd_ign(FRAGCOORD.xy * vec2(0.5, 0.5) + vec2(px * 37.0, py * 61.0));
 	if (cloud_temporal_jitter) jit = fract(jit + TIME * 7.3123);
 	// quarter per pixel, rotated randomly per quad: a fixed assignment shows up as a regular
 	// row/column pattern (the quarters are biased differently inside the doubled cells)
