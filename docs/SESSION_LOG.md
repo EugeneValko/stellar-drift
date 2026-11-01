@@ -10,3 +10,4 @@
 - Подключена локальная сессия на ПК пользователя (Remote Control, RTX 3060): рендер 1080p ≈ 1.8 с/кадр. Скрипты `tools/*.ps1`, `docs/LOCAL_RENDER.md`.
 - Влит этап 3a: корабль v1 (ветка worktree-agent-a62c838b704c1bb67). Отчёт `docs/reports/stage3_ship_model.md`. Замечания: силуэт как у реактивного самолёта, дуги кабины, створки шасси.
 - Влит этап 1 (ветка worktree-agent-a228ea92ec0c026a4): небо, звезда Helios, блики, окружение. Отчёт `docs/reports/stage1_space.md`. Находка: far/near ≤ 1e7 → scaled space.
+- Влит этап 2b (ветка worktree-agent-a4754233eca952b1c): атмосфера, облака, океан, газ-гигант, кольца; shader_globals `sun_direction/sun_color/sun_intensity` в project.godot. Отчёт `docs/reports/stage2_atmosphere.md`.
