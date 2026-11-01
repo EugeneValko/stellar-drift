@@ -152,36 +152,64 @@ func apply_capture_preset(preset: String) -> void:
 	game_mode.ensure_started()
 	var p := game_mode.player
 	help.set_open(false, true)
+	if preset != "hud_ship":
+		_reset_ship()
+		if game_mode.state != GameMode.State.ON_FOOT:
+			game_mode.force_on_foot()
+		game_mode.set_hatch_open(true, true)
+		_aim_sun(30.0, 75.0)
 	match preset:
-		"onfoot_fp", "help":
-			if game_mode.state != GameMode.State.ON_FOOT:
-				game_mode.force_on_foot()
+		"onfoot_fp":
 			p.set_third_person(false)
-			if preset == "help":
-				_place_player(Vector3(-6.5, 0.0, -13.0), Vector3(0.0, -0.5, 0.0))
-				help.set_open(true, true)
-			else:
-				_place_player(Vector3(-2.6, 0.0, -6.4), Vector3(0.3, -1.6, -2.0))
-			game_mode.set_hatch_open(true, true)
+			# within interact distance of the ramp end, looking up the open ramp
+			_place_player(Vector3(-3.3, 0.0, -5.7), Vector3(0.4, -1.3, -1.6))
+		"help":
+			p.set_third_person(false)
+			_place_player(Vector3(-8.0, 0.0, -15.0), Vector3(0.0, -0.8, 0.0))
+			help.set_open(true, true)
 		"onfoot_tp":
-			if game_mode.state != GameMode.State.ON_FOOT:
-				game_mode.force_on_foot()
-			_place_player(Vector3(-6.0, 0.0, -12.0), Vector3(0.0, -0.5, 1.5))
+			_place_player(Vector3(-6.5, 0.0, -11.5), Vector3(0.0, -0.8, 1.0))
 			p.set_third_person(true)
-			p.set_pitch_deg(-6.0)
-			game_mode.set_hatch_open(true, true)
+			p.set_pitch_deg(-4.0)
 		"hud_ship":
+			_aim_sun(32.0, -55.0)
 			_pose_ship_flying()
 		_:
 			push_warning("onfoot_test: unknown preset " + preset)
 			return
 	var cam := get_viewport().get_camera_3d()
 	if cam:
+		if preset == "hud_ship":
+			_place_sky_planet(cam, 17.0, 13.0)
+		else:
+			_place_sky_planet(cam, -24.0, 24.0)
 		planet.set_focus_global(cam.global_position)
-		if terra_ground:
-			terra_ground.focus(terra.to_local(cam.global_position))
+	if preset == "hud_ship" and terra:
+		ship.fake["target_position"] = terra.global_position
+		ship.fake["target_radius"] = TERRA_R
+		ship.fake["target_distance"] = ship.global_position.distance_to(terra.global_position) - TERRA_R
 	planet.terrain.build_until_stable()
 	print("[onfoot_test] preset %s: state=%s hatch_dist=%.1f m" % [preset, game_mode.get_state_name(), game_mode.distance_to_hatch()])
+
+
+## Moves the sky planet to `yaw`/`pitch` degrees off the camera's view direction (screenshots).
+func _place_sky_planet(cam: Camera3D, yaw: float, pitch: float) -> void:
+	if terra == null:
+		return
+	var b := cam.global_basis
+	var y := deg_to_rad(yaw)
+	var pt := deg_to_rad(pitch)
+	var dir := (b * Vector3(sin(y) * cos(pt), sin(pt), -cos(y) * cos(pt))).normalized()
+	terra.global_position = cam.global_position + dir * TERRA_DIST
+	terra_ground.focus(terra.to_local(cam.global_position))
+
+
+func _reset_ship() -> void:
+	ship.fake = {}
+	ship.third_person = false
+	ship.land_on(planet, site_dir, ship_fwd)
+	ship.get_visual().set_thrust(0.0)
+	ship._place_cameras()
 
 
 func _pose_ship_flying() -> void:
@@ -200,13 +228,9 @@ func _pose_ship_flying() -> void:
 	ship.fake = {
 		"speed": vel.length(), "vertical_speed": -42.0, "mode": 2, "mode_name": "Space",
 		"mode_max_speed": 5000.0, "throttle": 0.62, "gear_down": false, "landed": false,
-		"flight_assist": true, "autopilot": true, "heat": 0.32, "atmosphere_density": 0.0,
+		"flight_assist": true, "autopilot": true, "heat": 0.0, "atmosphere_density": 0.0,
 		"velocity": vel, "target_name": "Terra Nova",
 	}
-	if terra:
-		ship.fake["target_position"] = terra.global_position
-		ship.fake["target_radius"] = TERRA_R
-		ship.fake["target_distance"] = ship.global_position.distance_to(terra.global_position) - TERRA_R
 	if game_mode.state != GameMode.State.SHIP:
 		game_mode.force_ship()
 	# chase camera a bit to the side for a nicer composition
