@@ -6,8 +6,8 @@
 background_mode = 1
 background_color = Color(0, 0, 0, 1)
 ambient_light_source = 2
-ambient_light_color = Color(0.09, 0.1, 0.13, 1)
-ambient_light_energy = 0.6
+ambient_light_color = Color(0.13, 0.15, 0.2, 1)
+ambient_light_energy = 1.0
 tonemap_mode = 4
 tonemap_exposure = 1.0
 glow_enabled = true

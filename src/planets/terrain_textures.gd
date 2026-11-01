@@ -63,7 +63,7 @@ static func _build() -> Dictionary:
 		rgba[q + 1] = cell[i]
 		rgba[q + 2] = ridged[i]
 		rgba[q + 3] = fine[i]
-		rock_h[i] = float(ridged[i]) * 0.6 + float(cell[i]) * 0.55 + float(fine[i]) * 0.25
+		rock_h[i] = float(ridged[i]) * 0.75 + float(fbm[i]) * 0.3 + float(fine[i]) * 0.3
 		soft_h[i] = float(soft[i]) * 0.8 + float(fine[i]) * 0.35
 	var noise_img := Image.create_from_data(SIZE, SIZE, false, Image.FORMAT_RGBA8, rgba)
 	noise_img.generate_mipmaps()

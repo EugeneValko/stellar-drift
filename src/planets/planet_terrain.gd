@@ -14,6 +14,8 @@ signal chunk_built(level: int)
 
 ## Split when distance-to-chunk < chunk_edge * lod_factor.
 @export var lod_factor := 1.0
+## Chunks are always split at least down to this level (orbit-view quality).
+@export var min_level := 2
 ## Chunks entirely below the horizon (occluder sphere through the ground under the focus,
 ## lowered by this margin) are not refined.
 @export var horizon_margin := 250.0
@@ -47,6 +49,8 @@ var _build_ms_total := 0.0
 var _build_ms_max := 0.0
 var _ready_to_run := false
 var _focus_r := 0.0
+var _display_dirty := false
+var _shown_list: Array[ChunkNode] = []
 var _occluder_r := 0.0
 
 
@@ -60,6 +64,7 @@ class ChunkNode:
 	var center := Vector3.ZERO      # planet-local surface point at chunk centre
 	var bound := 0.0
 	var horiz := 0.0
+	var half_range := 0.0
 	var parent: ChunkNode
 	var children: Array[ChunkNode] = []
 	var mesh: MeshInstance3D
@@ -67,6 +72,8 @@ class ChunkNode:
 	var built := false
 	var pending := false
 	var want_split := false
+	var shown := false
+	var edge_flags := 0
 	var job: ChunkJob
 
 
@@ -197,8 +204,12 @@ func _update_tree() -> void:
 		_occluder_r = minf(ground, _focus_r) - horizon_margin
 	for r in _roots:
 		_refine(r)
+	_shown_list.clear()
 	for r in _roots:
 		_display(r)
+	if _display_dirty:
+		_display_dirty = false
+		_update_edge_flags()
 
 
 func _init_node(n: ChunkNode) -> void:
@@ -218,18 +229,34 @@ func _init_node(n: ChunkNode) -> void:
 	n.horiz = horiz
 	n.center = c * (config.radius + (lo + hi) * 0.5)
 	n.edge_m = n.size * 0.5 * config.radius * PI * 0.5
-	n.bound = horiz + (hi - lo) * 0.5 + n.edge_m * 0.05
+	n.half_range = (hi - lo) * 0.5 + n.edge_m * 0.05
+	n.bound = horiz + n.half_range
 	_node_count += 1
 
 
 func _should_split(n: ChunkNode) -> bool:
 	if n.level >= max_level:
 		return false
-	var d := maxf(focus.distance_to(n.center) - n.bound, 0.0)
+	if n.level < min_level:
+		return true
+	var d := _distance_to(n)
 	var k := lod_factor * (1.1 if n.want_split else 1.0)  # hysteresis
 	if d >= n.edge_m * k:
 		return false
 	return n.level < 3 or not _below_horizon(n)
+
+
+## Distance from the focus to the chunk's (curved) box: horizontal and vertical parts
+## are measured separately so tall mountain chunks are not over-refined.
+func _distance_to(n: ChunkNode) -> float:
+	var r := n.center.length()
+	var up := n.center / r
+	var rel := focus - n.center
+	var dv := rel.dot(up)
+	var dh := (rel - up * dv).length()
+	var a := maxf(dh - n.horiz, 0.0)
+	var b := maxf(absf(dv) - n.half_range, 0.0)
+	return sqrt(a * a + b * b)
 
 
 ## True when the whole chunk is hidden behind the planet's curvature as seen from the focus.
@@ -299,13 +326,62 @@ func _display(n: ChunkNode) -> void:
 
 
 func _set_shown(n: ChunkNode, on: bool) -> void:
+	on = on and n.mesh != null
+	if on != n.shown:
+		n.shown = on
+		_display_dirty = true
 	if n.mesh:
 		n.mesh.visible = on
 		if on:
 			_visible_count += 1
+			_shown_list.append(n)
 	if n.body:
 		var shape := n.body.get_child(0) as CollisionShape3D
 		shape.disabled = not on
+
+
+## For every shown chunk, flags the edges whose neighbour is shown at a coarser level so
+## the shader snaps the odd edge vertices onto the neighbour's edge (no T-junction cracks).
+func _update_edge_flags() -> void:
+	for n in _shown_list:
+		var e := n.size * 0.001
+		var hs := n.size * 0.5
+		var flags := 0
+		if _shown_level_at(n.face, n.u0 + hs, n.v0 - e) < n.level:
+			flags |= 1
+		if _shown_level_at(n.face, n.u0 + n.size + e, n.v0 + hs) < n.level:
+			flags |= 2
+		if _shown_level_at(n.face, n.u0 + hs, n.v0 + n.size + e) < n.level:
+			flags |= 4
+		if _shown_level_at(n.face, n.u0 - e, n.v0 + hs) < n.level:
+			flags |= 8
+		if flags != n.edge_flags:
+			n.edge_flags = flags
+			n.mesh.set_instance_shader_parameter("coarse_edges", flags)
+
+
+## Level of the chunk shown at face coords (u, v); coordinates outside [-1, 1] are
+## re-projected onto the adjacent cube face. Returns a large value if nothing is shown.
+func _shown_level_at(face: int, u: float, v: float) -> int:
+	if absf(u) > 1.0 or absf(v) > 1.0:
+		var c := TerrainGenerator.FACE_N[face] + TerrainGenerator.FACE_U[face] * u \
+			+ TerrainGenerator.FACE_V[face] * v
+		var ac := c.abs()
+		var axis := 0 if ac.x >= ac.y and ac.x >= ac.z else (1 if ac.y >= ac.z else 2)
+		face = axis * 2 + (0 if c[axis] > 0.0 else 1)
+		c /= ac[axis]
+		u = clampf(c.dot(TerrainGenerator.FACE_U[face]), -1.0, 1.0)
+		v = clampf(c.dot(TerrainGenerator.FACE_V[face]), -1.0, 1.0)
+	var n: ChunkNode = _roots[face]
+	while true:
+		if n.shown:
+			return n.level
+		if n.children.is_empty():
+			return 1 << 20
+		var h := n.size * 0.5
+		var q := (1 if u >= n.u0 + h else 0) + (2 if v >= n.v0 + h else 0)
+		n = n.children[q]
+	return 1 << 20
 
 
 func _hide_subtree(n: ChunkNode) -> void:
@@ -326,6 +402,9 @@ func _free_subtree(n: ChunkNode, recursive: bool) -> void:
 	if n.mesh:
 		n.mesh.queue_free()
 		n.mesh = null
+	if n.shown:
+		n.shown = false
+		_display_dirty = true
 	if n.body:
 		n.body.queue_free()
 		n.body = null
@@ -416,7 +495,8 @@ func _upload(n: ChunkNode, res: Dictionary) -> void:
 	var mid := (float(res["min_h"]) + float(res["max_h"])) * 0.5
 	var dir := n.center.normalized()
 	n.center = dir * (config.radius + mid)
-	n.bound = n.horiz + (float(res["max_h"]) - float(res["min_h"])) * 0.5
+	n.half_range = (float(res["max_h"]) - float(res["min_h"])) * 0.5
+	n.bound = n.horiz + n.half_range
 	if res.has("faces") and focus.distance_to(n.center) < collision_radius + n.bound:
 		var shape := ConcavePolygonShape3D.new()
 		shape.set_faces(res["faces"])

@@ -3,6 +3,7 @@
 //   COLOR   r rock exposure, g lava, b crater ejecta, a curvature (0.5 = flat)
 //   CUSTOM0 xyz detail coords (planet-local pos mod 4096 m), w height above radius (m)
 //   CUSTOM1 xyz unit dir from planet centre, w moisture
+//   CUSTOM2 xyz morph delta of odd edge vertices, w edge id + 1
 // All detail textures tile at power-of-two sizes <= 2048 m, so they are continuous across
 // chunks while the coordinates stay small (no float precision loss far from the origin).
 shader_type spatial;
@@ -43,8 +44,18 @@ varying float v_moist;
 varying vec4 v_mask;
 varying vec3 v_nrm;
 
+// Bit i set = edge i (0 bottom, 1 right, 2 top, 3 left) borders a coarser chunk.
+instance uniform int coarse_edges = 0;
+
 void vertex() {
 	v_detail = CUSTOM0.xyz;
+	if (CUSTOM2.w > 0.5) {
+		int e = int(CUSTOM2.w + 0.5) - 1;
+		if (((coarse_edges >> e) & 1) != 0) {
+			VERTEX += CUSTOM2.xyz;
+			v_detail += CUSTOM2.xyz;
+		}
+	}
 	v_height = CUSTOM0.w;
 	v_dir = CUSTOM1.xyz;
 	v_moist = CUSTOM1.w;
@@ -53,7 +64,7 @@ void vertex() {
 }
 
 vec3 tri_w(vec3 n) {
-	vec3 w = pow(abs(n), vec3(4.0));
+	vec3 w = pow(abs(n), vec3(8.0));
 	return w / (w.x + w.y + w.z);
 }
 
@@ -113,9 +124,14 @@ void fragment() {
 	// ---------- biome weights ----------
 	float moist = clamp(v_moist + macro * 0.35 + n2 * 0.25, 0.0, 1.0);
 	float snow_h = snow_line * (1.0 - polar_snow * lat * lat) + (macro + n2) * snow_line * 0.15;
-	float snow = smoothstep(snow_h - 120.0, snow_h + 120.0, hb + n1 * 160.0);
-	float rock_slope = smoothstep(0.22, 0.42, slope + n1 * 0.08 + n2 * 0.1);
+	// snow collects in gullies and on flats, thins out on convex ridges and steep faces
+	float snow_in = hb + (n1 * 0.6 + (nband.b - 0.5)) * 420.0 - slope * 900.0 + curv * 900.0;
+	float snow = smoothstep(snow_h - 180.0, snow_h + 180.0, snow_in);
+	float rock_slope = smoothstep(0.13, 0.3, slope + n1 * 0.08 + n2 * 0.1);
+	// alpine zone: scree and bare rock between the tree line and the snow line
+	float alpine = smoothstep(snow_h * 0.5, snow_h * 0.75, hb + n2 * 400.0 + n1 * 120.0);
 	float rock = max(rock_slope, smoothstep(0.35, 0.85, v_mask.r + n2 * 0.4) * (1.0 - snow * 0.7));
+	rock = max(rock, alpine * smoothstep(0.35, 0.65, nband.r + slope * 2.0) * (1.0 - snow));
 	snow *= 1.0 - smoothstep(0.32, 0.5, slope + n1 * 0.1);   // snow slides off steep walls
 	// polar ice caps (independent of height, ragged edge)
 	float cap = smoothstep(0.9, 0.95, lat + macro * 0.12 + n2 * 0.06) * step(0.0, polar_snow - 0.01);
@@ -128,6 +144,8 @@ void fragment() {
 	if (has_ocean) {
 		float bw = beach_width * (1.0 + n2 * 1.2);
 		beach = (1.0 - smoothstep(bw * 0.6, bw * 1.4, hb)) * (1.0 - smoothstep(0.15, 0.3, slope));
+		// a beach narrower than a few pixels would read as a thick contour line from orbit
+		beach *= clamp(bw * 1.5 / max(fwidth(hb) * 4.0, 1e-3), 0.0, 1.0) * (1.0 - smoothstep(6000.0, 25000.0, dist));
 		under = smoothstep(0.0, -bw * 2.0, hb);
 	}
 
@@ -135,8 +153,14 @@ void fragment() {
 	vec3 low = mix(color_dry, color_grass, smoothstep(0.25, 0.6, moist));
 	low = mix(low, color_desert, desert);
 	low = mix(low, color_forest, forest);
-	// soil/grass breakup at all scales
-	low *= 0.82 + 0.36 * nband.a + n1 * 0.25;
+	// soil/grass breakup at all scales: lush / dry-yellow / dark clumps / bare soil
+	float g1 = nband.r;
+	float g2 = nband.a;
+	low = mix(low, low * vec3(1.25, 1.12, 0.6), smoothstep(0.55, 0.8, g1) * (1.0 - forest) * 0.8);
+	low = mix(low, low * vec3(0.55, 0.65, 0.5), smoothstep(0.45, 0.2, g2) * 0.7);
+	float soil = smoothstep(0.62, 0.8, nband.b + n2 * 0.4) * (1.0 - forest) * (1.0 - desert);
+	low = mix(low, mix(color_dry, color_rock, 0.5) * 0.8, soil * 0.6);
+	low *= 0.85 + 0.3 * g2 + n1 * 0.2;
 	low = mix(low, low * vec3(1.08, 1.0, 0.85), smoothstep(-0.1, 0.25, n2));
 
 	// rock with strata bands (stronger in canyons / mesas)
@@ -159,7 +183,7 @@ void fragment() {
 	col = max(col, vec3(0.0));
 
 	// ---------- detail normal ----------
-	float soft_s = mix(0.6, 1.4, rock) * detail_normal_strength;
+	float soft_s = mix(1.0, 1.5, rock) * detail_normal_strength;
 	vec3 n = ng;
 	// big-scale relief (always) – keeps orbit/high-altitude shading alive
 	n = tri_nrm(tex_rock, p / 2048.0, n, w, 0.8 * rock + 0.25);
@@ -206,7 +230,7 @@ void fragment() {
 
 	ALBEDO = col;
 	ROUGHNESS = rough;
-	SPECULAR = mix(0.25, 0.5, snow);
+	SPECULAR = mix(mix(0.18, 0.35, rock), 0.5, snow);
 	AO = clamp(0.75 + curv * 1.5 + (1.0 - rock) * 0.1, 0.4, 1.0);
 	AO_LIGHT_AFFECT = 0.4;
 	EMISSION = emit;

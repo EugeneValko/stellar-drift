@@ -13,6 +13,7 @@ extends RefCounted
 ##   CUSTOM0  xyz = detail coords (planet-local position mod DETAIL_PERIOD, continuous inside
 ##            a chunk and periodic across chunks), w = height above radius (m)
 ##   CUSTOM1  xyz = unit direction from planet centre, w = moisture (0..1)
+##   CUSTOM2  xyz = morph delta for odd edge vertices, w = edge id + 1 (0 = not an edge)
 
 const GRID := 65                    ## vertices per chunk side (64 quads)
 const DETAIL_PERIOD := 4096.0       ## m; every shader detail texture tiles an integer number of times in this
@@ -85,20 +86,13 @@ func _init(config: PlanetConfig) -> void:
 	base_level = cfg.get_base_level()
 	var s := cfg.seed
 	n_cont = _mk(s + 1, cfg.continent_scale, cfg.continent_octaves)
-	n_cont.domain_warp_enabled = cfg.warp_strength > 0.0
-	n_cont.domain_warp_type = FastNoiseLite.DOMAIN_WARP_SIMPLEX
-	n_cont.domain_warp_amplitude = cfg.warp_strength
-	n_cont.domain_warp_frequency = 1.0 / cfg.warp_scale
-	n_cont.domain_warp_fractal_type = FastNoiseLite.DOMAIN_WARP_FRACTAL_PROGRESSIVE
-	n_cont.domain_warp_fractal_octaves = 3
+	_warp(n_cont, cfg.warp_strength, cfg.warp_scale, 3)
 	n_mmask = _mk(s + 2, cfg.mountain_mask_scale, 3)
 	n_ridge = _mk(s + 3, cfg.mountain_scale, cfg.mountain_octaves, FastNoiseLite.FRACTAL_RIDGED)
 	n_ridge.fractal_gain = 0.48
 	n_ridge.fractal_weighted_strength = 0.6
-	n_ridge.domain_warp_enabled = cfg.warp_strength > 0.0
-	n_ridge.domain_warp_type = FastNoiseLite.DOMAIN_WARP_SIMPLEX
-	n_ridge.domain_warp_amplitude = cfg.mountain_scale * 0.35
-	n_ridge.domain_warp_frequency = 1.0 / (cfg.mountain_scale * 2.0)
+	if cfg.warp_strength > 0.0:
+		_warp(n_ridge, cfg.mountain_scale * 0.35, cfg.mountain_scale * 2.0, 2)
 	n_gully = _mk(s + 4, cfg.gully_scale, 4, FastNoiseLite.FRACTAL_RIDGED)
 	n_hills = _mk(s + 5, cfg.hills_scale, 5)
 	n_rough = _mk(s + 6, cfg.rough_scale, 4)
@@ -107,10 +101,7 @@ func _init(config: PlanetConfig) -> void:
 	if cfg.canyon_scale > 0.0:
 		n_canyon = _mk(s + 9, cfg.canyon_scale, 4)
 		n_canyon.fractal_gain = 0.45
-		n_canyon.domain_warp_enabled = true
-		n_canyon.domain_warp_type = FastNoiseLite.DOMAIN_WARP_SIMPLEX
-		n_canyon.domain_warp_amplitude = cfg.canyon_scale * 0.25
-		n_canyon.domain_warp_frequency = 1.0 / cfg.canyon_scale
+		_warp(n_canyon, cfg.canyon_scale * 0.25, cfg.canyon_scale, 2)
 	if cfg.volcano_scale > 0.0:
 		n_volc_d = _mk_cell(s + 10, cfg.volcano_scale, FastNoiseLite.RETURN_DISTANCE)
 		n_volc_v = _mk_cell(s + 10, cfg.volcano_scale, FastNoiseLite.RETURN_CELL_VALUE)
@@ -166,6 +157,19 @@ func _mk(sd: int, wavelength: float, octaves: int,
 	return n
 
 
+## Domain warp with sane fractal settings (FastNoiseLite defaults use lacunarity 6 and
+## 5 octaves, which produces metre-scale jitter of hundreds of metres).
+static func _warp(n: FastNoiseLite, amplitude: float, wavelength: float, octaves: int) -> void:
+	n.domain_warp_enabled = amplitude > 0.0
+	n.domain_warp_type = FastNoiseLite.DOMAIN_WARP_SIMPLEX
+	n.domain_warp_amplitude = amplitude
+	n.domain_warp_frequency = 1.0 / wavelength
+	n.domain_warp_fractal_type = FastNoiseLite.DOMAIN_WARP_FRACTAL_PROGRESSIVE
+	n.domain_warp_fractal_octaves = octaves
+	n.domain_warp_fractal_lacunarity = 2.0
+	n.domain_warp_fractal_gain = 0.45
+
+
 func _mk_cell(sd: int, cell: float, ret: FastNoiseLite.CellularReturnType) -> FastNoiseLite:
 	var n := FastNoiseLite.new()
 	n.seed = sd
@@ -188,7 +192,7 @@ func get_height(dir: Vector3) -> float:
 
 
 ## Returns Vector4(height_m, rock_mask, lava_mask, ejecta_mask).
-## `quad` = vertex spacing (m) of the caller; detail octaves far below it are skipped.
+## `quad` = vertex spacing (m) of the caller (>= 1e8 skips the metre-scale octaves).
 func sample(d: Vector3, quad: float) -> Vector4:
 	var px := d.x * radius
 	var py := d.y * radius
@@ -290,11 +294,14 @@ func sample(d: Vector3, quad: float) -> Vector4:
 		h = _floor + (h - _floor) * 0.04
 
 	# --- mid roughness & micro relief (LOD dependent) ---
-	if _rough_h > 0.0 and quad < _rough_scale * 0.6:
-		var rr := n_rough.get_noise_3d(px, py, pz)
-		h += rr * _rough_h * (0.35 + rock)
-	if _detail_h > 0.0 and quad < _detail_scale * 0.6:
-		h += n_detail.get_noise_3d(px, py, pz) * _detail_h * (0.4 + rock)
+	# Always evaluated (also for coarse chunks): skipping octaves per LOD would make
+	# neighbouring levels disagree by metres and expose the skirts. Only callers that
+	# never need mesh-consistent values (quad >= 1e8, LOD bounds estimation) skip them.
+	if quad < 1e8:
+		if _rough_h > 0.0:
+			h += n_rough.get_noise_3d(px, py, pz) * _rough_h * (0.35 + rock)
+		if _detail_h > 0.0:
+			h += n_detail.get_noise_3d(px, py, pz) * _detail_h * (0.4 + rock)
 	return Vector4(h + base_level, rock, lava, ejecta)
 
 
@@ -467,8 +474,24 @@ func build_chunk(face: int, u0: float, v0: float, size: float, want_faces: bool,
 			c1[q + 2] = d.z
 			c1[q + 3] = moisture(d)
 
-	# --- skirts: copies of edge vertices pushed toward the planet centre ---
+	# --- edge morph targets: odd edge vertices -> midpoint of their even neighbours.
+	# The shader applies them on edges whose neighbour chunk is one level coarser
+	# (instance uniform `coarse_edges`), which removes T-junction cracks.
 	var edges := _edge_lists()
+	var c2 := PackedFloat32Array()
+	c2.resize(vcount * 4)
+	for s in 4:
+		var edge: PackedInt32Array = edges[s]
+		for k in range(1, n - 1, 2):
+			var src := edge[k]
+			var delta := (verts[edge[k - 1]] + verts[edge[k + 1]]) * 0.5 - verts[src]
+			var q := src * 4
+			c2[q] = delta.x
+			c2[q + 1] = delta.y
+			c2[q + 2] = delta.z
+			c2[q + 3] = float(s + 1)
+
+	# --- skirts: copies of edge vertices pushed toward the planet centre ---
 	var base := n * n
 	for s in 4:
 		var edge: PackedInt32Array = edges[s]
@@ -483,6 +506,7 @@ func build_chunk(face: int, u0: float, v0: float, size: float, want_faces: bool,
 			var qd := dst * 4
 			for t in 4:
 				c1[qd + t] = c1[q + t]
+				c2[qd + t] = c2[q + t]
 			c0[qd] = c0[q] - d.x * skirt_depth
 			c0[qd + 1] = c0[q + 1] - d.y * skirt_depth
 			c0[qd + 2] = c0[q + 2] - d.z * skirt_depth
@@ -495,6 +519,7 @@ func build_chunk(face: int, u0: float, v0: float, size: float, want_faces: bool,
 	arrays[Mesh.ARRAY_COLOR] = cols
 	arrays[Mesh.ARRAY_CUSTOM0] = c0
 	arrays[Mesh.ARRAY_CUSTOM1] = c1
+	arrays[Mesh.ARRAY_CUSTOM2] = c2
 	arrays[Mesh.ARRAY_INDEX] = _indices
 	var out := {
 		"arrays": arrays,
@@ -513,4 +538,5 @@ func build_chunk(face: int, u0: float, v0: float, size: float, want_faces: bool,
 
 static func mesh_format_flags() -> int:
 	return (Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT) \
-		| (Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM1_SHIFT)
+		| (Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM1_SHIFT) \
+		| (Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM2_SHIFT)

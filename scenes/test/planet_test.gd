@@ -80,20 +80,20 @@ func apply_capture_preset(preset: String) -> void:
 			var d := _offset_dir(site, Vector3.UP, 30000.0)
 			cam_local = d * (R + planet.get_height(d) + 20000.0)
 			look_dir = (site * R - cam_local).normalized()
-			_sun_at(site, look_dir, 25.0, 70.0)
+			_sun_at(site, look_dir, 28.0, 135.0)
 			sun.directional_shadow_max_distance = 60000.0
 			cam.near = 5.0
 			cam.far = R * 6.0
 			cam.fov = 60.0
 		"low_flight", "ignis_low", "glacia_low":
 			var site := _find_peak()
-			var d := _offset_dir(site, Vector3.UP, 9000.0)
-			var ground := planet.get_height(d)
-			var alt := maxf(ground, planet.get_height(site) * 0.6) + 500.0
+			var d := _lowest_around(site, float(Capture.args.get("dist", "11000")))
+			var alt := planet.get_height(d) + 500.0
 			cam_local = d * (R + alt)
 			var to_peak := (site * (R + planet.get_height(site)) - cam_local).normalized()
-			look_dir = (to_peak - d * to_peak.dot(d) - d * 0.1).normalized()
-			_sun_at(d, look_dir, 22.0, 60.0)
+			var level := (to_peak - d * to_peak.dot(d)).normalized()
+			look_dir = (level + d * clampf(to_peak.dot(d) * 0.6, -0.15, 0.2)).normalized()
+			_sun_at(d, look_dir, 24.0, 140.0)
 			sun.directional_shadow_max_distance = 20000.0
 			cam.near = 0.5
 			cam.far = R * 4.0
@@ -105,11 +105,11 @@ func apply_capture_preset(preset: String) -> void:
 			var to_peak := (site * (R + planet.get_height(site)) - cam_local).normalized()
 			look_dir = (to_peak - d * to_peak.dot(d) + d * 0.02).normalized()
 			if preset == "surface_sunset":
-				_sun_at(d, look_dir, 2.5, 35.0)
-				sun.light_color = Color(1.0, 0.62, 0.36)
-				sun.light_energy = 1.8
+				_sun_at(d, look_dir, 4.0, 115.0)
+				sun.light_color = Color(1.0, 0.6, 0.34)
+				sun.light_energy = 2.2
 			else:
-				_sun_at(d, look_dir, 30.0, 55.0)
+				_sun_at(d, look_dir, 35.0, 145.0)
 			sun.directional_shadow_max_distance = 3000.0
 			cam.near = 0.05
 			cam.far = R * 3.0
@@ -171,9 +171,13 @@ func _find_peak() -> Vector3:
 		var r := sqrt(1.0 - y * y)
 		var d := Vector3(cos(ga * i) * r, y, sin(ga * i) * r)
 		var h := planet.get_height(d)
+		if planet.config.type == PlanetConfig.PlanetType.EARTHLIKE \
+				and planet.terrain.generator.moisture(d) < 0.6:
+			continue   # prefer green ranges
 		if h > best_h:
 			best_h = h
 			best = d
+	best_h = planet.get_height(best)
 	# refine locally
 	for it in 3:
 		var step := 2000.0 / pow(3.0, it) / planet.config.radius
@@ -187,6 +191,22 @@ func _find_peak() -> Vector3:
 			if h > best_h:
 				best_h = h
 				best = d
+	return best
+
+
+## Lowest of 12 points at `meters` around `site` (a valley in front of the range).
+func _lowest_around(site: Vector3, meters: float) -> Vector3:
+	var t1 := site.cross(Vector3.UP).normalized()
+	var t2 := site.cross(t1)
+	var best := site
+	var best_h := 1e9
+	for k in 12:
+		var a := TAU * k / 12.0
+		var d := (site + (t1 * cos(a) + t2 * sin(a)) * (meters / planet.config.radius)).normalized()
+		var h := planet.get_height(d)
+		if h < best_h and h > planet.config.get_base_level() + 50.0:
+			best_h = h
+			best = d
 	return best
 
 
