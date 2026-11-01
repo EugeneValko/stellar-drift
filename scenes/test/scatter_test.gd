@@ -1,7 +1,7 @@
 extends Node3D
 ## Vegetation / rocks test scene (PlanetScatter on real planets). Camera presets:
 ##   meadow, forest_edge, hillside_view, rocky_slope, from_air      (Terra Nova)
-##   ignis_basalt, glacia_ice, selene_boulders                      (other bodies)
+##   ignis_basalt, glacia_ice, glacia_spires, selene_boulders, nyx_crystals   (other bodies)
 ##   lineup                                                         (every Terra asset in a row)
 ## Args: --no_atmo, --no_scatter, --mu_<slot>__<param>=value (material override), --stats (print scatter stats), --site_seed=N (pick another site),
 ##       --sun_elev=deg, --sun_az=deg, --planet=<preset> (override the preset's planet)
@@ -18,6 +18,7 @@ const VIEWS := {
 	"meadow": "terra_nova", "forest_edge": "terra_nova", "hillside_view": "terra_nova",
 	"rocky_slope": "terra_nova", "from_air": "terra_nova", "lineup": "terra_nova",
 	"ignis_basalt": "ignis", "glacia_ice": "glacia", "selene_boulders": "selene",
+	"glacia_spires": "glacia", "nyx_crystals": "nyx",
 }
 const ATMO_PRESET := {"terra_nova": "terra_nova", "ignis": "ignis", "glacia": "glacia"}
 
@@ -150,6 +151,25 @@ func apply_capture_preset(preset: String) -> void:
 			az = 120.0
 			elev = 9.0
 			sun_energy = 2.6
+		"glacia_spires":
+			# a high snowfield (ice spires grow above 160 m) looking along it
+			var s := _find_site(rnd, func(b: Dictionary) -> float:
+				return 2.0 - b["slope"] * 6.0 - absf(b["height"] - 700.0) * 0.001 - b["rock"] * 2.0)
+			d = s
+			eye = 2.5
+			look = _toward_best(d, 600.0, func(b: Dictionary) -> float: return b["height"] * 0.002 - b["slope"] * 3.0)
+			look = (look + d * 0.05).normalized()
+			az = 150.0
+			elev = 14.0
+		"nyx_crystals":
+			var s := _find_site(rnd, func(b: Dictionary) -> float: return 1.0 - b["slope"] * 6.0 - b["rock"])
+			d = s
+			eye = 2.2
+			look = _toward_best(d, 300.0, func(b: Dictionary) -> float: return -b["slope"])
+			look = (look + d * 0.04).normalized()
+			az = 160.0
+			elev = 7.0
+			sun_energy = 1.6
 	if Capture.args.has("sun_elev"):
 		elev = float(Capture.args["sun_elev"])
 	if Capture.args.has("sun_az"):
@@ -330,10 +350,12 @@ func _build_lineup(d: Vector3, look: Vector3) -> void:
 	planet.components.add_child(_lineup)
 	var assets := scatter.assets if scatter else ScatterAssets.new(planet.config,
 		load("res://src/planets/scatter/presets/terra_nova.tres"))
-	var big := ["spirepine_lod0", "parasol_lod0", "fernpalm_lod0", "spirepine_lod1", "parasol_lod1",
+	var big := ["spirepine_lod0", "spirepine_b_lod0", "spirepine_c_lod0", "parasol_lod0", "parasol_b_lod0",
+		"parasol_c_lod0", "fernpalm_lod0", "fernpalm_b_lod0", "spirepine_lod1", "parasol_lod1",
 		"fernpalm_lod1", "spirepine_lod2", "parasol_lod2", "fernpalm_lod2"]
 	var small := ["bush_round_lod0", "bush_quill_lod0", "fern_lod0", "grass_lod0", "grass_tall_lod0",
-		"flower_a_lod0", "flower_b_lod0", "boulder_a_lod0", "boulder_b_lod0", "rock_cluster_lod0", "pebbles_lod0"]
+		"flower_a_lod0", "flower_b_lod0", "boulder_a_lod0", "boulder_b_lod0", "rock_cluster_lod0", "pebbles_lod0",
+		"scree_lod0", "tor_lod0", "basalt_a_lod0"]
 	var side := look.cross(d).normalized()
 	var fwd := (look - d * look.dot(d)).normalized()
 	var layer := ScatterLayer.new()
@@ -345,7 +367,8 @@ func _build_lineup(d: Vector3, look: Vector3) -> void:
 		for k in names.size():
 			var nm: String = names[k]
 			layer.model = "res://assets/models/rocks.glb" if nm.begins_with("boulder") or nm.begins_with("rock") \
-				or nm.begins_with("pebbles") else "res://assets/models/flora_terra.glb"
+				or nm.begins_with("pebbles") or nm.begins_with("scree") or nm.begins_with("tor") \
+					or nm.begins_with("basalt") else "res://assets/models/flora_terra.glb"
 			var mi := MeshInstance3D.new()
 			mi.mesh = assets.mesh_for(layer, nm)
 			var p := cam_local + fwd * dist + side * (k - (names.size() - 1) * 0.5) * spacing

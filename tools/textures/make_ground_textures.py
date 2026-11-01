@@ -13,7 +13,8 @@ Outputs (1024x1024, tile seamlessly, sampled at power-of-two tile sizes in metre
   ripples.png        RGBA8
       r  wind ripples / sastrugi height (stretched along +x, wavy), g  dune-scale ripples,
       b  fbm (broad), a  sparkle seeds (sparse bright texels, for snow / sand glints)
-  ripples_normal.png RGB8 normal map of ripples (r) + dunes (g) + broad (b)
+  ripples_normal.png RGB8 normal map of fine ripples (+ a little broad fbm)
+  dunes_normal.png   RGB8 normal map of asymmetric dune / sastrugi crests + broad fbm (no fine ripples)
 """
 import os
 import sys
@@ -170,9 +171,18 @@ def main():
     rp = np.stack([rip, dune, broad, sparkle], axis=-1)
     Image.fromarray((np.clip(rp, 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA").save(
         os.path.join(out, "ripples.png"))
-    rn = normal_map(rip * 1.0 + dune * 0.5 + broad * 1.5, 14.0)
+    rn = normal_map(rip * 1.0 + broad * 0.6, 14.0)
     Image.fromarray((np.clip(rn, 0, 1) * 255 + 0.5).astype(np.uint8), "RGB").save(
         os.path.join(out, "ripples_normal.png"))
+    # dunes / sastrugi fields: asymmetric crests (gentle windward, steep lee), no fine ripples
+    # (fine ripples alias into moire at the scales this is sampled at)
+    ph = yy * 6 + (fft_noise(2.2, 1, 8, 24) - 0.5) * 2.5 + (fft_noise(2.0, 2, 24, 26) - 0.5) * 0.4
+    f = ph - np.floor(ph)
+    prof = np.where(f < 0.78, f / 0.78, (1.0 - f) / 0.22)
+    prof = prof * prof * (3 - 2 * prof)
+    dn = normal_map(prof * (0.6 + 0.4 * fft_noise(1.5, 1, 16, 27)) + broad * 1.2, 9.0)
+    Image.fromarray((np.clip(dn, 0, 1) * 255 + 0.5).astype(np.uint8), "RGB").save(
+        os.path.join(out, "dunes_normal.png"))
     print("[textures] written to", out)
 
 

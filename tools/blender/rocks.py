@@ -181,20 +181,27 @@ def basalt(rnd, radius=2.6, hmax=4.0, pavement=False, lod=0):
                 q = c + dirk * ar * rnd.uniform(0.97, 1.03)
                 dz = (q.x - c.x) * tilt.x + (q.y - c.y) * tilt.y
                 chip = 0.0
-                if lod == 0 and rnd.random() < 0.22:
-                    chip = rnd.uniform(0.06, 0.22)   # chipped corner
+                # (random numbers drawn on every LOD so both LODs share one layout)
+                chip_r, chip_v = rnd.random(), rnd.uniform(0.06, 0.22)
+                if lod == 0 and chip_r < 0.22:
+                    chip = chip_v                    # chipped corner
                 bot.append(bm.verts.new(Vector((q.x, q.y, -0.3))))
                 qm = q + lean
-                mid.append(bm.verts.new(Vector((qm.x, qm.y, h + dz - bev - chip))))
-                qt = c + lean + dirk * (ar - bev * 1.2 - chip * 0.6)
-                top.append(bm.verts.new(Vector((qt.x, qt.y, h + dz - chip * 0.4))))
+                if lod == 0:
+                    mid.append(bm.verts.new(Vector((qm.x, qm.y, h + dz - bev - chip))))
+                    qt = c + lean + dirk * (ar - bev * 1.2 - chip * 0.6)
+                    top.append(bm.verts.new(Vector((qt.x, qt.y, h + dz - chip * 0.4))))
+                else:
+                    mid.append(bm.verts.new(Vector((qm.x, qm.y, h + dz - bev * 0.5))))
             for k in range(6):
                 k2 = (k + 1) % 6
                 bm.faces.new([bot[k], bot[k2], mid[k2], mid[k]])
-                bm.faces.new([mid[k], mid[k2], top[k2], top[k]])     # chamfer
+                if lod == 0:
+                    bm.faces.new([mid[k], mid[k2], top[k2], top[k]])     # chamfer
             ctr = bm.verts.new(c + lean + Vector((0, 0, h + rnd.uniform(-0.02, 0.03))))
+            cap = top if lod == 0 else mid
             for k in range(6):
-                bm.faces.new([top[k], top[(k + 1) % 6], ctr])
+                bm.faces.new([cap[k], cap[(k + 1) % 6], ctr])
     bm.normal_update()
     return bm
 

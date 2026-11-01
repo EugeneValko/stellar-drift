@@ -43,6 +43,7 @@ var beach_width := 25.0
 var is_ice := false
 var has_lava := false
 var alien_forest := 0.0
+var earthlike := true
 
 var _tex := PackedByteArray()
 var _size := 512
@@ -59,6 +60,7 @@ func _init(generator: TerrainGenerator, cfg: PlanetConfig) -> void:
 	is_ice = cfg.surface_style == 3 or cfg.type == PlanetConfig.PlanetType.ICE
 	has_lava = cfg.lava_intensity > 0.0
 	alien_forest = cfg.alien_forest
+	earthlike = cfg.surface_style == 0
 	_tex = _noise_data()
 
 
@@ -149,6 +151,9 @@ func evaluate_into(out: PackedFloat32Array, offset: int, d: Vector3, h: float, r
 	var savanna := smoothstep(0.2, 0.32, moist + n2 * 0.1) * smoothstep(0.5, 0.38, moist + n2 * 0.1) \
 		* smoothstep(0.45, 0.65, temp)
 	var tundra := smoothstep(0.4, 0.2, temp) * (1.0 - snow)
+	if not earthlike:
+		savanna = 0.0   # Earth-like climate zones only (shader: surface_style != 0)
+		tundra = 0.0
 	var forest := smoothstep(0.5, 0.7, moist + macro * 0.2) \
 		* (1.0 - smoothstep(snow_h * 0.45, snow_h * 0.7, hb)) * (1.0 - smoothstep(0.25, 0.4, slope))
 	forest *= 1.0 - tundra * 0.65

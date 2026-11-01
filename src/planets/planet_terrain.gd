@@ -163,6 +163,7 @@ const GROUND_TEXTURES := {
 	"tex_ground_n": preload("res://assets/textures/ground_normal.png"),
 	"tex_ripple": preload("res://assets/textures/ripples.png"),
 	"tex_ripple_n": preload("res://assets/textures/ripples_normal.png"),
+	"tex_dune_n": preload("res://assets/textures/dunes_normal.png"),
 }
 
 

@@ -86,6 +86,7 @@ uniform sampler2D tex_ground_n : hint_normal, repeat_enable, filter_linear_mipma
 // r ripples, g dunes, b broad fbm, a sparkle seeds
 uniform sampler2D tex_ripple : repeat_enable, filter_linear_mipmap_anisotropic;
 uniform sampler2D tex_ripple_n : hint_normal, repeat_enable, filter_linear_mipmap_anisotropic;
+uniform sampler2D tex_dune_n : hint_normal, repeat_enable, filter_linear_mipmap_anisotropic;
 
 varying vec3 v_detail;
 varying float v_height;
@@ -165,9 +166,18 @@ float band_tile(float dist, float base, float bias, out float f) {
 	return min(base * exp2(2.0 * i), 512.0);
 }
 
-// Height blend of two layers: weight of b over a given its coverage and the layers' heights.
-float hblend(float cover_b, float h_a, float h_b, float sharp) {
-	return smoothstep(-sharp, sharp, (h_b + cover_b * 2.0 - 1.0) - h_a);
+// Fall-line streaks in one triplanar plane: noise stretched along the projection of the local
+// "up" on that plane (rills, couloirs, rock-fall stains). The frame rotates with `up` (~1 deg/km on
+// Terra): a smooth, invisible warp, no seams inside a chunk.
+float streak_plane(sampler2D t, vec2 q, vec2 upp) {
+	float l = length(upp);
+	if (l < 0.15) {
+		return 0.5;
+	}
+	vec2 u2 = upp / l;
+	float a = dot(q, u2);
+	float s = dot(q, vec2(-u2.y, u2.x));
+	return texture(t, vec2(s / 240.0, a / 1900.0)).b * 0.6 + texture(t, vec2(s / 64.0, a / 520.0)).r * 0.4;
 }
 
 void fragment() {
@@ -202,14 +212,23 @@ void fragment() {
 	float lat = abs(up.y);
 	float curv = v_mask.a - 0.5;
 	float concave = smoothstep(0.0, 0.12, curv);
+	// fall-line streaks on slopes (mean 0.5: ScatterBiome treats it as its mean, like n1)
+	float streak = 0.5;
+	float steep = smoothstep(0.06, 0.22, slope);
+	if (steep > 0.0) {
+		streak = streak_plane(tex_noise, p.zy, up.zy) * w.x + streak_plane(tex_noise, p.xz, up.xz) * w.y
+			+ streak_plane(tex_noise, p.xy, up.xy) * w.z;
+		streak = mix(0.5, streak, steep);
+	}
 
 	// ---------- biome weights (SYNC: ScatterBiome.evaluate_into) ----------
 	float moist = clamp(v_moist + macro * 0.35 + n2 * 0.25, 0.0, 1.0);
 	float snow_h = snow_line * (1.0 - polar_snow * lat * lat) + (macro + n2) * snow_line * 0.15;
-	// snow collects in gullies and on flats, thins out on convex ridges and steep faces
-	float snow_in = hb + (n1 * 0.6 + (nband.b - 0.5)) * 420.0 - slope * 900.0 + curv * 900.0;
+	// snow collects in gullies, couloirs and on flats, thins out on convex ridges and steep faces
+	float snow_in = hb + (n1 * 0.6 + (nband.b - 0.5)) * 420.0 - slope * 900.0 + curv * 900.0
+		+ (streak - 0.5) * 900.0;
 	float snow = smoothstep(snow_h - 180.0, snow_h + 180.0, snow_in);
-	float rock_slope = smoothstep(0.13, 0.3, slope + n1 * 0.08 + n2 * 0.1);
+	float rock_slope = smoothstep(0.13, 0.3, slope + n1 * 0.08 + n2 * 0.1 + (0.5 - streak) * 0.12);
 	// alpine zone: scree and bare rock between the tree line and the snow line
 	float alpine = smoothstep(snow_h * 0.5, snow_h * 0.75, hb + n2 * 400.0 + n1 * 120.0);
 	float rock = max(rock_slope, smoothstep(0.35, 0.85, v_mask.r + n2 * 0.4) * (1.0 - snow * 0.7));
@@ -224,6 +243,10 @@ void fragment() {
 	float savanna = smoothstep(0.2, 0.32, moist + n2 * 0.1) * smoothstep(0.5, 0.38, moist + n2 * 0.1)
 		* smoothstep(0.45, 0.65, temp);
 	float tundra = smoothstep(0.4, 0.2, temp) * (1.0 - snow);
+	if (surface_style != 0) {
+		savanna = 0.0;     // Earth-like climate zones only
+		tundra = 0.0;
+	}
 	float forest = smoothstep(0.5, 0.7, moist + n1 * 0.25 + macro * 0.2)
 		* (1.0 - smoothstep(snow_h * 0.45, snow_h * 0.7, hb)) * (1.0 - smoothstep(0.25, 0.4, slope));
 	forest *= 1.0 - tundra * 0.65;
@@ -270,8 +293,9 @@ void fragment() {
 	// soil/grass breakup at all scales: lush / dry-yellow / dark clumps / bare soil
 	float g1 = nband.r;
 	float g2 = nband.a;
-	low = mix(low, low * vec3(1.25, 1.12, 0.6), smoothstep(0.55, 0.8, g1) * (1.0 - forest) * 0.8);
-	low = mix(low, low * vec3(0.55, 0.65, 0.5), smoothstep(0.45, 0.2, g2) * 0.7);
+	bool earth = surface_style == 0;
+	low = mix(low, low * (earth ? vec3(1.25, 1.12, 0.6) : vec3(1.15)), smoothstep(0.55, 0.8, g1) * (1.0 - forest) * 0.8);
+	low = mix(low, low * (earth ? vec3(0.55, 0.65, 0.5) : vec3(0.7)), smoothstep(0.45, 0.2, g2) * 0.7);
 	float soil = smoothstep(0.62, 0.8, nband.b + n2 * 0.4) * (1.0 - forest) * (1.0 - desert);
 	vec3 soil_col = mix(color_dry, color_rock, 0.5) * 0.8;
 	low = mix(low, soil_col, soil * 0.6);
@@ -289,6 +313,9 @@ void fragment() {
 	rk *= mix(vec3(1.0), vec3(1.16, 1.0, 0.84), bed * strata_strength * 1.4);
 	rk *= 1.0 + smoothstep(0.94, 0.99, sin(sh * 0.61 + nband.g) * 0.5 + 0.5) * strata_strength * 0.4;
 	rk *= 0.85 + 0.3 * nband.g;
+	// rills / rock-fall stains down the fall line; greyer, colder rock up high
+	rk *= mix(0.68, 1.25, smoothstep(0.2, 0.8, streak));
+	rk = mix(rk, vec3(dot(rk, vec3(0.33))) * vec3(0.95, 0.98, 1.04), smoothstep(0.3, 0.9, hb / max(snow_line, 1.0)) * 0.45);
 	rk = mix(rk, rk * 0.72, concave * 0.8);     // darker, wetter gullies
 	rk *= 0.92 + 0.16 * smoothstep(0.3, 0.9, dot(ng, up));   // weathered, lighter ledges
 	// scree aprons at the foot of rock (concave, moderate slope) and in the alpine zone
@@ -327,11 +354,15 @@ void fragment() {
 		st = max(st, smoothstep(0.05, 0.12, g16.r) * max(scree, rock * 0.6));   // scree cobbles
 		st *= 1.0 - beach * 0.85;
 		st *= 1.0 - river;
-		vec3 stone_col = mix(color_rock, color_rock2, g4.g * 0.8) * (0.8 + 0.45 * fract(g4.g * 7.3));
-		stone_col = mix(stone_col, low, 0.15);
+		vec3 stone_col = mix(color_rock, color_rock2, g4.g * 0.7) * (0.85 + 0.5 * fract(g4.g * 7.3));
+		// stones are cleaner and greyer than the soil they sit in; a few pale / rusty ones
+		float slum = dot(stone_col, vec3(0.33));
+		stone_col = mix(stone_col, vec3(slum) * vec3(0.98, 1.0, 1.03), 0.45) * 1.15;
+		stone_col *= mix(vec3(1.0), vec3(1.15, 0.92, 0.78), step(0.85, fract(g4.g * 13.1)));
+		stone_col = mix(stone_col, low, 0.08);
 		// grass clumps and dirt
 		float clump = smoothstep(0.3, 0.75, nn.a * 0.6 + nn2.r * 0.6 - 0.1);
-		vec3 lush = low * mix(vec3(0.75, 0.85, 0.7), vec3(1.15, 1.12, 0.9), clump);
+		vec3 lush = low * (earth ? mix(vec3(0.75, 0.85, 0.7), vec3(1.15, 1.12, 0.9), clump) : vec3(0.85 + 0.25 * clump));
 		// grit / soil micro variation
 		lush *= 0.88 + 0.24 * g4.a;
 		// mud cracks in dry, bare soil and desert pans
@@ -348,7 +379,7 @@ void fragment() {
 		rk = mix(rk, rk * 0.55, g16.b * 0.6 * near_f * rock);   // rock fractures
 		sandc = mix(sandc, mix(sandc, stone_col, st * 0.6) * (0.92 + 0.16 * g4.a), near_f);
 	}
-	low = mix(low, low * vec3(1.08, 1.0, 0.85), smoothstep(-0.1, 0.25, n2));
+	low = mix(low, low * (earth ? vec3(1.08, 1.0, 0.85) : vec3(1.0)), smoothstep(-0.1, 0.25, n2));
 
 	// lichen and moss on Earth-like rock (moist, not too steep)
 	if (surface_style == 0 && has_ocean) {
@@ -382,9 +413,13 @@ void fragment() {
 		ice = smoothstep(0.05, 0.6, nbig.b + macro) * (1.0 - rock) * (1.0 - smoothstep(0.1, 0.25, slope));
 		vec3 icec = mix(vec3(0.42, 0.66, 0.86), vec3(0.7, 0.86, 0.97), nband.r);
 		col = mix(col, icec, ice * 0.65);
-		float icecliff = smoothstep(0.4, 0.6, nbig.g + n1 * 0.4) * rock;
-		vec3 blue = mix(vec3(0.16, 0.38, 0.58), vec3(0.55, 0.78, 0.92), smoothstep(0.3, 0.8, nband.a + (strata - 0.5) * 0.4));
-		col = mix(col, blue, icecliff * 0.85);
+		// most exposed "rock" is glacier ice: blue cliffs with vertical melt streaks and bands
+		float icecliff = smoothstep(0.25, 0.45, nbig.g + n1 * 0.4 + nmid.b * 0.2) * rock;
+		float streak = tri(tex_noise, vec3(p.x * 0.25, p.y * 0.01, p.z * 0.25) / 8.0, w).r;
+		vec3 blue = mix(vec3(0.12, 0.34, 0.55), vec3(0.58, 0.8, 0.94),
+			smoothstep(0.25, 0.85, nband.a * 0.6 + streak * 0.5 + (strata - 0.5) * 0.4));
+		blue = mix(blue, vec3(0.88, 0.94, 0.98), smoothstep(0.55, 0.9, dot(ng, up)) * 0.7);   // snow on ledges
+		col = mix(col, blue, icecliff * 0.9);
 		vec4 c64 = tri(tex_ground, p / 64.0, w);
 		float crev = c64.b * smoothstep(0.03, 0.08, slope) * (1.0 - rock) * smoothstep(0.3, 0.6, nmid.g);
 		col = mix(col, color_accent * 0.35, crev * 0.9);
@@ -430,7 +465,10 @@ void fragment() {
 	// dunes (desert / ash / snow) at the 256 m and 32 m scales
 	float dune = max(desert * (1.0 - rock) * (1.0 - forest), snow * 0.6) * (1.0 - beach);
 	if (dune > 0.01) {
-		n = tri_nrm(tex_ripple_n, p / 256.0, n, w, dune * 1.4);
+		n = tri_nrm(tex_dune_n, p / 256.0, n, w, dune * 1.2);
+		if (dist < 400.0) {
+			n = tri_nrm(tex_dune_n, p / 32.0, n, w, dune * 0.6 * (1.0 - smoothstep(150.0, 400.0, dist)));
+		}
 	}
 	// banded near detail
 	float nf;
@@ -450,7 +488,8 @@ void fragment() {
 		// stones / grit / cracks (masked where grass hides the stones), sand & snow ripples
 		float gs = near_f * (0.35 + 1.3 * st + crack * 0.6) * (1.0 - snow * 0.7) * (1.0 - river);
 		n = tri_nrm(tex_ground_n, pp / 4.0, n, w, gs);
-		float rip = max(beach * (1.0 - wet * 0.7), max(desert * (1.0 - forest), snow)) * near_f * (1.0 - st);
+		float rip = max(beach * (1.0 - wet * 0.7), max(desert * (1.0 - forest), snow)) * (1.0 - st)
+			* (1.0 - smoothstep(8.0, 35.0, dist));
 		if (rip > 0.01) {
 			n = tri_nrm(tex_ripple_n, p / (snow > 0.5 ? 8.0 : 4.0), n, w, rip * 0.9);
 		}
@@ -467,6 +506,13 @@ void fragment() {
 		vec3 wc = color_water * (0.8 + 0.4 * nband.r);
 		col = mix(col, wc, water);
 		emit += v_sky_amb * sky_ambient_scale * fres * water * 2.2;
+	}
+
+	if (has_rivers && snow > 0.0) {
+		// frozen rivers / lakes: grey-blue ice, not a bright snow stripe
+		float frozen = smoothstep(0.55, 0.85, v_mask.g + n1 * 0.15) * snow * (1.0 - under);
+		col = mix(col, vec3(0.5, 0.62, 0.72) * (0.85 + 0.25 * nband.r), frozen * 0.85);
+		n = normalize(mix(n, up, frozen * 0.7));
 	}
 
 	// ---------- lava ----------

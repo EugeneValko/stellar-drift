@@ -43,8 +43,8 @@ func L(props: Dictionary) -> ScatterLayer:
 
 
 func _far(colors: Dictionary) -> Dictionary:
-	return {"far_foliage": colors.merged({"region_tint_b": Color(0.4, 0.15, 0.48),
-		"region_tint_c": Color(0.06, 0.4, 0.42), "region_strength": 0.85})}
+	return {"far_foliage": colors.merged({"region_tint_b": Color(0.34, 0.2, 0.36),
+		"region_tint_c": Color(0.1, 0.34, 0.33), "region_strength": 0.6})}
 
 
 ## Same layer under several skeleton variants (<mesh>, <mesh>_b, <mesh>_c): density split evenly,
@@ -78,8 +78,8 @@ func _terra() -> ScatterRuleSet:
 	}
 	# alien canopy regions (ScatterBiome alien_b / alien_c) + faint night bioluminescence
 	for slot in ["needles", "leaves", "frond"]:
-		rs.material_params[slot].merge({"region_tint_b": Color(0.4, 0.15, 0.48),
-			"region_tint_c": Color(0.06, 0.4, 0.42), "region_strength": 0.85,
+		rs.material_params[slot].merge({"region_tint_b": Color(0.34, 0.2, 0.36),
+			"region_tint_c": Color(0.1, 0.34, 0.33), "region_strength": 0.6,
 			"night_glow_color": Color(0.2, 0.85, 0.75), "night_glow": 0.12 if slot == "needles" else 0.25}, true)
 	var trees_common := {"model": FLORA, "cell_size": 128.0, "far_factor": 8, "far_start": 700.0,
 		"max_distance": 3000.0, "fade_length": 60.0, "lod_distances": PackedFloat32Array([90.0]),
@@ -105,13 +105,14 @@ func _terra() -> ScatterRuleSet:
 			"sway_height": 11.0, "collision_size": Vector2(0.45, 3.0), "material_overrides": _far(LEAVES)}),
 		"parasol", [23, 24, 25]))
 	# lone umbrella trees on the savanna
-	rs.layers.append(L(trees_common.merged({"name": "parasol_savanna", "seed": 27, "density": 0.00035,
+	rs.layers.append(L(trees_common.merged({"name": "parasol_savanna", "seed": 27, "density": 0.00025,
 		"meshes": PackedStringArray(["parasol_b_lod0", "parasol_b_lod1"]), "far_mesh": "parasol_b_lod2",
 		"rules": {"savanna": Vector3(0.3, 2.0, 0.2), "forest": Vector3(-1.0, 0.3, 0.15),
 			"slope": Vector3(-1.0, 0.2, 0.06), "river": Vector3(-1.0, 0.25, 0.15), "beach": Vector3(-1.0, 0.1, 0.2)},
 		"scale_range": Vector2(0.8, 1.35), "height_jitter": 0.1, "sink": 0.4, "sway_height": 11.0,
 		"collision_size": Vector2(0.45, 3.0),
-		"material_overrides": _far(LEAVES).merged({"leaves": {"dry_amount": 0.9}})})))
+		"material_overrides": _far(LEAVES).merged({"leaves": {"dry_amount": 0.5,
+			"color_dry": Color(0.62, 0.5, 0.2)}})})))
 	rs.layers.append_array(_variants(trees_common.merged({"name": "fernpalm", "density": 0.0033,
 			"rules": {"height": Vector3(2.0, 420.0, 90.0), "moist": Vector3(0.5, 2.0, 0.12),
 				"slope": Vector3(-1.0, 0.25, 0.08), "lat": Vector3(-1.0, 0.5, 0.1),
@@ -133,7 +134,7 @@ func _terra() -> ScatterRuleSet:
 			"scale_range": Vector2(0.6, 1.5), "height_jitter": 0.2, "tint_regions": true, "sink": 0.12,
 			"align_to_normal": 0.3, "sway_height": 1.5, "shadow_distance": 90.0,
 			"material_overrides": {"leaves": {"color_a": Color(0.27, 0.4, 0.15),
-				"color_b": Color(0.52, 0.3, 0.38), "variation": 0.55, "dry_amount": 0.3}}}),
+				"color_b": Color(0.46, 0.32, 0.34), "variation": 0.5, "dry_amount": 0.3}}}),
 		L({"name": "bush_quill", "model": FLORA, "seed": 57, "cell_size": 96.0, "max_distance": 300.0,
 			"fade_length": 40.0, "density": 0.012, "grid_res": 8, "exact_height": true,
 			"meshes": PackedStringArray(["bush_quill_lod0"]),

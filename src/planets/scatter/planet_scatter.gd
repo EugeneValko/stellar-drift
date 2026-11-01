@@ -1082,7 +1082,7 @@ func _build_cell(L: LayerRT, face: int, i: int, j: int) -> CellData:
 				var ab := lerpf(lerpf(wgt[q00 + 3], wgt[q10 + 3], tx), lerpf(wgt[q01 + 3], wgt[q11 + 3], tx), ty)
 				var ac := lerpf(lerpf(wgt[q00 + 4], wgt[q10 + 4], tx), lerpf(wgt[q01 + 4], wgt[q11 + 4], tx), ty)
 				var rr := rng.randf()
-				var reg := 1.0 if rr < ab else (2.0 if rr < ab + ac else 0.0)
+				var reg := 1.0 if rr < ab * 0.65 else (2.0 if rr < (ab + ac) * 0.65 else 0.0)
 				cw = minf(snow, 0.99) + 2.0 * reg
 			var o := d * (R + h) - up * (L.sink * sc) - cd.origin
 			out.append_array([c0.x, c1.x, c2.x, o.x, c0.y, c1.y, c2.y, o.y, c0.z, c1.z, c2.z, o.z,
