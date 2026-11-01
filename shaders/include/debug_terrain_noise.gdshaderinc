@@ -85,6 +85,32 @@ vec2 dt_smooth_d(float a, float b, float x) {
 	return vec2(t * t * (3.0 - 2.0 * t), 6.0 * t * (1.0 - t) / (b - a));
 }
 
+// Crater field (moon style): bowls with raised rims in jittered 3D cells.
+float dt_craters(vec3 P, float cell) {
+	vec3 x = P / cell;
+	vec3 fi = floor(x);
+	vec3 f = x - fi;
+	ivec3 i = ivec3(fi);
+	float h = 0.0;
+	for (int dz = -1; dz <= 1; dz++)
+	for (int dy = -1; dy <= 1; dy++)
+	for (int dx = -1; dx <= 1; dx++) {
+		ivec3 c = i + ivec3(dx, dy, dz);
+		float r4 = dt_h(c + ivec3(3, 29, 19));
+		if (r4 > 0.55) continue;
+		vec3 cp = vec3(float(dx), float(dy), float(dz)) + vec3(dt_h(c), dt_h(c + ivec3(7, 13, 17)), dt_h(c + ivec3(31, 5, 11)));
+		float rad = mix(0.12, 0.5, pow(r4 / 0.55, 2.0));
+		float d = length(f - cp) / rad;
+		if (d < 1.0) {
+			h += (d * d - 1.0) * rad * 0.45 + 0.08 * rad;
+		} else if (d < 1.7) {
+			float t = (d - 1.0) / 0.7;
+			h += 0.08 * rad * (1.0 - t) * (1.0 - t);
+		}
+	}
+	return h * cell;
+}
+
 uniform int dt_style = 0;          // 0 earth-like, 1 moon (grey, craters)
 uniform float dt_seed = 0.0;
 uniform float dt_scale = 1.0;      // horizontal feature scale multiplier
@@ -127,6 +153,18 @@ vec4 dt_terrain(vec3 P, int detail) {
 	if (dt_style == 1) lm = vec2(1.0, 0.0);
 	hgt.x += hl.x * 140.0 * lm.x;
 	hgt.yzw += (hl.yzw * lm.x + hl.x * lm.y * land.yzw) * 140.0;
+	if (dt_style == 1) {
+		// craters at two scales; gradient by central differences
+		float e = 25.0;
+		for (int s = 0; s < 2; s++) {
+			float cell = s == 0 ? 6000.0 : 1500.0;
+			float c0 = dt_craters(Q, cell);
+			vec3 g = vec3(dt_craters(Q + vec3(e, 0.0, 0.0), cell) - c0,
+				dt_craters(Q + vec3(0.0, e, 0.0), cell) - c0,
+				dt_craters(Q + vec3(0.0, 0.0, e), cell) - c0) / e;
+			hgt += vec4(c0, g);
+		}
+	}
 	return vec4(hgt.x * dt_amp, hgt.yzw * dt_amp);
 }
 

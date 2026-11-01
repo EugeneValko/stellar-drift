@@ -199,4 +199,31 @@ func height_at(dir: Vector3, detail: int = 3) -> float:
 	var hl := _fbm(q / 1300.0, 2 + detail)
 	var lm := 1.0 if style == 1 else smoothstep(-0.02, 0.08, land)
 	hgt += hl * 140.0 * lm
+	if style == 1:
+		hgt += _craters(q, 6000.0) + _craters(q, 1500.0)
 	return hgt * amp
+
+
+static func _craters(p: Vector3, cell: float) -> float:
+	var x := p / cell
+	var fi := x.floor()
+	var f := x - fi
+	var h := 0.0
+	for dz in range(-1, 2):
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				var cx := int(fi.x) + dx
+				var cy := int(fi.y) + dy
+				var cz := int(fi.z) + dz
+				var r4 := _h(cx + 3, cy + 29, cz + 19)
+				if r4 > 0.55:
+					continue
+				var cp := Vector3(dx, dy, dz) + Vector3(_h(cx, cy, cz), _h(cx + 7, cy + 13, cz + 17), _h(cx + 31, cy + 5, cz + 11))
+				var rad := lerpf(0.12, 0.5, pow(r4 / 0.55, 2.0))
+				var d := (f - cp).length() / rad
+				if d < 1.0:
+					h += (d * d - 1.0) * rad * 0.45 + 0.08 * rad
+				elif d < 1.7:
+					var t := (d - 1.0) / 0.7
+					h += 0.08 * rad * (1.0 - t) * (1.0 - t)
+	return h * cell

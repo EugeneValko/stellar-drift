@@ -12,6 +12,7 @@ const MOON_DIST := 900000.0
 const ATMO_SCENE := preload("res://scenes/planets/atmosphere.tscn")
 const OCEAN_SCENE := preload("res://scenes/planets/ocean.tscn")
 const CLOUDS_SCENE := preload("res://scenes/planets/clouds.tscn")
+const GG_SCENE := preload("res://scenes/planets/gas_giant.tscn")
 
 var sun_dir := Vector3(1.0, 0.18, 0.32).normalized()
 var sun_color := Color(1.0, 0.96, 0.9)
@@ -26,7 +27,7 @@ var terra_atmo: AtmosphereLayer
 var terra_clouds: CloudLayer
 var terra_ocean: OceanLayer
 var gg_root: Node3D
-var gg: Node3D
+var gg: GasGiantBody
 var moon_root: Node3D
 var moon_ground: PlaceholderBody
 var _focus_body: PlaceholderBody
@@ -123,7 +124,37 @@ func _build_aurelion() -> void:
 	gg_root = Node3D.new()
 	gg_root.name = "AurelionSystem"
 	add_child(gg_root)
+	gg = GG_SCENE.instantiate()
+	gg_root.add_child(gg)
+	gg.setup({"radius": R_GG, "rings": true, "ring_tilt_deg": GG_TILT, "quality": 2})
+	moon_root = Node3D.new()
+	moon_root.name = "Moon"
+	gg_root.add_child(moon_root)
+	moon_root.position = moon_offset()
+	moon_ground = PlaceholderBody.new()
+	moon_ground.radius = R_MOON
+	moon_ground.style = 1
+	moon_ground.seed_value = 3.0
+	moon_ground.feature_scale = 0.35
+	moon_ground.amp = 0.45
+	moon_root.add_child(moon_ground)
+	moon_ground.material.set_shader_parameter("use_atmosphere", false)
 	gg_root.visible = false
+
+
+const GG_TILT := 16.0
+
+
+## Moon position relative to Aurelion: just above the ring plane, outside the rings.
+func moon_offset() -> Vector3:
+	var up := Vector3.UP.rotated(Vector3.RIGHT, deg_to_rad(GG_TILT))
+	var d := Vector3(0.62, 0.0, -0.78).normalized()
+	d = (d - up * d.dot(up)).normalized()
+	return (d + up * 0.1).normalized() * MOON_DIST
+
+
+func _gg_up() -> Vector3:
+	return Vector3.UP.rotated(Vector3.RIGHT, deg_to_rad(GG_TILT))
 
 
 func _set_sun(d: Vector3) -> void:
@@ -219,8 +250,47 @@ func apply_capture_preset(preset: String) -> void:
 			var fr := _frame(n)
 			var pos: Vector3 = n * (R_TERRA + 900.0)
 			_look(pos, pos + fr[1] * 10000.0 - n * 1300.0, n)
+		"gasgiant", "rings", "gasgiant_from_moon":
+			_gg_preset(preset)
 		_:
 			push_warning("unknown preset " + preset)
+	_after_camera()
+
+
+func _gg_preset(preset: String) -> void:
+	terra.visible = false
+	gg_root.visible = true
+	gg_root.position = Vector3.ZERO
+	_focus_body = null
+	var up := _gg_up()
+	var m := moon_offset()
+	match preset:
+		"gasgiant":
+			# three-quarter phase, slightly above the ring plane: ring shadow on the planet
+			var c := Vector3(0.3, 0.0, 1.0).normalized()
+			c = (c - up * c.dot(up)).normalized()
+			_set_sun((c.rotated(up, deg_to_rad(-75.0)) + up * 0.42).normalized())
+			var pos := (c + up * 0.32).normalized() * 1.75e6
+			_look(pos, Vector3(0, -40000, 0), up)
+		"rings":
+			# just above the ring plane near the outer A ring, looking across the rings at the planet
+			var c := Vector3(-0.2, 0.0, 1.0).normalized()
+			c = (c - up * c.dot(up)).normalized()
+			var side := up.cross(c).normalized()
+			_set_sun((-c * 0.55 + side * 0.65 + up * 0.38).normalized())
+			var pos := c * 700000.0 + up * 38000.0 + side * 150000.0
+			_look(pos, c * 150000.0 + side * -160000.0 + up * -60000.0, up)
+		"gasgiant_from_moon":
+			gg_root.position = -m       # floating origin: the moon at the world origin
+			_focus_body = moon_ground
+			var g := -m.normalized()    # toward the gas giant (moon-local)
+			var side := g.cross(up).normalized()
+			var n := (g * 0.5 + up * 0.85 + side * 0.15).normalized()
+			_set_sun((side * 0.55 + g * -0.35 + up * 0.5 + n * 0.25).normalized())
+			var h := moon_ground.height_at(n)
+			var pos := n * (R_MOON + h + 3.0)
+			var look := (g - n * g.dot(n)).normalized()
+			_look(pos, pos + look * 1000.0 + n * 420.0, n)
 	_after_camera()
 
 

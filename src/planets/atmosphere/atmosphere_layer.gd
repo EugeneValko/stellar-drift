@@ -52,8 +52,8 @@ const PRESETS := {
 	},
 	"aurelion": {  # gas giant haze: warm, thick high haze
 		"radius": 300000.0, "height": 40000.0, "rayleigh_height": 6000.0, "mie_height": 4000.0,
-		"rayleigh_density": 0.35, "rayleigh_tint": Vector3(0.7, 0.85, 1.0),
-		"mie_density": 0.08, "mie_color": Color(1.0, 0.85, 0.6), "mie_absorb": Vector3(0.05, 0.12, 0.3),
+		"rayleigh_density": 0.14, "rayleigh_tint": Vector3(0.8, 0.9, 1.0),
+		"mie_density": 0.22, "mie_color": Color(1.0, 0.88, 0.7), "mie_absorb": Vector3(0.05, 0.12, 0.3),
 		"mie_g": 0.7, "ozone_density": 0.0, "intensity": PI, "multi_scatter": 0.4,
 	},
 }
