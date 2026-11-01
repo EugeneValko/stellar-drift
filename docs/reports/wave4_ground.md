@@ -112,9 +112,32 @@
   свечение, пульсация).
 - Новые атрибуты правил: `river`, `temp`, `savanna`, `tundra`, `alien_b`, `alien_c`, `scree`.
 
-## 5. Скриншоты
+## 5. Скриншоты (`docs/screenshots/s6/ground/`, 1920×1080)
 
-TODO
+«До» — та же сцена/пресет на коммите `397f871` (до волны 4). Пресеты выбирают место автоматически по рельефу/биому,
+поэтому после изменения рельефа место может отличаться — сравнивается тот же *вид*.
+
+| Файл | Что видно |
+|---|---|
+| `terra_ground_before.png` / `_after.png` | было: плоский «размазанный» песок, сухая трава и тёмные точки гальки на пляже; стало: саванна — густая трава с оттенками, оливково-золотые зонтичные деревья, рощи на горизонте, пятна цветов, красноватые кусты |
+| `terra_low_before.png` / `_after.png` | было: километровые песчаные пляжи; стало: узкая коралловая полоса пляжа на берме, обрыв, речная долина, текстура леса, борозды на склонах |
+| `ignis_low_before.png` / `_after.png` | базальт/пепел/сера вместо равномерно-бурых террас |
+| `rocky_slope_before.png` / `_after.png` | было: гладкий склон в пятнах тени; стало: камни и галька в почве, осыпи, валуны кластерами, пурпурная куртина «шпилевых сосен» (инопланетный регион) |
+| `terra_sunset_ground.png` | закат: одинокое зонтичное дерево, морской обрыв с валунами, трава |
+| `meadow_alien.png` | луг у смешанного леса: пурпурные и зелёные ели трёх форм, «зонтики», дрейфы цветов |
+| `selene_terra_rise.png` | Selene: россыпи валунов и осыпь, светлый реголит, Terra над горизонтом |
+| `glacia_low.png` | Glacia: заструги, синий лёд, снег в кулуарах |
+| `nyx_crystals.png` | Nyx: тёмный реголит, тонкие фиолетовые светящиеся жилы, поля кристаллов |
+| `ignis_basalt.png` | Ignis вблизи: столбы с фасками и светлыми торцами, полигональные трещины базальта, лавовое озеро |
+
+Команды (пресеты не менялись, кроме новых `glacia_spires` / `nyx_crystals`):
+```bash
+tools/shot.sh scenes/main.tscn --shots=terra_ground,terra_low,ignis_low,terra_sunset_ground,selene_surface_terra_rise,glacia_low --outdir=<dir>
+tools/shot.sh scenes/test/scatter_test.tscn --shots=rocky_slope,meadow,nyx_crystals,ignis_basalt,glacia_spires,forest_edge --outdir=<dir> --warmup=8
+tools/shot.sh scenes/test/planet_test.tscn --shots=orbit,high_alt --tu_debug_view=1 --res=960x540 --outdir=<dir>   # биомы
+```
+На CPU-рендере (lavapipe, 4 ядра на 4 агента) один кадр 1080p `main.tscn` — ~20 мин и ~3 ГБ ОЗУ: снимать по одному
+процессу, иначе OOM.
 
 ## 6. Плейтест
 
@@ -126,4 +149,19 @@ TODO
 
 ## 8. Изменения общих файлов
 
-TODO
+- Чужие системы (`src/ship`, `src/core`, `src/ui`, `src/player`, `scenes/main.*`, `solar_system.gd`, атмосфера/
+  облака/океан, `project.godot`, STATUS/ROADMAP/SESSION_LOG) — **не менялись**.
+- `src/planets/planet.gd` — не менялся: новые uniform'ы рельефа выставляет `PlanetTerrain.apply_style_params()`
+  (вызывается из `PlanetTerrain.setup()`), так что материал из `Planet.create_terrain_material()` дополняется автоматически.
+- `src/planets/presets/*.tres` — только параметры рельефа/палитры; `atmosphere_height` не трогал.
+- `scenes/test/scatter_test.gd` — пресеты `glacia_spires`, `nyx_crystals`, в `lineup` — варианты деревьев и новые камни.
+- Новое: `assets/textures/` (5 PNG + `.import`: без сжатия, мипмапы, `detect_3d/compress_to=0`),
+  `tools/textures/make_ground_textures.py` (numpy + Pillow), `tools/dev/biome_stats.gd`.
+- Смысл канала `COLOR.g` вершин рельефа расширен: на планетах без лавы — маска русла реки
+  (`ScatterBiome`: атрибут `river`, `lava` = 0). `main.gd` читает `.z` (лаву) только у Ignis — не затронуто.
+- `INSTANCE_CUSTOM.w` у слоёв с `tint_regions` = снег + 2·регион (шейдеры камней такие слои не используют).
+
+Предлагаемые строки в `docs/DECISIONS.md`:
+- Ближняя детализация земли — офлайн-текстуры 1024² (numpy), а не генерация при старте: нет +секунд к загрузке.
+- Реки — врез в функцию высот + маска в цвете вершин; вода рисуется шейдером рельефа (без отдельной геометрии).
+- Варианты деревьев — отдельные слои разброса (плотность делится), а не массив мешей внутри слоя.
