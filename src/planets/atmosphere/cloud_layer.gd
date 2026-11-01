@@ -26,7 +26,9 @@ extends Node3D
 ##   atmosphere        AtmosphereLayer or its uniforms Dictionary (sun colour + aerial perspective)
 ##   ocean_radius      rays stop at this sphere (sea level); 0 = off
 ##   shadow_strength   for receivers (0..1, default 0.75)
-##   quality           0/1/2 -> max steps 32/56/96, light steps 3/4/5
+##   quality           0/1/2 -> max steps 32/56/96, light steps 3/4/5 (q0: + bilinear weather and
+##                     shorter light march beyond 30 km)
+##   quad_share        2x2 pixel quads split the raymarch (default true, ~2x cheaper; see clouds.gdshader)
 ##   weather_resolution  equirect bake width (default 2048)
 ##   render_priority_base
 
@@ -76,6 +78,11 @@ func setup(cfg: Variant = null) -> void:
 	var render := {
 		"cloud_steps": int(params.get("steps", [32, 56, 96][q])),
 		"cloud_light_steps": int(params.get("light_steps", [3, 4, 5][q])),
+		# performance (docs/reports/perf_gpu.md): 2x2 quad sharing of the march at every level;
+		# quality 0 also uses bilinear weather and a shorter light march beyond 30 km
+		"cloud_quad_share": bool(params.get("quad_share", true)),
+		"cloud_bicubic_distance": float(params.get("bicubic_distance", [30000.0, 1.0e9, 1.0e9][q])),
+		"cloud_light_far": float(params.get("light_far", [30000.0, 1.0e9, 1.0e9][q])),
 		"cloud_brightness": float(params.get("brightness", 1.0)),
 		"cloud_ambient": float(params.get("ambient", 1.0)),
 		"cloud_albedo": LayerParams.col3(params.get("albedo", Color.WHITE)),

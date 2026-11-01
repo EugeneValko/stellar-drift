@@ -16,8 +16,8 @@ void fragment() {
 	vec3 ro = (CAMERA_POSITION_WORLD - NODE_POSITION_WORLD) / S;
 	float sd = sd_scene_distance(texture(depth_tex, SCREEN_UV).r, SCREEN_UV, INV_PROJECTION_MATRIX) / S;
 	vec3 T;
-	vec3 L = atmo_scatter(ro, rd, sd, atmo_steps, sd_ign(FRAGCOORD.xy), T);
-	ALBEDO = L;
+	vec3 L = atmo_scatter(ro, rd, sd, atmo_quad_steps(atmo_steps), atmo_quad_jitter(FRAGCOORD.xy, sd_ign(FRAGCOORD.xy)), T);
+	ALBEDO = atmo_quad_blend(L, FRAGCOORD.xy, sd);
 	if (atmo_debug == 1) ALBEDO = vec3(sd / 200000.0, float(atmo_steps) / 16.0, length(ro) / 200000.0);
 	if (atmo_debug == 2) ALBEDO = abs(sun_direction);
 }

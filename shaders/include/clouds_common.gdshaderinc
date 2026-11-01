@@ -106,15 +106,18 @@ vec2 cloud_weather_uv(vec3 dir) {
 	return vec2(atan(q.z, q.x) * 0.15915494 + 0.5, acos(clamp(q.y, -1.0, 1.0)) * 0.31830989);
 }
 
-// Cheap single bilinear tap (light rays, shadows).
-vec2 cloud_weather_fast(vec3 dir) {
-	return texture(cloud_weather_tex, cloud_weather_uv(dir)).rg;
+// Cheap single bilinear tap (light rays, shadows, far samples).
+vec2 cloud_weather_fast_uv(vec2 uv) {
+	return textureLod(cloud_weather_tex, uv, 0.0).rg;
 }
 
-vec2 cloud_weather(vec3 dir) {
-	vec2 uv = cloud_weather_uv(dir);
-	// bicubic B-spline from 4 bilinear taps: C2-smooth coverage (bilinear creases would be
-	// extruded into vertical "curtains" by the density remap)
+vec2 cloud_weather_fast(vec3 dir) {
+	return cloud_weather_fast_uv(cloud_weather_uv(dir));
+}
+
+// bicubic B-spline from 4 bilinear taps: C2-smooth coverage (bilinear creases would be
+// extruded into vertical "curtains" by the density remap)
+vec2 cloud_weather_bicubic_uv(vec2 uv) {
 	vec2 size = vec2(textureSize(cloud_weather_tex, 0));
 	vec2 st = uv * size - 0.5;
 	vec2 i = floor(st);
@@ -127,10 +130,14 @@ vec2 cloud_weather(vec3 dir) {
 	vec2 g1 = w2 + w3;
 	vec2 h0 = (i - 1.0 + w1 / g0 + 0.5) / size;
 	vec2 h1 = (i + 1.0 + w3 / g1 + 0.5) / size;
-	return (texture(cloud_weather_tex, vec2(h0.x, h0.y)).rg * g0.x
-		+ texture(cloud_weather_tex, vec2(h1.x, h0.y)).rg * g1.x) * g0.y
-		+ (texture(cloud_weather_tex, vec2(h0.x, h1.y)).rg * g0.x
-		+ texture(cloud_weather_tex, vec2(h1.x, h1.y)).rg * g1.x) * g1.y;
+	return (textureLod(cloud_weather_tex, vec2(h0.x, h0.y), 0.0).rg * g0.x
+		+ textureLod(cloud_weather_tex, vec2(h1.x, h0.y), 0.0).rg * g1.x) * g0.y
+		+ (textureLod(cloud_weather_tex, vec2(h0.x, h1.y), 0.0).rg * g0.x
+		+ textureLod(cloud_weather_tex, vec2(h1.x, h1.y), 0.0).rg * g1.x) * g1.y;
+}
+
+vec2 cloud_weather(vec3 dir) {
+	return cloud_weather_bicubic_uv(cloud_weather_uv(dir));
 }
 
 // Density (0..~1) at planet-local point pl, radius r, weather w.

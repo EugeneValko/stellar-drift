@@ -12,5 +12,6 @@ void fragment() {
 	float S = sd_node_scale(MODEL_MATRIX);   // scaled-space proxy: work in body units
 	vec3 ro = (CAMERA_POSITION_WORLD - NODE_POSITION_WORLD) / S;
 	float sd = sd_scene_distance(texture(depth_tex, SCREEN_UV).r, SCREEN_UV, INV_PROJECTION_MATRIX) / S;
-	ALBEDO = atmo_transmittance(ro, rd, sd, atmo_steps, sd_ign(FRAGCOORD.xy));
+	vec3 T = atmo_transmittance(ro, rd, sd, atmo_quad_steps(atmo_steps), atmo_quad_jitter(FRAGCOORD.xy, sd_ign(FRAGCOORD.xy)));
+	ALBEDO = atmo_quad_blend(T, FRAGCOORD.xy, sd);
 }
