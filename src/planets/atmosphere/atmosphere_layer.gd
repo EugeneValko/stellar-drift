@@ -37,6 +37,7 @@ const PRESETS := {
 	"terra_nova": {
 		"radius": 60000.0, "height": 24000.0, "rayleigh_height": 2600.0, "mie_height": 750.0,
 		"rayleigh_density": 1.2, "rayleigh_tint": Vector3(1, 1, 1), "sun_path_window": 7.0,
+		"steps_mul": 1.5,   # cloud shadows in the air add variance along the ray
 		"mie_density": 3.0, "mie_color": Color(1, 0.9, 0.75), "mie_absorb": Vector3(0.1, 0.1, 0.1),
 		"mie_g": 0.8, "ozone_density": 2.5, "ozone_height": 7000.0, "intensity": PI,
 		"multi_scatter": 0.0, "ms_strength": 1.4, "ms_lift_deg": 4.5, "sun_path_scale": 2.6,

@@ -202,7 +202,7 @@ func set_atmosphere(a: Variant) -> void:
 	if a is AtmosphereLayer and (a as AtmosphereLayer).mat_scatter:
 		var m: ShaderMaterial = (a as AtmosphereLayer).mat_scatter
 		var su := get_shadow_uniforms()
-		su["cloud_shadow_strength"] = float(params.get("air_shadow_strength", 0.85))
+		su["cloud_shadow_strength"] = float(params.get("air_shadow_strength", 0.7))
 		LayerParams.apply_uniforms(m, su)
 		if not _shadow_receivers.has(m):
 			_shadow_receivers.append(m)

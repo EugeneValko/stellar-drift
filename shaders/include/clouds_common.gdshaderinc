@@ -242,7 +242,7 @@ float cloud_shadow_air(vec3 pl, vec3 L_local) {
 	if (hit.y <= 0.0 || hit.y < hit.x) return 1.0;
 	float t = hit.x > 0.0 ? hit.x : hit.y;
 	vec2 w = cloud_weather_fast(normalize(pl + L_local * t));
-	return 1.0 - cloud_shadow_strength * smoothstep(0.25, 0.75, w.x) * mix(0.6, 1.0, w.y);
+	return 1.0 - cloud_shadow_strength * smoothstep(0.2, 0.85, w.x) * mix(0.6, 1.0, w.y);
 }
 
 // p: world-oriented planet-relative position in BODY units (divide by the node scale when the
