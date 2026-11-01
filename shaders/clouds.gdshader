@@ -25,7 +25,7 @@ uniform float cloud_detail_distance = 25000.0; // beyond: no detail erosion
 uniform int cloud_ap_steps = 6;
 uniform int cloud_debug = 0;
 uniform bool cloud_temporal_jitter = false;   // enable with TAA/FSR to resolve noise over frames
-uniform float cirrus_opacity = 0.6;           // 0 = no cirrus sheet
+uniform float cirrus_opacity = 0.4;           // 0 = no cirrus sheet
 uniform float cirrus_altitude = 3500.0;       // above cloud_top, m
 uniform float cirrus_scale = 1.0;
 group_uniforms;
@@ -168,9 +168,9 @@ void fragment() {
 			float s1 = cl_tex(vec3(sq.x * 5.0, sq.y * 22.0, sq.z * 5.0));
 			float s2 = cl_tex(vec3(sq.x * 13.0, sq.y * 55.0, sq.z * 13.0) + vec3(0.3));
 			float s3 = texture(cloud_detail_tex, dc * cirrus_scale * 40.0).r;
-			float mask = smoothstep(0.42, 0.7, cl_tex(sq * 1.7 + vec3(0.4)));
-			float dens = smoothstep(0.45, 0.85, s1 * 0.65 + s2 * 0.35 + s3 * 0.15) * mask;
-			float cosv = max(abs(dot(rd, dcw)), 0.06);
+			float mask = smoothstep(0.5, 0.72, cl_tex(sq * 1.7 + vec3(0.4)));
+			float dens = smoothstep(0.55, 0.9, s1 * 0.65 + s2 * 0.35 + s3 * 0.15) * mask;
+			float cosv = max(abs(dot(rd, dcw)), 0.3);
 			float ca = (1.0 - exp(-dens * 0.25 / cosv)) * cirrus_opacity;
 			if (ca > 0.001) {
 				vec3 sc = atmo_sun_transmittance(pcw, L);

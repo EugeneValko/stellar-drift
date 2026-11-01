@@ -61,7 +61,7 @@ func setup(cfg: Variant = null) -> void:
 		"cloud_cyclone_strength": float(params.get("cyclone_strength", 1.0)),
 	}
 	var cirrus_alt: float = float(params.get("cirrus_altitude", 3500.0))
-	_ensure_nodes(top + (cirrus_alt if float(params.get("cirrus_opacity", 0.6)) > 0.0 else 0.0))
+	_ensure_nodes(top + (cirrus_alt if float(params.get("cirrus_opacity", 0.4)) > 0.0 else 0.0))
 	_bake_weather(int(params.get("weather_resolution", 2048)))
 	uniforms["cloud_weather_tex"] = weather_viewport.get_texture()
 	var render := {
@@ -71,7 +71,7 @@ func setup(cfg: Variant = null) -> void:
 		"cloud_ambient": float(params.get("ambient", 1.0)),
 		"cloud_albedo": LayerParams.col3(params.get("albedo", Color.WHITE)),
 		"cloud_ocean_radius": float(params.get("ocean_radius", 0.0)),
-		"cirrus_opacity": float(params.get("cirrus_opacity", 0.6)),
+		"cirrus_opacity": float(params.get("cirrus_opacity", 0.4)),
 		"cirrus_altitude": cirrus_alt,
 		"cirrus_scale": float(params.get("cirrus_scale", 1.0)),
 	}

@@ -280,6 +280,7 @@ func _gg_preset(preset: String) -> void:
 			_set_sun((c.rotated(up, deg_to_rad(-75.0)) + up * 0.42).normalized())
 			var pos := (c + up * 0.3).normalized() * 1.3e6
 			_look(pos, Vector3(0, -40000, 0), up)
+			_place_storm(c.rotated(up, deg_to_rad(-32.0)) + up * 0.22)
 		"rings":
 			# just above the ring plane near the outer A ring, looking across the rings at the planet
 			var c := Vector3(-0.2, 0.0, 1.0).normalized()
@@ -299,7 +300,14 @@ func _gg_preset(preset: String) -> void:
 			var pos := n * (R_MOON + h + 3.0)
 			var look := (g - n * g.dot(n)).normalized()
 			_look(pos, pos + look * 1000.0 + n * 420.0, n)
+			_place_storm(m.normalized() + sun_dir * 0.45 + up * 0.12)
 	_after_camera()
+
+
+## Moves the great storm of the gas giant to a world direction (test framing only).
+func _place_storm(world_dir: Vector3) -> void:
+	var local := (gg.global_basis.inverse() * world_dir).normalized()
+	gg.material.set_shader_parameter("gg_storm_dir", local)
 
 
 func _after_camera() -> void:
