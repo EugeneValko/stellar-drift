@@ -44,7 +44,7 @@ uniform vec3 accent_color : source_color = vec3(0.96, 0.40, 0.07);
 uniform vec3 marking_dark : source_color = vec3(0.07, 0.075, 0.085);
 uniform vec3 hazard_color : source_color = vec3(0.95, 0.72, 0.10);
 uniform vec3 number_color : source_color = vec3(0.10, 0.11, 0.12);
-uniform vec3 radiator_color : source_color = vec3(0.17, 0.19, 0.22);
+uniform vec3 radiator_color : source_color = vec3(0.34, 0.35, 0.38);
 
 uniform float brushed : hint_range(0.0, 1.0) = 0.0;
 uniform float heat_tint : hint_range(0.0, 1.0) = 0.0;
@@ -55,9 +55,9 @@ uniform float heat_z1 = 9.7;
 uniform float pod_x = 3.9;
 uniform float pod_top = 1.36;
 uniform vec2 rad_root = vec2(4.42, 0.98);
-uniform float rad_dihedral = 38.0;
-uniform float rad_span = 2.75;
-uniform vec2 rad_le = vec2(1.6, 4.85);      // leading edge z at root / tip
+uniform float rad_dihedral = 30.0;
+uniform float rad_span = 3.0;
+uniform vec2 rad_le = vec2(2.5, 4.3);       // leading edge z at root / tip
 uniform vec3 bay_front = vec3(0.0, -6.35, 0.5);  // x, z, half size
 uniform vec3 bay_rear = vec3(3.9, 5.0, 0.6);
 uniform vec4 ramp = vec4(0.72, -3.55, -0.35, 0.0);  // half width, z0, z1
@@ -259,8 +259,8 @@ void fragment() {
 		float le_band = 1.0 - smoothstep(0.42, 0.46, p.z - zle);
 		float panel = on_wing * (1.0 - le_band) * step(rs, rad_span - 0.08);
 		col = mix(col, radiator_color * (0.9 + 0.2 * pid), panel);
-		metal = mix(metal, 0.55, panel);
-		rough = mix(rough, 0.32, panel);
+		metal = mix(metal, 0.45, panel);
+		rough = mix(rough, 0.26, panel);
 		float tipb = on_wing * step(rad_span - 0.12, rs);
 		col = mix(col, accent_color, tipb);
 		// thin orange stripe at the root fairing of the wing
@@ -348,7 +348,8 @@ void fragment() {
 	rough = mix(rough, 0.75, gm * 0.6);
 	coat *= 1.0 - gm;
 	// exhaust soot: only right at the engine exits
-	float st = smoothstep(7.9, 8.6, p.z) * soot * (0.5 + 0.5 * fbm(p * 2.5)) * (1.0 - smoothstep(0.2, 0.7, n.y));
+	float dn = min(length(vec2(abs(p.x) - pod_x, p.y - 0.24)), length(vec2(p.x * 0.45, p.y - 0.12)));
+	float st = smoothstep(7.9, 8.6, p.z) * soot * (0.5 + 0.5 * fbm(p * 2.5)) * (1.0 - smoothstep(0.75, 1.35, dn));
 	col = mix(col, vec3(0.05), st * 0.6);
 	rough = mix(rough, 0.7, st * 0.5);
 

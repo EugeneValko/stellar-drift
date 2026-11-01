@@ -59,8 +59,8 @@ const GEAR_TRAVEL := 0.55
 const GROUND_OFFSET := 2.95         # ship origin height above the pads (GroundPoint)
 ## Hull probe points for the analytic last-resort terrain clamp (nose, nozzles, keel, pod bellies,
 ## radiator wing tips, spine).
-const HULL_PROBES: Array[Vector3] = [Vector3(0, -0.3, -10.25), Vector3(0, 0.2, 9.0), Vector3(-6.7, 2.6, 6.0),
-	Vector3(6.7, 2.6, 6.0), Vector3(0, -1.3, 0), Vector3(0, 2.1, 3.0), Vector3(-4.6, -0.85, 8.6),
+const HULL_PROBES: Array[Vector3] = [Vector3(0, -0.3, -10.25), Vector3(0, 0.2, 9.0), Vector3(-6.9, 2.4, 6.0),
+	Vector3(6.9, 2.4, 6.0), Vector3(0, -1.3, 0), Vector3(0, 2.1, 3.0), Vector3(-4.6, -0.85, 8.6),
 	Vector3(4.6, -0.85, 8.6), Vector3(0, -1.0, -6.5), Vector3(-4.5, -0.8, 0.6), Vector3(4.5, -0.8, 0.6)]
 
 @export_group("Control")

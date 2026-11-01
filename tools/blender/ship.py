@@ -69,10 +69,10 @@ NOZZLE_LEN = 1.35
 
 # radiator wings: canted up from the pods' outer shoulders (heat radiators + lifting surfaces)
 RAD_ROOT = (4.42, 0.98)       # root line (x, z) on the pod's upper chamfer
-RAD_DIHEDRAL = 38.0           # degrees above horizontal
-RAD_SPAN = 2.75
-RAD_ROOT_LE, RAD_ROOT_TE = -1.6, -7.95
-RAD_TIP_LE, RAD_TIP_TE = -4.85, -7.75
+RAD_DIHEDRAL = 30.0           # degrees above horizontal
+RAD_SPAN = 3.0
+RAD_ROOT_LE, RAD_ROOT_TE = -2.5, -7.95
+RAD_TIP_LE, RAD_TIP_TE = -4.3, -7.8
 RAD_TH_ROOT, RAD_TH_TIP = 0.26, 0.11
 
 # canopy / cockpit
@@ -666,7 +666,7 @@ def build_pods():
                 for p in ring:
                     p.y += k * POD_PROW * (p.z - cz) / (2 * b)
             rings.append([Vector((p.x * side, p.y, p.z)) for p in ring])
-        loft(bm, rings, HULL, cap_mats=(DARK, DARK))
+        loft(bm, rings, HULL, cap_mats=(DARK, HULL))
     return obj_from_bm("Pods", bm)
 
 
@@ -895,6 +895,16 @@ def deck_light_points():
     return out
 
 
+def flank_light_points():
+    """Logo-style lamps under the radiator tips, washing the pod flanks and hull sides (night readability)."""
+    out = []
+    for s, nm in ((1, "FlankLight_R"), (-1, "FlankLight_L")):
+        tip = wing_tip(s)
+        p = Vector((tip.x - 0.35 * s, rad_chord(1.0)[0] - 0.6, tip.z - 0.22))
+        out.append((nm, p, Vector((-0.75 * s, 0.55, -0.55))))
+    return out
+
+
 def build_details():
     bm = bmesh.new()
     # --- emissive chine strip (just under the blade, full length) ---
@@ -936,7 +946,7 @@ def build_details():
     for name, p in nav_points().items():
         add_sphere(bm, p, 0.065, GLASS, segs=10, rings=6)
     # --- floodlight housings (lamp lens + bezel) ---
-    for nm, p, d in flood_points() + deck_light_points():
+    for nm, p, d in flood_points() + deck_light_points() + flank_light_points():
         d = d.normalized()
         rot = d.to_track_quat('Z', 'Y').to_matrix().to_4x4()
         add_cyl(bm, p - d * 0.06, p + d * 0.01, 0.12, DARK, segs=14)
@@ -997,8 +1007,13 @@ def build_details():
     # --- nose sensor window (chin) ---
     # --- pod nose sensor caps ---
     for side in (1, -1):
-        add_sphere(bm, (side * PCX(POD_FRONT_Y - 0.05), POD_FRONT_Y + 0.02, PCZ(POD_FRONT_Y)), 0.12, DARK,
-                   segs=12, rings=8, scale=(1, 1.3, 1))
+        cx, cz, bb = PCX(POD_FRONT_Y) * side, PCZ(POD_FRONT_Y), PB(POD_FRONT_Y)
+        nrm = Vector((0, 2 * bb, -POD_PROW)).normalized()          # prow face normal (forward-down)
+        rot = nrm.to_track_quat('Z', 'Y').to_matrix().to_4x4()
+        for dz, w, h, m in ((0.35, 0.9, 0.16, GLASS), (-0.15, 0.5, 0.10, DARK), (-0.42, 0.7, 0.06, LAMP)):
+            pz = cz + dz * bb
+            py = POD_FRONT_Y + POD_PROW * (pz - cz) / (2 * bb)
+            add_box(bm, Vector((cx, py, pz)) + nrm * 0.005, (w, h, 0.03), m, rot)
     return obj_from_bm("Details", bm)
 
 
@@ -1482,7 +1497,7 @@ def main():
         empty(nm, Vector(p) + Vector(n).normalized() * 0.06, direction=n, size=0.15)
     for nm, p in nav_points().items():
         empty(nm, p, size=0.1)
-    for nm, p, d in flood_points() + deck_light_points():
+    for nm, p, d in flood_points() + deck_light_points() + flank_light_points():
         empty(nm, p + d.normalized() * 0.04, direction=d, size=0.2)
     empty("CockpitLight", (0, SEAT_Y + 0.6, 1.55), size=0.1)
     empty("PilotSeat", (0, SEAT_Y + 0.1, COCKPIT_FLOOR + 0.46), size=0.3)

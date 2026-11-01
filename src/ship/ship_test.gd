@@ -162,6 +162,14 @@ func apply_capture_preset(preset: String) -> void:
 			_look(Vector3(11.0, 3.4, -21.0), Vector3(0.0, 0.0, -0.5), 42.0)
 			_light(key, Vector3(-0.5, -0.55, 0.65), 2.8, warm)
 			_light(rim, Vector3(0.6, -0.2, 0.75), 2.2, cool)
+		"ship_belly":
+			_space(true)
+			ship.set_gear(false, true)
+			ship.set_hatch(false, true)
+			ship.set_thrust(0.3)
+			_look(Vector3(-9.0, -17.0, -9.0), Vector3(0.0, -0.5, 0.5), 50.0)
+			_light(key, Vector3(0.3, 0.6, 0.5), 2.2, warm)
+			_light(rim, Vector3(-0.4, 0.5, -0.7), 1.2, cool)
 		"ship_sunset":
 			_space(false)
 			ship.set_gear(true, true)

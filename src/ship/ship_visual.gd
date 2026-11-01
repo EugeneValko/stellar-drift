@@ -23,7 +23,7 @@ const MATERIALS := {
 }
 const PLUME_SHADER := preload("res://shaders/ship_plume.gdshader")
 const MARKER_PREFIXES := ["EngineExhaust_", "Thruster_", "NavLight_", "PilotSeat", "PilotEye", "ExitPoint",
-	"GroundPoint", "CameraChase", "Flood_", "DeckLight_", "CockpitLight"]
+	"GroundPoint", "CameraChase", "Flood_", "DeckLight_", "FlankLight_", "CockpitLight"]
 const DEFAULT_HATCH_OPEN := -30.0
 const DEFAULT_CANOPY_OPEN := 30.0
 const NAV_LIGHT_ENERGY := 0.35
@@ -46,6 +46,9 @@ const LEG_START := 0.24
 ## Small lamps on the spine shoulders that wash the aft deck / radiators (readability at night).
 @export var deck_light_energy := 1.6
 @export var cockpit_light_energy := 0.5
+## Floodlights/deck lights follow the sun like auto headlights: full on in planet shadow / at night,
+## off in daylight (reads the scene's shadowed DirectionalLight3D: colour x energy x elevation).
+@export var auto_lights := true
 
 var thrust := 0.0
 var gear_deployed := true
@@ -71,6 +74,10 @@ var _plumes: Array[Node3D] = []
 var _plume_mats: Array[ShaderMaterial] = []
 var _engine_lights: Array[OmniLight3D] = []
 var _floods: Array[SpotLight3D] = []
+var _deck_lights: Array[SpotLight3D] = []
+var _sun: DirectionalLight3D
+var _night := 1.0                   # 0 = daylight .. 1 = dark (auto_lights)
+var _sun_scan_t := 0.0
 var _nav: Array[Dictionary] = []    # {light, mesh_mat, color, kind}
 var _time := 0.0
 var _capture := false
@@ -245,6 +252,19 @@ func _build_lights() -> void:
 			s.position = Vector3(0, 0, -0.05)
 			m.add_child(s)
 			_floods.append(s)
+		elif nm.begins_with("FlankLight_"):
+			var f := SpotLight3D.new()
+			f.name = "FlankLight"
+			f.light_color = Color(1.0, 0.93, 0.85)
+			f.spot_range = 13.0
+			f.spot_angle = 48.0
+			f.spot_angle_attenuation = 1.2
+			f.spot_attenuation = 0.9
+			f.light_energy = deck_light_energy
+			f.light_specular = 0.15
+			f.shadow_enabled = false
+			m.add_child(f)
+			_deck_lights.append(f)
 		elif nm.begins_with("DeckLight_"):
 			var d := SpotLight3D.new()
 			d.name = "DeckLight"
@@ -257,6 +277,7 @@ func _build_lights() -> void:
 			d.light_specular = 0.15
 			d.shadow_enabled = false
 			m.add_child(d)
+			_deck_lights.append(d)
 		elif nm == "CockpitLight":
 			var o := OmniLight3D.new()
 			o.name = "CabinLight"
@@ -270,12 +291,49 @@ func _build_lights() -> void:
 
 
 func _update_floods() -> void:
-	var on := smoothstep(LEG_START, 0.6, _gear_t)
+	var dark := _night if auto_lights else 1.0
+	var on := smoothstep(LEG_START, 0.6, _gear_t) * dark
 	for s in _floods:
 		s.light_energy = flood_energy * on
 		s.visible = on > 0.01
+	for d in _deck_lights:
+		d.light_energy = deck_light_energy * (0.25 + 0.75 * dark)
 	if _mats.has("Lamp"):
-		(_mats["Lamp"] as ShaderMaterial).set_shader_parameter("lit", 0.25 + 0.75 * on)
+		(_mats["Lamp"] as ShaderMaterial).set_shader_parameter("lit", 0.2 + 0.8 * maxf(on, dark * 0.6))
+
+
+## Daylight estimate at the ship from the scene's main (shadowed) directional light.
+func _update_daylight(delta: float) -> void:
+	if not auto_lights:
+		return
+	_sun_scan_t -= delta
+	if (_sun == null or not is_instance_valid(_sun)) and _sun_scan_t <= 0.0:
+		_sun_scan_t = 1.0
+		_sun = null
+		var best := -1.0
+		for n in get_tree().root.find_children("*", "DirectionalLight3D", true, false):
+			var l := n as DirectionalLight3D
+			var score := l.light_energy + (10.0 if l.shadow_enabled else 0.0)
+			if score > best:
+				best = score
+				_sun = l
+	var day := 0.0
+	if _sun and _sun.is_visible_in_tree():
+		var c := _sun.light_color
+		var lum := (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b) * _sun.light_energy
+		var elev := _sun.global_basis.z.normalized().dot(global_basis.y.normalized())
+		day = lum * clampf(elev * 2.5 + 0.35, 0.0, 1.0)
+	var target := 1.0 - smoothstep(0.08, 0.4, day)
+	# airless bodies / space: shadowed sides are pitch black even in daylight -> keep the lights on
+	var env := get_viewport().find_world_3d().environment if get_viewport() else null
+	if env and env.ambient_light_source == Environment.AMBIENT_SOURCE_COLOR:
+		var a := env.ambient_light_color
+		var amb := (0.2126 * a.r + 0.7152 * a.g + 0.0722 * a.b) * env.ambient_light_energy
+		target = maxf(target, 1.0 - smoothstep(0.09, 0.2, amb))
+	var k := 1.0 if _capture else 1.0 - exp(-delta * 1.5)
+	if absf(target - _night) > 0.002:
+		_night = lerpf(_night, target, k)
+		_update_floods()
 
 
 # ------------------------------------------------------------------ nav lights
@@ -338,6 +396,7 @@ func _update_nav(t: float) -> void:
 
 func _process(delta: float) -> void:
 	_time += delta
+	_update_daylight(delta)
 	if not _nav.is_empty():
 		_update_nav(_time)
 	# separate meshes (bay doors, leg stages) follow the hull's FX overlay (re-entry heating, ShipFX)
