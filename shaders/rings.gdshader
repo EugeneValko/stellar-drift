@@ -53,7 +53,7 @@ void fragment() {
 	// back side: diffuse transmission + strong forward scattering of small particles
 	float mu = dot(-V, L);
 	float fwd = sd_hg(mu, 0.75) * 4.0 * SD_PI;
-	vec3 c_back = albedo * (exp(-tau) * (1.0 - exp(-tau)) * 2.2) * (0.4 + fwd * ring_forward_scatter * 0.6 * exp(-tau))
+	vec3 c_back = albedo * (exp(-tau) * (1.0 - exp(-tau)) * 2.2) * (0.3 + fwd * ring_forward_scatter * 0.35 * exp(-tau))
 		* mix(vec3(1.0), vec3(1.0, 0.92, 0.8), 0.5);
 	vec3 col = (lit_side > 0.0 ? c_front : c_back) * Esun * sh * ring_brightness;
 	// faint planetshine/ambient on the dark side
