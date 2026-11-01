@@ -790,7 +790,7 @@ func _update_exposure(cam: Camera3D, dt: float) -> void:
 			surf = lerpf(exposure_space, exposure_night_surface, 1.0 - smoothstep(-0.18, 0.06, sun_up))
 		target = lerpf(exposure_space, surf, inside)
 		if focus.atmo:
-			var day := smoothstep(-0.2, 0.03, sun_up)   # stars appear only after dusk
+			var day := smoothstep(-0.25, -0.02, sun_up)   # stars appear only after dusk
 			# the daylight sky stays bright up to ~half the shell (stars only near its top)
 			var dense := 1.0 - smoothstep(0.45 * h, 1.1 * h, alt)
 			sky = lerpf(1.0, sky_day_energy, day * dense)
