@@ -120,7 +120,7 @@ script = ExtResource("2_0eduy")
 layers = Array[ExtResource("1_ievri")]([SubResource("Resource_abrxa"), SubResource("Resource_y3syf"), SubResource("Resource_wtqmc"), SubResource("Resource_dpc10"), SubResource("Resource_ad8xg")])
 material_params = {
 "ice": {
-"color_body": Color(0.1, 0.3, 0.5, 1),
+"color_body": Color(0.3, 0.55, 0.75, 1),
 "color_glow": Color(0.35, 0.7, 1, 1),
 "color_rim": Color(0.78, 0.92, 1, 1),
 "glow_energy": 0.5

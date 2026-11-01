@@ -10,7 +10,7 @@ extends RefCounted
 const SLOTS := {
 	"bark": ["res://shaders/flora_bark.gdshader", {"style": 0}],
 	"bark_palm": ["res://shaders/flora_bark.gdshader", {"style": 1,
-		"color_a": Color(0.36, 0.28, 0.2), "color_b": Color(0.16, 0.12, 0.09), "moss_amount": 0.15}],
+		"color_a": Color(0.6, 0.52, 0.42), "color_b": Color(0.33, 0.27, 0.21), "moss_amount": 0.15}],
 	"needles": ["res://shaders/flora_leaves.gdshader", {"pattern": 0, "leaflets": 15.0, "slant": 0.9,
 		"duty": 0.42, "rachis": 0.03, "envelope_round": 0.0}],
 	"leaves": ["res://shaders/flora_leaves.gdshader", {"pattern": 1, "broad_leaves": 6}],
@@ -23,7 +23,7 @@ const SLOTS := {
 	"rock": ["res://shaders/rock_scatter.gdshader", {"style": 0}],
 	"basalt": ["res://shaders/rock_scatter.gdshader", {"style": 1, "roughness": 0.8}],
 	"crystal": ["res://shaders/crystal_scatter.gdshader", {"mode": 0}],
-	"ice": ["res://shaders/crystal_scatter.gdshader", {"mode": 1, "color_body": Color(0.16, 0.36, 0.55),
+	"ice": ["res://shaders/crystal_scatter.gdshader", {"mode": 1, "color_body": Color(0.3, 0.55, 0.75),
 		"color_rim": Color(0.75, 0.9, 1.0), "color_glow": Color(0.4, 0.75, 1.0), "glow_energy": 0.6,
 		"roughness": 0.06}],
 }

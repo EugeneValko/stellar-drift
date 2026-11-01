@@ -3,7 +3,7 @@ extends Node3D
 ##   meadow, forest_edge, hillside_view, rocky_slope, from_air      (Terra Nova)
 ##   ignis_basalt, glacia_ice, selene_boulders                      (other bodies)
 ##   lineup                                                         (every Terra asset in a row)
-## Args: --no_atmo, --no_scatter, --stats (print scatter stats), --site_seed=N (pick another site),
+## Args: --no_atmo, --no_scatter, --mu_<slot>__<param>=value (material override), --stats (print scatter stats), --site_seed=N (pick another site),
 ##       --sun_elev=deg, --sun_az=deg, --planet=<preset> (override the preset's planet)
 ##
 ## Floating-origin emulation as in planet_test: the camera stays at the origin, the planet is moved
@@ -220,6 +220,16 @@ func _ensure_planet(key: String) -> void:
 		scatter = PlanetScatter.new()
 		scatter.name = "Scatter"
 		planet.add_component(scatter)
+		# debug: --mu_<slot>__<param>=value overrides a scatter material parameter
+		for k: String in Capture.args:
+			if k.begins_with("mu_") and scatter.assets:
+				var parts := k.substr(3).split("__")
+				var m: ShaderMaterial = scatter.assets.materials.get(parts[0])
+				if m:
+					m.set_shader_parameter(parts[1], str_to_var(Capture.args[k]))
+					for vk in scatter.assets._variants:
+						if String(vk).begins_with(parts[0] + "|"):
+							scatter.assets._variants[vk].set_shader_parameter(parts[1], str_to_var(Capture.args[k]))
 	# environment: brighter test sky ambient per planet
 	match key:
 		"terra_nova":

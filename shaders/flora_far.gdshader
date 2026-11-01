@@ -6,12 +6,12 @@ render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_lambert_wrap, specu
 
 #include "res://shaders/include/flora_common.gdshaderinc"
 
-uniform vec3 color_a : source_color = vec3(0.06, 0.16, 0.11);
-uniform vec3 color_b : source_color = vec3(0.16, 0.32, 0.2);
-uniform vec3 color_dry : source_color = vec3(0.42, 0.3, 0.1);
+uniform vec3 color_a : source_color = vec3(0.16, 0.32, 0.26);
+uniform vec3 color_b : source_color = vec3(0.3, 0.5, 0.36);
+uniform vec3 color_dry : source_color = vec3(0.6, 0.5, 0.25);
 uniform float dry_amount = 0.0;
 uniform float variation = 0.35;
-uniform vec3 color_trunk : source_color = vec3(0.12, 0.09, 0.07);
+uniform vec3 color_trunk : source_color = vec3(0.3, 0.25, 0.2);
 uniform float brightness = 0.85;
 uniform float clump_scale = 1.6;
 uniform sampler2D tex_noise : repeat_enable, filter_linear_mipmap;
@@ -48,6 +48,7 @@ void fragment() {
 	float clump = smoothstep(0.3, 0.75, n);
 	vec3 c = mix(v_tint * 0.55, v_tint * 1.15, clump);
 	c = mix(color_trunk, c, v_fol);
+	c = max(c, vec3(0.0));
 	ALBEDO = c;
 	ROUGHNESS = 0.8;
 	SPECULAR = 0.2;

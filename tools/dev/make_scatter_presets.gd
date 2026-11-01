@@ -9,12 +9,12 @@ const ROCKS := "res://assets/models/rocks.glb"
 const CRYST := "res://assets/models/crystals.glb"
 
 # --- Terra Nova palette ---
-const NEEDLES := {"color_a": Color(0.045, 0.14, 0.1), "color_b": Color(0.13, 0.3, 0.2),
-	"color_dry": Color(0.28, 0.24, 0.1), "dry_amount": 0.15, "variation": 0.4}
-const LEAVES := {"color_a": Color(0.1, 0.19, 0.035), "color_b": Color(0.27, 0.34, 0.05),
-	"color_dry": Color(0.5, 0.22, 0.06), "dry_amount": 0.7, "variation": 0.45}
-const FRONDS := {"color_a": Color(0.08, 0.21, 0.04), "color_b": Color(0.2, 0.36, 0.07),
-	"color_dry": Color(0.42, 0.36, 0.12), "dry_amount": 0.35, "variation": 0.4}
+const NEEDLES := {"color_a": Color(0.16, 0.32, 0.26), "color_b": Color(0.3, 0.5, 0.36),
+	"color_dry": Color(0.52, 0.47, 0.25), "dry_amount": 0.15, "variation": 0.4}
+const LEAVES := {"color_a": Color(0.3, 0.44, 0.13), "color_b": Color(0.52, 0.6, 0.18),
+	"color_dry": Color(0.74, 0.45, 0.16), "dry_amount": 0.7, "variation": 0.45}
+const FRONDS := {"color_a": Color(0.26, 0.47, 0.13), "color_b": Color(0.46, 0.62, 0.2),
+	"color_dry": Color(0.62, 0.56, 0.3), "dry_amount": 0.35, "variation": 0.4}
 
 
 func _init() -> void:
@@ -53,9 +53,9 @@ func _terra() -> ScatterRuleSet:
 		"needles": NEEDLES.merged({"translucency": 0.6, "sway_amp": 0.012, "flutter_amp": 0.05}),
 		"leaves": LEAVES.merged({"translucency": 0.6, "sway_amp": 0.016, "flutter_amp": 0.06}),
 		"frond": FRONDS.merged({"translucency": 0.6, "sway_amp": 0.02, "flutter_amp": 0.07}),
-		"bark": {"color_a": Color(0.25, 0.19, 0.15), "color_b": Color(0.08, 0.06, 0.05), "sway_amp": 0.012},
+		"bark": {"color_a": Color(0.5, 0.42, 0.35), "color_b": Color(0.22, 0.18, 0.15), "sway_amp": 0.012},
 		"bark_palm": {"sway_amp": 0.02},
-		"rock": {"color_cover": Color(0.11, 0.19, 0.05), "cover_amount": 0.55, "snow_amount": 1.0},
+		"rock": {"color_cover": Color(0.3, 0.4, 0.14), "cover_amount": 0.55, "snow_amount": 1.0},
 		"glow": {"glow_color": Color(0.25, 0.95, 0.8), "glow_energy": 0.5},
 	}
 	var trees_common := {"model": FLORA, "cell_size": 128.0, "far_factor": 8, "far_start": 700.0,
@@ -98,8 +98,8 @@ func _terra() -> ScatterRuleSet:
 			"cluster_scale": 70.0, "cluster_threshold": -0.1, "cluster_soft": 0.4,
 			"scale_range": Vector2(0.6, 1.5), "sink": 0.12, "align_to_normal": 0.3, "sway_height": 1.5,
 			"shadow_distance": 90.0,
-			"material_overrides": {"leaves": {"color_a": Color(0.09, 0.17, 0.045),
-				"color_b": Color(0.3, 0.12, 0.17), "variation": 0.55, "dry_amount": 0.3}}}),
+			"material_overrides": {"leaves": {"color_a": Color(0.27, 0.4, 0.15),
+				"color_b": Color(0.52, 0.3, 0.38), "variation": 0.55, "dry_amount": 0.3}}}),
 		L({"name": "bush_quill", "model": FLORA, "seed": 57, "cell_size": 96.0, "max_distance": 300.0,
 			"fade_length": 40.0, "density": 0.012, "grid_res": 8, "exact_height": true,
 			"meshes": PackedStringArray(["bush_quill_lod0"]),
@@ -108,7 +108,7 @@ func _terra() -> ScatterRuleSet:
 				"snow": Vector3(-1.0, 0.2, 0.2), "beach": Vector3(-1.0, 0.3, 0.2)},
 			"cluster_scale": 50.0, "cluster_threshold": 0.0, "scale_range": Vector2(0.7, 1.4),
 			"sink": 0.05, "align_to_normal": 0.4, "sway_height": 1.2, "shadow_distance": 70.0,
-			"material_overrides": {"frond": {"color_a": Color(0.16, 0.24, 0.07), "color_b": Color(0.36, 0.38, 0.12),
+			"material_overrides": {"frond": {"color_a": Color(0.4, 0.5, 0.22), "color_b": Color(0.62, 0.62, 0.3),
 				"leaflets": 9.0, "duty": 0.7, "slant": 2.4}}}),
 		L({"name": "fern", "model": FLORA, "seed": 59, "cell_size": 48.0, "max_distance": 160.0,
 			"fade_length": 30.0, "density": 0.09, "grid_res": 6,
@@ -201,7 +201,7 @@ func _volcanic(vex: bool) -> ScatterRuleSet:
 	rs.material_params = {
 		"rock": {"style": 2, "color_cover": Color(0.5, 0.42, 0.2) if vex else Color(0.42, 0.22, 0.12),
 			"cover_amount": 0.5, "snow_amount": 0.0, "emission_color": glow, "emission_energy": 0.0},
-		"basalt": {"color_a": Color(0.12, 0.1, 0.1), "color_b": Color(0.05, 0.045, 0.045), "cover_amount": 0.35,
+		"basalt": {"color_a": Color(0.24, 0.21, 0.2), "color_b": Color(0.11, 0.1, 0.1), "cover_amount": 0.35,
 			"color_cover": Color(0.4, 0.3, 0.12) if vex else Color(0.35, 0.18, 0.1), "snow_amount": 0.0},
 		"crystal": {"color_body": Color(0.35, 0.25, 0.04) if vex else Color(0.3, 0.04, 0.06),
 			"color_glow": glow, "color_rim": Color(1.0, 0.95, 0.6) if vex else Color(1.0, 0.6, 0.35),
@@ -264,7 +264,7 @@ func _glacia() -> ScatterRuleSet:
 	rs.max_altitude = 3000.0
 	rs.material_params = {
 		"rock": {"color_cover": Color(0.85, 0.9, 0.97), "cover_amount": 0.0, "snow_amount": 1.4},
-		"ice": {"color_body": Color(0.1, 0.3, 0.5), "color_rim": Color(0.78, 0.92, 1.0),
+		"ice": {"color_body": Color(0.3, 0.55, 0.75), "color_rim": Color(0.78, 0.92, 1.0),
 			"color_glow": Color(0.35, 0.7, 1.0), "glow_energy": 0.5},
 	}
 	rs.layers = [

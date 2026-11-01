@@ -16,15 +16,16 @@ uniform float rachis = 0.035;       // central stem half width (0..1 of half car
 uniform float envelope_round = 1.0; // 0 = pointed spray, 1 = rounded frond
 uniform int broad_leaves = 6;
 
-uniform vec3 color_a : source_color = vec3(0.06, 0.16, 0.11);   // mature
-uniform vec3 color_b : source_color = vec3(0.16, 0.32, 0.2);    // young tips / lighter instances
-uniform vec3 color_dry : source_color = vec3(0.42, 0.3, 0.1);   // dry / autumn instances
+uniform vec3 color_a : source_color = vec3(0.16, 0.32, 0.26);   // mature
+uniform vec3 color_b : source_color = vec3(0.3, 0.5, 0.36);    // young tips / lighter instances
+uniform vec3 color_dry : source_color = vec3(0.6, 0.5, 0.25);   // dry / autumn instances
 uniform float dry_amount = 0.0;          // global push toward color_dry by (1 - moisture)
 uniform float variation = 0.35;
 uniform float translucency = 0.55;
 uniform float sway_amp = 0.02;            // tip sway, fraction of the plant height
 uniform float flutter_amp = 0.05;
 uniform float roughness = 0.62;
+uniform int debug_mode = 0;   // 1 = no backlight, 2 = no specular, 3 = albedo only
 
 varying float v_fade;
 varying vec3 v_tint;
@@ -71,7 +72,7 @@ float pinnate(vec2 uv, out float vein) {
 	float w = duty * (1.0 - pow(clamp(ax / max(envi, 1e-3), 0.0, 1.0), 2.0)) + aa;
 	float leaf = step(abs(f - 0.5) * 2.0, w) * step(ax, envi);
 	float stem = step(ax, rachis * (1.0 - t * 0.6) + fwidth(x) * 0.5) * step(t, 0.99);
-	vein = 1.0 - ax / max(envi, 1e-3);
+	vein = clamp(1.0 - ax / max(envi, 1e-3), 0.0, 1.0);
 	return max(leaf, stem);
 }
 
@@ -95,7 +96,7 @@ float broad(vec2 uv, out float vein, out float lid) {
 		float wid = len * 0.24 * sin(3.14159 * clamp(t, 0.0, 1.0)) * (1.0 - 0.35 * t);
 		float inside = step(0.0, t) * step(t, 1.0) * step(abs(across), wid + aa);
 		if (inside > 0.5 && a < 0.5) {
-			vein = 1.0 - abs(across) / max(wid, 1e-3);
+			vein = clamp(1.0 - abs(across) / max(wid, 1e-3), 0.0, 1.0);
 			lid = h;
 		}
 		a = max(a, inside);
@@ -120,10 +121,22 @@ void fragment() {
 	vec3 c = v_tint * mix(0.8, 1.12, vein);
 	c *= 0.9 + 0.2 * lid;
 	c = mix(c, c * vec3(1.15, 1.2, 0.9), v_tip * 0.35);
+	c = max(c, vec3(0.0));
 	ALBEDO = c;
 	ROUGHNESS = roughness;
 	SPECULAR = 0.22;
 	AO = v_ao;
 	AO_LIGHT_AFFECT = 0.55;
 	BACKLIGHT = c * translucency * (0.5 + 0.5 * v_ao);
+	if (debug_mode == 1) {
+		BACKLIGHT = vec3(0.0);
+	} else if (debug_mode == 2) {
+		SPECULAR = 0.0;
+		ROUGHNESS = 1.0;
+	} else if (debug_mode == 3) {
+		BACKLIGHT = vec3(0.0);
+		SPECULAR = 0.0;
+		ALBEDO = vec3(0.0);
+		EMISSION = c;
+	}
 }

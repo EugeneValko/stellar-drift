@@ -84,6 +84,7 @@ void fragment() {
 		c = mix(glow_color * 0.4, vec3(0.9, 1.0, 0.95), v_g * 0.2);
 		emit = glow_color * glow_energy * (0.35 + 0.65 * v_g);
 	}
+	c = max(c, vec3(0.0));
 	ALBEDO = c;
 	ROUGHNESS = mode == 2 ? 0.35 : 0.7;
 	SPECULAR = 0.25;

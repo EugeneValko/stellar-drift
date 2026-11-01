@@ -10,7 +10,7 @@ render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_sc
 uniform int style = 0;                // 0 = rock, 1 = basalt columns (joints), 2 = porous volcanic
 uniform vec3 color_a : source_color = vec3(0.4, 0.36, 0.32);
 uniform vec3 color_b : source_color = vec3(0.25, 0.23, 0.22);
-uniform vec3 color_cover : source_color = vec3(0.16, 0.24, 0.07);   // moss / dust
+uniform vec3 color_cover : source_color = vec3(0.3, 0.4, 0.14);   // moss / dust
 uniform vec3 color_snow : source_color = vec3(0.93, 0.95, 1.0);
 uniform float cover_amount = 0.5;     // moss/dust strength (scaled by instance moisture)
 uniform float snow_amount = 1.0;      // snow strength (scaled by instance snow)
@@ -113,6 +113,7 @@ void fragment() {
 		float crack = smoothstep(0.62, 0.92, 1.0 - v_ao) * smoothstep(0.12, 0.02, n1.g + n0.g * 0.2);
 		emit = emission_color * crack * emission_energy;
 	}
+	c = max(c, vec3(0.0));
 	ALBEDO = c;
 	ROUGHNESS = rough;
 	SPECULAR = mix(0.3, 0.5, snow);

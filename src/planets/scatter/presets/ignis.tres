@@ -190,8 +190,8 @@ script = ExtResource("2_uqnqs")
 layers = Array[ExtResource("1_2wtxj")]([SubResource("Resource_dvewm"), SubResource("Resource_7u5vf"), SubResource("Resource_y76vd"), SubResource("Resource_cuciy"), SubResource("Resource_n2irh"), SubResource("Resource_uqwg3"), SubResource("Resource_7yrq1")])
 material_params = {
 "basalt": {
-"color_a": Color(0.12, 0.1, 0.1, 1),
-"color_b": Color(0.05, 0.045, 0.045, 1),
+"color_a": Color(0.24, 0.21, 0.2, 1),
+"color_b": Color(0.11, 0.1, 0.1, 1),
 "color_cover": Color(0.35, 0.18, 0.1, 1),
 "cover_amount": 0.35,
 "snow_amount": 0.0

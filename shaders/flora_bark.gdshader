@@ -7,9 +7,9 @@ render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_sc
 #include "res://shaders/include/flora_common.gdshaderinc"
 
 uniform int style = 0;
-uniform vec3 color_a : source_color = vec3(0.22, 0.17, 0.13);
-uniform vec3 color_b : source_color = vec3(0.09, 0.07, 0.06);
-uniform vec3 color_moss : source_color = vec3(0.12, 0.2, 0.06);
+uniform vec3 color_a : source_color = vec3(0.5, 0.42, 0.35);
+uniform vec3 color_b : source_color = vec3(0.22, 0.18, 0.15);
+uniform vec3 color_moss : source_color = vec3(0.3, 0.42, 0.15);
 uniform float moss_amount = 0.3;
 uniform float sway_amp = 0.02;
 uniform sampler2D tex_noise : repeat_enable, filter_linear_mipmap;
@@ -61,6 +61,7 @@ void fragment() {
 		bump = ridge;
 	}
 	c = mix(c, color_moss, clamp(v_moss * 2.0, 0.0, 1.0));
+	c = max(c, vec3(0.0));
 	ALBEDO = c;
 	ROUGHNESS = rough;
 	SPECULAR = 0.25;
