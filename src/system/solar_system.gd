@@ -100,6 +100,9 @@ const PRESET_DIR := "res://src/planets/presets/"
 @export var sky_day_energy := 0.0005
 ## Stars near a sunlit planet seen from space (glare of the bright disc; 1 = no dimming).
 @export var sky_dayside_energy := 0.45
+## Share of the exposure boost (night / twilight on the ground) taken back on the star field
+## (0 = stars get the full boost, 1 = stars look exactly as in space).
+@export var sky_exposure_compensation := 0.6
 ## Exposure adaptation speed (1/s); capture snaps instantly.
 @export var adapt_speed := 1.5
 
@@ -797,6 +800,9 @@ func _update_exposure(cam: Camera3D, dt: float) -> void:
 		# glare of a sunlit planet filling the view from orbit: fewer, fainter stars
 		var lit := smoothstep(-0.05, 0.35, sun_up) * (1.0 - smoothstep(focus.radius * 1.5, focus.radius * 5.0, alt))
 		sky = minf(sky, lerpf(1.0, sky_dayside_energy, lit))
+		# the night-side exposure boost (ground readable) should not blow the stars out: keep part
+		# of the boost for the Milky Way, compensate the rest on the sky
+		sky *= pow(exposure_space / maxf(target, 1e-3), sky_exposure_compensation)
 	if not auto_exposure:
 		target = exposure_space
 	var a := 1.0 if _snap or Capture.active else 1.0 - exp(-dt * adapt_speed)

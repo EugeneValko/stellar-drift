@@ -43,6 +43,7 @@ const PRESETS := {
 		"multi_scatter": 0.0, "ms_strength": 1.4, "ms_lift_deg": 4.5, "sun_path_scale": 2.6,
 		"twilight_tint": Vector3(1.25, 0.9, 0.95), "twilight_tint_mie": Vector3(1.8, 0.85, 0.3),
 		"emission": Vector3(0.45e-6, 1.0e-6, 0.8e-6),   # faint teal airglow band at night
+		"night_light": Vector3(0.018, 0.024, 0.042),    # starlight + airglow + giant-shine (ambient)
 	},
 	# thin dusty orange-red (Mars-like: dust absorbs blue); wave 4: Mars-like BLUE glow around a
 	# low sun (fine dust forward-scatters blue), red volcanic glow of the lower haze at night
@@ -149,6 +150,7 @@ static func make_uniforms(p: Dictionary) -> Dictionary:
 		"atmo_sky_gain": float(p.get("sky_gain", 1.0)),
 		"atmo_halo": float(p.get("halo", 0.0)),
 		"atmo_emission": LayerParams.col3(p.get("emission", Vector3.ZERO)),
+		"atmo_night_light": LayerParams.col3(p.get("night_light", Vector3.ZERO)),
 	}
 
 

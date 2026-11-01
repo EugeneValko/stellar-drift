@@ -48,6 +48,9 @@ uniform float atmo_sky_gain = 1.0;
 // density per metre; visible mostly at night)
 uniform float atmo_halo = 0.0;
 uniform vec3 atmo_emission = vec3(0.0);
+// night-side sky light for the ambient of terrain / clouds (starlight, airglow, planetshine):
+// irradiance-like radiance added to atmo_sky_ambient() when the sun is below the horizon
+uniform vec3 atmo_night_light = vec3(0.0);
 group_uniforms;
 
 float atmo_ozone_h() {
@@ -294,7 +297,8 @@ vec3 atmo_sky_ambient(vec3 p) {
 	vec3 sh = sd_sun_dir() - up * dot(sd_sun_dir(), up);
 	vec3 side = normalize(cross(up, sh + vec3(1e-4, 2e-4, 0.0)));
 	vec3 hor = atmo_scatter(p, normalize(up * 0.3 + side + normalize(sh + vec3(1e-4)) * 0.35), 1e30, 4, 0.5, T);
-	return (zen + hor) * 0.5 * SD_PI;
+	float night = 1.0 - smoothstep(-0.25, 0.0, dot(up, sd_sun_dir()));
+	return (zen + hor) * 0.5 * SD_PI + atmo_night_light * night;
 }
 
 #endif
