@@ -35,7 +35,7 @@
 Корабль и персонаж используют локальную «вертикаль» = от центра тела. Можно сесть на любую сторону.
 
 ## Планеты
-- **Cube-sphere quadtree LOD**: 6 граней, каждая — квадродерево чанков (сетка ~33×33), разбиение по расстоянию.
+- **Cube-sphere quadtree LOD**: 6 граней, каждая — квадродерево чанков (65×65 + морфинг рёбер + юбки), разбиение по расстоянию.
   Генерация мешей в `WorkerThreadPool`. Высоты — `FastNoiseLite` (континенты + ridged-горы + domain warp + эрозия-подобные маски).
 - Коллизия — только для ближайших чанков (`ConcavePolygonShape3D`).
 - Материал — шейдер: триплан. текстуры по уклону/высоте/широте, детальные нормали, биомы.
@@ -63,3 +63,14 @@ shaders/      все .gdshader
 scenes/       main.tscn и тестовые сцены scenes/test/
 tools/        скрипты окружения, скриншотов, сборки, Blender
 ```
+
+## Контракт Universe (autoload `src/core/universe.gd`)
+- Всё «плавающее» (тела, корабль, игрок, эффекты) — дети `world_root` (`Universe.set_world_root(node)` из главной сцены).
+- Тела — группа `celestial_body`, методы: `get_body_name()`, `get_body_radius()`, `get_soi_radius()`,
+  `get_surface_gravity()`, `get_atmosphere_height()`, `get_altitude_global(world_pos)`. Planet уже реализует.
+- API: `get_dominant_body(pos)`, `get_nearest_body(pos)`, `get_gravity(pos)`, `get_up(pos)`, `get_atmosphere_density(pos)`.
+- Floating origin: `Universe.set_focus(ship_or_player)`; при удалении > 2 км все дети `world_root` сдвигаются,
+  сигнал `origin_shifted(delta)`. Истинная позиция = локальная + `origin_x/y/z` (64-bit).
+- Камера: **far/near ≤ 1e7** (см. DECISIONS). Дальние тела — scaled space.
+- Порядок прозрачных слоёв планет: `render_priority` (океан −10, атмосфера −9/−8, облака −7, кольца −6);
+  при перекрытии планет менеджер системы сдвигает `render_priority_base` по дальности.

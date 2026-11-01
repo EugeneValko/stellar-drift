@@ -25,6 +25,10 @@ signal terrain_ready
 ## `set_focus()` itself, e.g. focus = ship position).
 @export var auto_focus_camera := true
 @export var build_on_ready := true
+## Surface gravity, m/s^2 (gameplay-tuned, not physical).
+@export var surface_gravity := 9.81
+## Sphere of influence = radius * soi_factor.
+@export var soi_factor := 8.0
 
 var terrain: PlanetTerrain
 var terrain_material: ShaderMaterial
@@ -34,6 +38,7 @@ const TERRAIN_SHADER := preload("res://shaders/planet_terrain.gdshader")
 
 
 func _ready() -> void:
+	add_to_group("celestial_body")
 	components = get_node_or_null("Components") as Node3D
 	if components == null:
 		components = Node3D.new()
@@ -135,3 +140,25 @@ static func create_terrain_material(cfg: PlanetConfig) -> ShaderMaterial:
 	m.set_shader_parameter("tex_normal", tex["normal"])
 	m.set_shader_parameter("tex_rock", tex["rock"])
 	return m
+
+
+# --- Celestial body interface for Universe (see src/core/universe.gd) ---
+
+func get_body_name() -> String:
+	return config.planet_name
+
+
+func get_body_radius() -> float:
+	return config.radius
+
+
+func get_soi_radius() -> float:
+	return config.radius * soi_factor
+
+
+func get_surface_gravity() -> float:
+	return surface_gravity
+
+
+func get_atmosphere_height() -> float:
+	return config.atmosphere_height if config.has_atmosphere else 0.0
