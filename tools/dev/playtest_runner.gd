@@ -484,6 +484,7 @@ func _soak() -> void:
 	var prev_v := ship.vel
 	var modes_seen := {}
 	var max_alt := 0.0
+	var min_hull := INF
 	while t < soak_sec:
 		if t >= next:
 			next = t + rng.randf_range(1.0, 3.5)
@@ -524,8 +525,15 @@ func _soak() -> void:
 			worst_jump = maxf(worst_jump, err)
 		if ship.global_position.length() > 3000.0:
 			far += 1
-		if ship.body and ship.body is Planet and ship.altitude < -1.5:
-			under += 1
+		if ship.body and ship.body is Planet:
+			# hull below the ground: the centre or any hull probe deeper than the clamp allows
+			# (`altitude` is pad-based and goes negative when the ship lies on its side/back)
+			var worst := ship._ground_alt(ship.body, ship.global_position)
+			for hp in Ship.HULL_PROBES:
+				worst = minf(worst, ship._ground_alt(ship.body, ship.global_transform * hp))
+			min_hull = minf(min_hull, worst)
+			if worst < -1.0:
+				under += 1
 		max_alt = maxf(max_alt, ship.altitude)
 		prev = p
 		prev_v = v
@@ -533,5 +541,5 @@ func _soak() -> void:
 	_clear_inputs()
 	ship.full_stop()
 	_result("soak_%ds" % int(soak_sec), nan == 0 and jumps == 0 and under == 0 and far == 0,
-		"NaN %d, teleports %d (worst %.1f m), below terrain %d, off-origin %d frames, modes seen %s, max alt %.0f m" % [
-		nan, jumps, worst_jump, under, far, str(modes_seen.keys()), max_alt])
+		"NaN %d, teleports %d (worst %.1f m), hull below terrain %d frames (deepest probe %.2f m), off-origin %d frames, modes seen %s, max alt %.0f m" % [
+		nan, jumps, worst_jump, under, min_hull, far, str(modes_seen.keys()), max_alt])

@@ -727,7 +727,9 @@ func _start_session(then_preset: String) -> void:
 	if then_preset != "" and then_preset != "start":
 		await _game_preset(then_preset)
 	session_started.emit()
-	if not Capture.active:
+	if Capture.active:
+		hud.fade_to(0.0, 0.0)
+	else:
 		await get_tree().process_frame
 		hud.fade_to(0.0, 0.8)
 
@@ -771,6 +773,7 @@ func _ship_at(r: SolarSystem.BodyRec, off: Vector3, b: Basis, v := Vector3.ZERO,
 	ship.landed = false
 	ship.autopilot = false
 	ship.throttle = 0.0
+	ship.gear_contacts = 0
 	ship.teleport(Transform3D(b.orthonormalized(), Vector3.ZERO), v, ship.capture_hold)
 	if mode == Ship.Mode.WARP:
 		ship.mode = Ship.Mode.WARP
@@ -800,8 +803,8 @@ func _slope(r: SolarSystem.BodyRec, n: Vector3, e: float) -> float:
 	return s
 
 
-## Start site: daylight (sun ~30 deg, from the side), Selene ~12 deg up ahead of the ship's nose,
-## a gentle open meadow 10-300 m above the sea, mountains in the view, the sea nearby.
+## Start site: daylight (sun ~30 deg, behind-side so the ship and the view are lit), a gentle open
+## meadow 8-260 m above the sea, mountains and the coast in the view, Selene in the sky if possible.
 func _choose_start_site(t: SolarSystem.BodyRec) -> void:
 	var s := system.sun_dir_from("Terra Nova")
 	var ds := _dir_to("Terra Nova", "Selene")
@@ -809,51 +812,70 @@ func _choose_start_site(t: SolarSystem.BodyRec) -> void:
 	var biome: ScatterBiome = t.scatter.biome if t.scatter else null
 	var best := -INF
 	var best_n := Vector3.ZERO
+	var best_f := Vector3.ZERO
+	var best_info := ""
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 20261101
-	for e1: float in [27.0, 31.0]:
-		for e2: float in [9.0, 13.0]:
-			for n0: Vector3 in _two_elev(s, ds, e1, e2):
-				for j in 70:
-					var nn := n0
-					if j > 0:
-						nn = (n0 + Vector3(rng.randf_range(-1, 1), rng.randf_range(-1, 1), rng.randf_range(-1, 1)) * 0.06).normalized()
-					var h := _h(t, nn) - base
-					if h < 10.0 or h > 320.0:
-						continue
-					var sl := _slope(t, nn, 12.0)
-					if sl > 0.12:
-						continue
-					var f := _horizon_dir(nn, ds)
-					var tt := nn.cross(f)
-					# mountains in the view (ahead / to the sides), not a wall right in front
-					var m := maxf(_max_ahead(t, nn, f, 14000.0, 7), maxf(_max_ahead(t, nn, (f + tt * 0.6).normalized(), 12000.0, 6),
-						_max_ahead(t, nn, (f - tt * 0.6).normalized(), 12000.0, 6))) - h
-					var near_wall := _max_ahead(t, nn, f, 1500.0, 5) - h
-					# sea nearby (coast): fraction of points 0.8-5 km around below sea level
-					var sea := 0.0
-					for k in 12:
-						var a := TAU * float(k) / 12.0
-						for dist: float in [800.0, 2500.0, 5000.0]:
-							var d := (nn * t.radius + (f * cos(a) + tt * sin(a)) * dist).normalized()
-							if _h(t, d) < base:
-								sea += 1.0 / 36.0
-					var score := clampf(m, 0.0, 1800.0) * 0.0015 - maxf(near_wall - 120.0, 0.0) * 0.01 \
-						+ (1.0 - absf(sea - 0.3) * 2.0) * 1.2 - sl * 8.0 - _sun_blocked(t, nn, s, e1) * 2.0
-					if biome:
-						var bio := biome.evaluate(nn)
-						score -= float(bio["forest"]) * 2.5 + float(bio["rock"]) * 1.5 + float(bio["snow"]) * 3.0 \
-							+ float(bio["beach"]) * 1.0 + float(bio["desert"]) * 0.8
-					if score > best:
-						best = score
-						best_n = nn
+	var a := (Vector3.UP if absf(s.y) < 0.9 else Vector3.RIGHT).cross(s).normalized()
+	var b := s.cross(a)
+	for i in 1400:
+		var e := sin(deg_to_rad(rng.randf_range(28.5, 31.5)))
+		var az := rng.randf() * TAU
+		var nn := (s * e + (a * cos(az) + b * sin(az)) * sqrt(1.0 - e * e)).normalized()
+		if absf(nn.y) > 0.6:
+			continue   # polar ice caps
+		var h := _h(t, nn) - base
+		if h < 8.0 or h > 260.0:
+			continue
+		var sl := _slope(t, nn, 12.0)
+		if sl > 0.1:
+			continue
+		var bio_pen := 0.0
+		if biome:
+			var bio := biome.evaluate(nn)
+			bio_pen = float(bio["forest"]) * 2.5 + float(bio["rock"]) * 1.5 + float(bio["snow"]) * 3.0 \
+				+ float(bio["beach"]) * 1.0 + float(bio["desert"]) * 0.8
+			if bio_pen > 1.2:
+				continue
+		var shade := _sun_blocked(t, nn, s, 30.0)
+		if shade > 0.0:
+			continue
+		var sun_h := _horizon_dir(nn, s)
+		var sel_h := _horizon_dir(nn, ds)
+		var sel_el := rad_to_deg(asin(clampf(nn.dot(ds), -1.0, 1.0)))
+		for rel: float in [-145.0, -125.0, -105.0, 105.0, 125.0, 145.0]:
+			var f := sun_h.rotated(nn, deg_to_rad(rel))
+			var tt := nn.cross(f)
+			var m := -INF
+			for lat: float in [-0.4, 0.0, 0.4]:
+				m = maxf(m, _max_ahead(t, nn, (f + tt * lat).normalized(), 16000.0, 6))
+			m -= h
+			var near_wall := _max_ahead(t, nn, f, 2000.0, 4) - h
+			var sea := 0.0
+			for dist: float in [1500.0, 3500.0, 6500.0]:
+				for lat: float in [-0.55, 0.0, 0.55]:
+					var d := (nn * t.radius + (f + tt * lat).normalized() * dist).normalized()
+					if _h(t, d) < base:
+						sea += 1.0 / 9.0
+			var coast := 1.0 - absf(sea - 0.35) * 2.2
+			var sel := 0.0
+			if sel_el > 4.0 and sel_el < 26.0:
+				sel = clampf(1.0 - rad_to_deg(f.angle_to(sel_h)) / 30.0, 0.0, 1.0)
+			var score := clampf(m, 0.0, 2200.0) * 0.0012 + coast * 1.5 + sel * 2.0 \
+				- maxf(near_wall - 150.0, 0.0) * 0.01 - sl * 8.0 - bio_pen
+			if score > best:
+				best = score
+				best_n = nn
+				best_f = f
+				best_info = "mountains %.0f m, sea %.2f, Selene %.1f deg up / %.0f deg off-axis, sun %.0f deg to the side" % [
+					m, sea, sel_el, rad_to_deg(f.angle_to(sel_h)), rel]
 	if best_n == Vector3.ZERO:
 		best_n = _two_elev(s, ds, 30.0, 12.0)[0]
+		best_f = _horizon_dir(best_n, ds)
 	start_site = best_n
-	start_heading = _horizon_dir(best_n, ds)
-	var up_sun := rad_to_deg(asin(best_n.dot(s)))
-	print("[main]   start: sun %.1f deg, Selene %.1f deg, height %.0f m, slope %.3f, score %.2f" % [up_sun,
-		rad_to_deg(asin(best_n.dot(ds))), _h(t, best_n) - base, _slope(t, best_n, 12.0), best])
+	start_heading = best_f
+	print("[main]   start: sun %.1f deg, height %.0f m, slope %.3f, score %.2f: %s" % [
+		rad_to_deg(asin(best_n.dot(s))), _h(t, best_n) - base, _slope(t, best_n, 12.0), best, best_info])
 
 
 func _clear_start_weather() -> void:
@@ -862,8 +884,10 @@ func _clear_start_weather() -> void:
 		if t.clouds == null or t.clouds.weather_at(Vector3.UP).x >= 0.0:
 			break
 		await get_tree().process_frame
-	_clear_weather(t, start_site, [system.sun_dir_from("Terra Nova"), _dir_to("Terra Nova", "Selene"), start_site],
-		[3.0, 3.0, 1.5])
+	var tt := start_site.cross(start_heading)
+	_clear_weather(t, start_site, [system.sun_dir_from("Terra Nova"), _dir_to("Terra Nova", "Selene"),
+		(start_heading + start_site * 0.25).normalized(), (start_heading + tt * 0.5 + start_site * 0.3).normalized(),
+		(start_heading - tt * 0.5 + start_site * 0.3).normalized(), start_site], [2.0, 1.5, 3.0, 1.5, 1.5, 1.0])
 
 
 ## Gameplay capture presets (real Ship / Player through GameMode; ship frozen for stills).
@@ -886,8 +910,12 @@ func _game_preset(preset: String) -> void:
 	match preset:
 		"start":
 			_place_start()
+			await _clear_start_weather()
 			if Capture.args.has("hud"):
 				help.show_hint(30.0)
+				help._hint.modulate.a = 1.0   # skip the fade-in for the still
+			if Capture.args.has("cockpit"):
+				rig.set_view(ShipCameraRig.View.COCKPIT)
 		"takeoff":
 			_place_start()
 			var b := ship.global_basis
@@ -904,10 +932,11 @@ func _game_preset(preset: String) -> void:
 				return -absf(nn.y) - _cloud_cov(t, nn, nn) * 0.5)
 			var fwd := _horizon_dir(n, s.cross(n))
 			var off := n * (t.radius + 70000.0)
-			var b := _nose_basis(fwd.rotated(n.cross(fwd).normalized(), deg_to_rad(-4.0)), n)
+			# the limb is ~62 deg below the horizontal at 70 km: nose (and the chase view) pitched down
+			var b := _nose_basis(fwd.rotated(fwd.cross(n).normalized(), deg_to_rad(-44.0)), n)
 			_ship_at(t, off, b, -b.z * 2400.0, Ship.Mode.SPACE)
 			fx.force_thrust = 0.5
-			rig.view_override = _rig_cam.bind(Vector3(9.0, 6.0, 24.0), Vector3(0.0, -4.0, -16.0))
+			rig.view_override = _rig_cam.bind(Vector3(9.0, 7.0, 25.0), Vector3(0.0, -6.0, -20.0))
 		"selene_landed_onfoot":
 			_selene_onfoot()
 		"warp_to_aurelion":
@@ -933,13 +962,17 @@ func _game_preset(preset: String) -> void:
 			_ship_at(a, off, b, -b.z * 300.0, Ship.Mode.SPACE)
 			ship.target = a.node
 			rig.view_override = _rig_cam.bind(Vector3(-10.0, 5.0, 26.0), Vector3(0.0, -2.0, -30.0))
-	_sync_ship_camera()
 	if game.state == GameMode.State.ON_FOOT:
+		game.player.get_camera().make_current()
 		system.camera = game.player.get_camera()
+	else:
+		_sync_ship_camera()
 	system.gameplay_body = game.get_gameplay_body()
 	system.build_terrain_now(system.camera)
-	print("[main] game preset %s: state %s, body %s, alt %.0f m, speed %.0f m/s" % [preset, game.get_state_name(),
-		ship.body.get_body_name() if ship.body else "-", ship.altitude, ship.vel.length()])
+	system.process_frame(system.camera)
+	print("[main] game preset %s: state %s, body %s, alt %.0f m, speed %.0f m/s, light tint %s, ambient %s" % [preset,
+		game.get_state_name(), ship.body.get_body_name() if ship.body else "-", ship.altitude, ship.vel.length(),
+		str(system.light_tint), str(system.ambient_color)])
 
 
 ## Chase camera at a fixed ship-local offset looking at a ship-local point (still framing).

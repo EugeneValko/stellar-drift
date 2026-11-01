@@ -74,7 +74,7 @@ const PRESET_DIR := "res://src/planets/presets/"
 ## (radiance of the atmosphere model, refreshed every `ambient_interval` s).
 @export var ambient_space := Color(0.013, 0.0145, 0.019)
 @export var ambient_night := Color(0.025, 0.032, 0.055)
-@export var ambient_sky_scale := 0.9
+@export var ambient_sky_scale := 1.15
 ## Sunlit ground bounce near a surface (albedo-ish factor on the sun irradiance).
 @export var ambient_ground_bounce := 0.07
 @export var ambient_interval := 0.12
@@ -410,12 +410,20 @@ func set_quality(q: int) -> void:
 ## Synchronous terrain build of every planet for the current camera (capture/loading).
 func build_terrain_now(cam: Camera3D = null) -> void:
 	process_frame(cam)
+	var t0 := Time.get_ticks_msec()
+	var t_focus := 0
 	for r in bodies:
 		if r.planet:
+			var tb := Time.get_ticks_msec()
 			r.planet.terrain.build_until_stable(60.0 if r == focus else 20.0)
+			if r == focus:
+				t_focus = Time.get_ticks_msec() - tb
+	var t1 := Time.get_ticks_msec()
 	_update_scatter()
 	if focus and focus.scatter:
 		focus.scatter.build_until_stable(60.0)
+	print("[system] synchronous build: terrain %d ms (focus %s %d ms), vegetation %d ms" % [t1 - t0,
+		focus.name if focus else "-", t_focus, Time.get_ticks_msec() - t1])
 	_snap = true
 
 
