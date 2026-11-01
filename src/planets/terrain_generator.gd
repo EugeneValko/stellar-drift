@@ -9,7 +9,8 @@ extends RefCounted
 ## Vertex layout produced by build_chunk() (consumed by shaders/planet_terrain.gdshader):
 ##   VERTEX   position relative to the chunk origin (planet-local orientation)
 ##   NORMAL   smooth normal (computed from a 1-sample apron, so it is continuous across chunks)
-##   COLOR    r = rock exposure, g = lava mask, b = crater ejecta, a = curvature (0.5 = flat)
+##   COLOR    r = rock exposure, g = lava mask (river / water mask on planets without lava),
+##            b = crater ejecta + bright rays, a = curvature (0.5 = flat)
 ##   CUSTOM0  xyz = detail coords (planet-local position mod DETAIL_PERIOD, continuous inside
 ##            a chunk and periodic across chunks), w = height above radius (m)
 ##   CUSTOM1  xyz = unit direction from planet centre, w = moisture (0..1)
@@ -55,6 +56,16 @@ var n_crater_g: Array[FastNoiseLite] = []
 const BORDER_FADE := 0.35
 var n_volc_g: FastNoiseLite
 var crater_cell: PackedFloat64Array = []
+var n_river: FastNoiseLite
+var n_river_m: FastNoiseLite
+var n_cliff: FastNoiseLite
+var n_isl: FastNoiseLite
+var n_ray: FastNoiseLite
+## Young ray craters: unit centre, tangent frame, radius (m) per crater.
+var ray_c: PackedVector3Array = []
+var ray_e1: PackedVector3Array = []
+var ray_e2: PackedVector3Array = []
+var ray_r: PackedFloat64Array = []
 
 # cached config values (hot path)
 var _ocean := false
@@ -86,6 +97,13 @@ var _crater_thr := 0.0
 var _maria := 0.0
 var _desert_belt := 0.0
 var _moist_bias := 0.0
+var _river := false
+var _river_d := 0.0
+var _river_w := 0.012
+var _cliff_h := 0.0
+var _berm := 0.0
+var _isl := 0.0
+var _water_mask := false   # river mask goes into the lava channel (planets without lava)
 
 
 func _init(config: PlanetConfig) -> void:
@@ -114,6 +132,29 @@ func _init(config: PlanetConfig) -> void:
 		n_volc_d = _mk_cell(s + 10, cfg.volcano_scale, FastNoiseLite.RETURN_DISTANCE)
 		n_volc_v = _mk_cell(s + 10, cfg.volcano_scale, FastNoiseLite.RETURN_CELL_VALUE)
 		n_volc_g = _mk_cell(s + 10, cfg.volcano_scale, FastNoiseLite.RETURN_DISTANCE2_SUB)
+	if cfg.river_scale > 0.0 and cfg.river_depth > 0.0:
+		n_river = _mk(s + 31, cfg.river_scale, 3)
+		n_river.fractal_gain = 0.42
+		_warp(n_river, cfg.river_scale * 0.18, cfg.river_scale * 0.7, 2)
+		n_river_m = _mk(s + 32, cfg.river_scale * 2.5, 2)
+	if cfg.coast_cliff_height > 0.0:
+		n_cliff = _mk(s + 33, 9000.0, 3)
+	if cfg.island_amount > 0.0:
+		n_isl = _mk(s + 34, cfg.island_scale, 4)
+	if cfg.ray_craters > 0:
+		n_ray = _mk(s + 35, 1.0, 3)
+		var rr := RandomNumberGenerator.new()
+		rr.seed = s * 7 + 3
+		for k in cfg.ray_craters:
+			var c := Vector3(rr.randf_range(-1, 1), rr.randf_range(-1, 1), rr.randf_range(-1, 1))
+			if c.length() < 0.05:
+				c = Vector3.UP
+			c = c.normalized()
+			var e1 := c.cross(Vector3.UP if absf(c.y) < 0.9 else Vector3.RIGHT).normalized()
+			ray_c.append(c)
+			ray_e1.append(e1)
+			ray_e2.append(c.cross(e1))
+			ray_r.append(rr.randf_range(cfg.ray_crater_radius.x, cfg.ray_crater_radius.y))
 	for i in cfg.crater_layers:
 		var cell := cfg.crater_scale / pow(2.6, i)
 		crater_cell.append(cell)
@@ -150,6 +191,13 @@ func _init(config: PlanetConfig) -> void:
 	_maria = cfg.maria_strength
 	_desert_belt = cfg.desert_belt
 	_moist_bias = cfg.moisture_bias
+	_river = n_river != null
+	_river_d = cfg.river_depth
+	_river_w = cfg.river_width
+	_cliff_h = cfg.coast_cliff_height
+	_berm = cfg.coast_berm
+	_isl = cfg.island_amount
+	_water_mask = cfg.lava_intensity <= 0.0
 	if _indices.is_empty():
 		_build_indices()
 
@@ -214,6 +262,11 @@ func sample(d: Vector3, quad: float) -> Vector4:
 
 	# --- continents (domain-warped fbm) ---
 	var c := n_cont.get_noise_3d(px, py, pz) + _cont_bias
+	if _isl > 0.0:
+		# archipelagos / lagoons / ragged coasts: small-scale noise only near the coastline
+		var ca := absf(c)
+		if ca < 0.16:
+			c += n_isl.get_noise_3d(px, py, pz) * _isl * (1.0 - smoothstep(0.03, 0.16, ca))
 	var h := 0.0
 	if c >= 0.0:
 		h = _cont_h * pow(c * 2.0, 1.4)
@@ -221,6 +274,15 @@ func sample(d: Vector3, quad: float) -> Vector4:
 		h = -_ocean_d * smoothstep(0.0, 0.3, -c) - _cont_h * 0.15 * (-c / _coast_w)
 	if _ocean:
 		land = smoothstep(-_coast_w, _coast_w * 2.0, c)
+		if _berm > 0.0 and c > 0.0:
+			h += _berm * smoothstep(0.0, 0.007, c)
+		if _cliff_h > 0.0 and c > 0.0:
+			# regional sea cliffs: a sharp step just behind the coastline (elsewhere: beaches)
+			var cl := smoothstep(0.05, 0.4, n_cliff.get_noise_3d(px, py, pz))
+			if cl > 0.0:
+				var step_k := smoothstep(0.0004, 0.0045, c)
+				h += _cliff_h * cl * step_k
+				rock = maxf(rock, cl * step_k * (1.0 - step_k) * 3.0)
 	if _maria > 0.0:
 		# dark low basins on moons: flatten & lower where continents are negative
 		var m := smoothstep(0.0, -0.25, c)
@@ -246,6 +308,25 @@ func sample(d: Vector3, quad: float) -> Vector4:
 	# --- rolling hills ---
 	if _hills_h > 0.0:
 		h += n_hills.get_noise_3d(px, py, pz) * _hills_h * (0.25 + 0.75 * land)
+
+	# --- river valleys: warped |noise| channels cut into the land (deeper through mountains),
+	# flat channel floor reaching sea level at the coast (estuaries / fjords) ---
+	var chan := 0.0
+	if _river:
+		var rn := absf(n_river.get_noise_3d(px, py, pz))
+		var rw := _river_w
+		if rn < rw * 6.0 and h > -30.0:
+			var dens := smoothstep(-0.35, 0.05, n_river_m.get_noise_3d(px, py, pz))
+			var landk := smoothstep(-0.004, 0.03, c) * dens
+			if landk > 0.0:
+				var valley := smoothstep(rw * 6.0, rw * 0.6, rn)
+				valley = valley * valley * (3.0 - 2.0 * valley)
+				chan = smoothstep(rw, rw * 0.45, rn) * landk
+				var hp := maxf(h, 0.0)
+				var cut := minf(hp * 0.97, _river_d * (1.0 + hp / 700.0))
+				h -= cut * (valley * 0.8 + chan * 0.2) * landk
+				if _water_mask:
+					lava = maxf(lava, chan)
 
 	# --- volcanoes (shield cones with calderas) ---
 	if _volc:
@@ -308,6 +389,37 @@ func sample(d: Vector3, quad: float) -> Vector4:
 			ejecta = maxf(ejecta, fresh * smoothstep(2.6, 1.0, r) * fade)
 		h += ch * fade
 
+	# --- young ray craters: fresh bowl + bright ejecta blanket + long radial rays ---
+	for k in ray_c.size():
+		var cc := ray_c[k]
+		var cosang := d.dot(cc)
+		var rk := ray_r[k]
+		if cosang < 0.0:
+			continue
+		var dist := acos(minf(cosang, 1.0)) * radius
+		var t := dist / rk
+		if t > 9.0:
+			continue
+		var v := d - cc * cosang
+		var phi := atan2(v.dot(ray_e2[k]), v.dot(ray_e1[k]))
+		var fresh_depth := rk * 0.22
+		if t < 2.0:
+			var cht := 0.0
+			if t < 1.0:
+				cht = maxf(t * t - 1.0, -0.8) * fresh_depth + 0.2 * fresh_depth
+				cht += 0.3 * fresh_depth * smoothstep(0.3, 0.0, t)
+				rock = maxf(rock, smoothstep(0.55, 0.95, t) * 0.9)
+			else:
+				var tt := t - 1.0
+				cht = 0.2 * fresh_depth * exp(-tt * tt * 8.0)
+				rock = maxf(rock, smoothstep(1.3, 1.0, t) * 0.9)
+			h += cht * smoothstep(2.0, 1.7, t)
+		if t > 0.8:
+			var rn := n_ray.get_noise_3d(cos(phi) * 4.0 + k * 13.0, sin(phi) * 4.0, t * 0.35)
+			var ray := smoothstep(0.05, 0.45, rn) * exp(-(t - 1.0) * 0.32)
+			var blanket := exp(-(t - 1.0) * (t - 1.0) * 1.2) * 0.9
+			ejecta = maxf(ejecta, maxf(ray, blanket) * smoothstep(0.8, 1.05, t) * smoothstep(9.0, 6.0, t))
+
 	# --- flat floors (frozen seas / lava plains) ---
 	if h < _floor:
 		h = _floor + (h - _floor) * 0.04
@@ -317,10 +429,11 @@ func sample(d: Vector3, quad: float) -> Vector4:
 	# neighbouring levels disagree by metres and expose the skirts. Only callers that
 	# never need mesh-consistent values (quad >= 1e8, LOD bounds estimation) skip them.
 	if quad < 1e8:
+		var calm := 1.0 - chan * 0.85     # flat river beds
 		if _rough_h > 0.0:
-			h += n_rough.get_noise_3d(px, py, pz) * _rough_h * (0.35 + rock)
+			h += n_rough.get_noise_3d(px, py, pz) * _rough_h * (0.35 + rock) * calm
 		if _detail_h > 0.0:
-			h += n_detail.get_noise_3d(px, py, pz) * _detail_h * (0.4 + rock)
+			h += n_detail.get_noise_3d(px, py, pz) * _detail_h * (0.4 + rock) * calm
 	return Vector4(h + base_level, rock, lava, ejecta)
 
 

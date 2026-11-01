@@ -1,7 +1,9 @@
 // Scatter rocks / boulders / basalt columns. Object-space triplanar detail (scaled, offset per instance:
 // no precision issues, no two boulders alike), detail normals, and a cover layer (moss / snow / dust)
 // on faces that point toward the planet up.
-// Vertex colour: r = baked AO, b = variant random.
+// Vertex colour: r = baked AO, g = up-facing "top" mask (basalt column tops / ledges), b = variant random.
+// Weathering: lighter, dustier up-facing surfaces; dark cavities (baked AO); lichen (Terra), frost
+// (Glacia) and a dust / moss / snow cover layer from the biome (INSTANCE_CUSTOM z / w).
 shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
 
@@ -19,6 +21,12 @@ uniform float normal_strength = 1.0;
 uniform float roughness = 0.88;
 uniform vec3 emission_color : source_color = vec3(1.0, 0.3, 0.05);
 uniform float emission_energy = 0.0;  // glowing cracks (volcanic)
+uniform float lichen_amount = 0.0;    // crustose lichen patches (moist Earth-like)
+uniform vec3 lichen_a : source_color = vec3(0.72, 0.55, 0.18);
+uniform vec3 lichen_b : source_color = vec3(0.55, 0.6, 0.45);
+uniform float frost_amount = 0.0;     // hoarfrost on every face (icy worlds)
+uniform vec3 top_color : source_color = vec3(0.5, 0.46, 0.4);   // weathered / dusty tops
+uniform float top_amount = 0.35;
 uniform sampler2D tex_noise : repeat_enable, filter_linear_mipmap;
 uniform sampler2D tex_rock : hint_normal, repeat_enable, filter_linear_mipmap;
 
@@ -31,6 +39,7 @@ varying vec3 v_up;
 varying float v_fade;
 varying vec4 v_custom;
 varying float v_ao;
+varying float v_top;
 
 vec3 tri_w(vec3 n) {
 	vec3 w = pow(abs(n), vec3(6.0));
@@ -65,6 +74,7 @@ void vertex() {
 	v_up = v_by;
 	v_custom = INSTANCE_CUSTOM;
 	v_ao = COLOR.r;
+	v_top = COLOR.g;
 	if (v_fade <= 0.0) {
 		VERTEX = vec3(0.0);
 	}
@@ -84,10 +94,14 @@ void fragment() {
 	c *= 0.8 + 0.4 * n1.a;
 	float rough = roughness;
 	if (style == 1) {
-		// columnar joints: horizontal cracks and darker vertical edges
+		// columnar joints: irregular horizontal cracks, vertical weathering streaks, pale dusty tops
 		float j = fract(v_obj.y * 1.3 + n0.r * 0.6);
-		c *= mix(0.55, 1.0, smoothstep(0.0, 0.06, j));
+		c *= mix(0.55, 1.0, smoothstep(0.0, 0.06, j) * (1.0 - v_top));
 		c *= 0.85 + 0.15 * smoothstep(0.2, 0.8, n1.g);
+		float streak = texture(tex_noise, vec2(v_obj.x * 0.9 + v_obj.z * 0.7, v_obj.y * 0.08)).r;
+		c *= 0.8 + 0.4 * streak;
+		c = mix(c, top_color * (0.8 + 0.4 * n1.a), v_top * (0.55 + 0.35 * n0.r));
+		rough = mix(rough, 0.95, v_top);
 	} else if (style == 2) {
 		float pores = smoothstep(0.18, 0.05, n1.g);
 		c *= 1.0 - pores * 0.6;
@@ -99,6 +113,14 @@ void fragment() {
 	vec3 nw = normalize(mat3(v_bx, v_by, v_bz) * nd);
 	// cover layer on up-facing faces (moss in wet areas, snow where the biome is snowy)
 	float top = dot(nw, normalize(v_up));
+	// sun-bleached, dust-catching upper surfaces; dark cavities
+	c = mix(c, c * 0.6 + top_color * 0.45, smoothstep(0.2, 0.85, top) * top_amount);
+	c *= mix(0.65, 1.08, smoothstep(0.35, 0.95, v_ao));
+	if (lichen_amount > 0.0) {
+		vec4 nl = tri(tex_noise, p * 1.7, w);
+		float lich = smoothstep(0.66, 0.8, nl.r * 0.6 + n1.g * 0.5 + top * 0.15) * lichen_amount * (0.4 + v_custom.z);
+		c = mix(c, mix(lichen_a, lichen_b, step(0.5, fract(nl.a * 3.7 + var))) * (0.8 + 0.3 * nl.b), clamp(lich, 0.0, 0.85));
+	}
 	float edge = n1.r * 0.35 + n0.a * 0.25;
 	float moss = smoothstep(0.55, 0.9, top + edge - 0.2) * clamp(cover_amount * (0.3 + v_custom.z), 0.0, 1.0);
 	float snow = smoothstep(0.25, 0.55, top + edge * 0.6 - 0.1) * clamp(snow_amount * v_custom.w * 1.5, 0.0, 1.0);
@@ -107,6 +129,11 @@ void fragment() {
 	rough = mix(rough, 0.95, moss);
 	rough = mix(rough, 0.55, snow);
 	nw = normalize(mix(nw, normalize(mat3(v_bx, v_by, v_bz) * on), snow * 0.6));
+	if (frost_amount > 0.0) {
+		float fr = frost_amount * smoothstep(0.3, 0.8, n1.r * 0.7 + (1.0 - v_ao) * 0.2 + top * 0.3 + 0.2);
+		c = mix(c, color_snow * 0.9, clamp(fr, 0.0, 0.8));
+		rough = mix(rough, 0.45, fr);
+	}
 	float ao = mix(v_ao, 1.0, 0.15);
 	vec3 emit = vec3(0.0);
 	if (emission_energy > 0.0) {

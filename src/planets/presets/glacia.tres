@@ -53,3 +53,6 @@ strata_strength = 0.25
 macro_variation = 0.25
 atmosphere_color = Color(0.45, 0.7, 1, 1)
 atmosphere_height = 11000.0
+surface_style = 3
+color_accent = Color(0.2, 0.5, 0.85, 1)
+stone_amount = 0.25

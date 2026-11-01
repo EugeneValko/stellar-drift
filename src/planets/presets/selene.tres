@@ -51,3 +51,7 @@ color_rock2 = Color(0.32, 0.32, 0.32, 1)
 color_snow = Color(0.8, 0.8, 0.8, 1)
 strata_strength = 0.0
 macro_variation = 0.25
+surface_style = 4
+ray_craters = 9
+ray_crater_radius = Vector2(180, 650)
+stone_amount = 0.7

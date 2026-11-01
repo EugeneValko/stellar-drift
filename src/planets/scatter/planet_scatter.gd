@@ -104,6 +104,8 @@ class LayerRT:
 	var meshes: Array[Mesh] = []
 	var far: Mesh
 	var rule_attr := PackedInt32Array()
+	var tint := false
+	var height_jit := 0.0
 	var rule_lo := PackedFloat32Array()
 	var rule_hi := PackedFloat32Array()
 	var rule_soft := PackedFloat32Array()
@@ -289,6 +291,8 @@ func _init_runtime() -> void:
 		L.tilt = deg_to_rad(s.max_tilt_deg)
 		L.align = s.align_to_normal
 		L.sink = s.sink
+		L.tint = s.tint_regions
+		L.height_jit = s.height_jitter
 		if s.collision == 3 and not L.meshes.is_empty():
 			L.convex = L.meshes[L.meshes.size() - 1].create_convex_shape(true, true)
 		_layers.append(L)
@@ -970,9 +974,10 @@ func _build_cell(L: LayerRT, face: int, i: int, j: int) -> CellData:
 		return cd
 	var C := ScatterBiome.COUNT
 	var bg := cg.bg
-	# rule weight + moisture + snow on the biome grid (interpolated per candidate)
+	# rule weight + moisture + snow + alien canopy regions on the biome grid (interpolated per candidate)
+	const WS := 5
 	var wgt := PackedFloat32Array()
-	wgt.resize(bg * bg * 3)
+	wgt.resize(bg * bg * WS)
 	var nr := L.rule_attr.size()
 	var any := false
 	for q in bg * bg:
@@ -982,9 +987,11 @@ func _build_cell(L: LayerRT, face: int, i: int, j: int) -> CellData:
 			var v := cg.bio[o + L.rule_attr[r]]
 			var sft := L.rule_soft[r]
 			w *= clampf((v - L.rule_lo[r]) / sft + 0.5, 0.0, 1.0) * clampf((L.rule_hi[r] - v) / sft + 0.5, 0.0, 1.0)
-		wgt[q * 3] = w
-		wgt[q * 3 + 1] = cg.bio[o + ScatterBiome.A_MOIST]
-		wgt[q * 3 + 2] = cg.bio[o + ScatterBiome.A_SNOW]
+		wgt[q * WS] = w
+		wgt[q * WS + 1] = cg.bio[o + ScatterBiome.A_MOIST]
+		wgt[q * WS + 2] = cg.bio[o + ScatterBiome.A_SNOW]
+		wgt[q * WS + 3] = cg.bio[o + ScatterBiome.A_ALIEN_B]
+		wgt[q * WS + 4] = cg.bio[o + ScatterBiome.A_ALIEN_C]
 		any = any or w > 0.001
 	if not any:
 		return cd
@@ -1016,10 +1023,10 @@ func _build_cell(L: LayerRT, face: int, i: int, j: int) -> CellData:
 			var biy := mini(int(by), bg - 2)
 			var tx := bx - bix
 			var ty := by - biy
-			var q00 := (biy * bg + bix) * 3
-			var q10 := q00 + 3
-			var q01 := q00 + bg * 3
-			var q11 := q01 + 3
+			var q00 := (biy * bg + bix) * WS
+			var q10 := q00 + WS
+			var q01 := q00 + bg * WS
+			var q11 := q01 + WS
 			var w := lerpf(lerpf(wgt[q00], wgt[q10], tx), lerpf(wgt[q01], wgt[q11], tx), ty)
 			if w <= 0.001:
 				continue
@@ -1067,9 +1074,19 @@ func _build_cell(L: LayerRT, face: int, i: int, j: int) -> CellData:
 			var c0 := basis.x * sc
 			var c1 := basis.y * sc
 			var c2 := basis.z * sc
+			if L.height_jit > 0.0:
+				c1 *= 1.0 + (rng.randf() * 2.0 - 1.0) * L.height_jit
+			var cw := snow
+			if L.tint:
+				# canopy region code for flora shaders: w = snow + 2 * region (1 purple, 2 teal)
+				var ab := lerpf(lerpf(wgt[q00 + 3], wgt[q10 + 3], tx), lerpf(wgt[q01 + 3], wgt[q11 + 3], tx), ty)
+				var ac := lerpf(lerpf(wgt[q00 + 4], wgt[q10 + 4], tx), lerpf(wgt[q01 + 4], wgt[q11 + 4], tx), ty)
+				var rr := rng.randf()
+				var reg := 1.0 if rr < ab else (2.0 if rr < ab + ac else 0.0)
+				cw = minf(snow, 0.99) + 2.0 * reg
 			var o := d * (R + h) - up * (L.sink * sc) - cd.origin
 			out.append_array([c0.x, c1.x, c2.x, o.x, c0.y, c1.y, c2.y, o.y, c0.z, c1.z, c2.z, o.z,
-				rng.randf(), rng.randf(), moist, snow])
+				rng.randf(), rng.randf(), moist, cw])
 			cnt += 1
 	cd.data = out
 	cd.count = cnt

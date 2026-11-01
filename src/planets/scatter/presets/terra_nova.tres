@@ -15,11 +15,12 @@ max_distance = 3000.0
 fade_length = 60.0
 grid_res = 4
 exact_height = true
-density = 0.0045
+density = 0.0016666666666666668
 rules = {
 "beach": Vector3(-1, 0.1, 0.2),
 "forest": Vector3(0.3, 2, 0.3),
 "height": Vector3(60, 3200, 250),
+"river": Vector3(-1, 0.25, 0.15),
 "slope": Vector3(-1, 0.3, 0.1),
 "snow": Vector3(-1, 0.25, 0.2)
 }
@@ -30,6 +31,8 @@ seed = 11
 scale_range = Vector2(0.65, 1.3)
 edge_scale = 0.45
 sink = 0.7
+height_jitter = 0.12
+tint_regions = true
 shadow_distance = 320.0
 sway_height = 20.0
 material_overrides = {
@@ -38,6 +41,9 @@ material_overrides = {
 "color_b": Color(0.3, 0.5, 0.36, 1),
 "color_dry": Color(0.52, 0.47, 0.25, 1),
 "dry_amount": 0.15,
+"region_strength": 0.85,
+"region_tint_b": Color(0.4, 0.15, 0.48, 1),
+"region_tint_c": Color(0.06, 0.4, 0.42, 1),
 "variation": 0.4
 }
 }
@@ -46,6 +52,102 @@ collision_size = Vector2(0.45, 9)
 collision_distance = 70.0
 
 [sub_resource type="Resource" id="Resource_no7q4"]
+script = ExtResource("1_n8ok1")
+name = "spirepine_b"
+meshes = PackedStringArray("spirepine_b_lod0", "spirepine_b_lod1")
+lod_distances = PackedFloat32Array(90)
+far_mesh = "spirepine_b_lod2"
+far_start = 700.0
+cell_size = 128.0
+max_distance = 3000.0
+fade_length = 60.0
+grid_res = 4
+exact_height = true
+density = 0.0016666666666666668
+rules = {
+"beach": Vector3(-1, 0.1, 0.2),
+"forest": Vector3(0.3, 2, 0.3),
+"height": Vector3(60, 3200, 250),
+"river": Vector3(-1, 0.25, 0.15),
+"slope": Vector3(-1, 0.3, 0.1),
+"snow": Vector3(-1, 0.25, 0.2)
+}
+cluster_scale = 260.0
+cluster_threshold = -0.15
+cluster_soft = 0.35
+seed = 12
+scale_range = Vector2(0.65, 1.3)
+edge_scale = 0.45
+sink = 0.7
+height_jitter = 0.12
+tint_regions = true
+shadow_distance = 320.0
+sway_height = 20.0
+material_overrides = {
+"far_foliage": {
+"color_a": Color(0.16, 0.32, 0.26, 1),
+"color_b": Color(0.3, 0.5, 0.36, 1),
+"color_dry": Color(0.52, 0.47, 0.25, 1),
+"dry_amount": 0.15,
+"region_strength": 0.85,
+"region_tint_b": Color(0.4, 0.15, 0.48, 1),
+"region_tint_c": Color(0.06, 0.4, 0.42, 1),
+"variation": 0.4
+}
+}
+collision = 1
+collision_size = Vector2(0.45, 9)
+collision_distance = 70.0
+
+[sub_resource type="Resource" id="Resource_2atc5"]
+script = ExtResource("1_n8ok1")
+name = "spirepine_c"
+meshes = PackedStringArray("spirepine_c_lod0", "spirepine_c_lod1")
+lod_distances = PackedFloat32Array(90)
+far_mesh = "spirepine_c_lod2"
+far_start = 700.0
+cell_size = 128.0
+max_distance = 3000.0
+fade_length = 60.0
+grid_res = 4
+exact_height = true
+density = 0.0016666666666666668
+rules = {
+"beach": Vector3(-1, 0.1, 0.2),
+"forest": Vector3(0.3, 2, 0.3),
+"height": Vector3(60, 3200, 250),
+"river": Vector3(-1, 0.25, 0.15),
+"slope": Vector3(-1, 0.3, 0.1),
+"snow": Vector3(-1, 0.25, 0.2)
+}
+cluster_scale = 260.0
+cluster_threshold = -0.15
+cluster_soft = 0.35
+seed = 13
+scale_range = Vector2(0.65, 1.3)
+edge_scale = 0.45
+sink = 0.7
+height_jitter = 0.12
+tint_regions = true
+shadow_distance = 320.0
+sway_height = 20.0
+material_overrides = {
+"far_foliage": {
+"color_a": Color(0.16, 0.32, 0.26, 1),
+"color_b": Color(0.3, 0.5, 0.36, 1),
+"color_dry": Color(0.52, 0.47, 0.25, 1),
+"dry_amount": 0.15,
+"region_strength": 0.85,
+"region_tint_b": Color(0.4, 0.15, 0.48, 1),
+"region_tint_c": Color(0.06, 0.4, 0.42, 1),
+"variation": 0.4
+}
+}
+collision = 1
+collision_size = Vector2(0.45, 9)
+collision_distance = 70.0
+
+[sub_resource type="Resource" id="Resource_kx0v8"]
 script = ExtResource("1_n8ok1")
 name = "parasol"
 meshes = PackedStringArray("parasol_lod0", "parasol_lod1")
@@ -57,12 +159,13 @@ max_distance = 3000.0
 fade_length = 60.0
 grid_res = 4
 exact_height = true
-density = 0.0024
+density = 0.0008666666666666666
 rules = {
 "beach": Vector3(-1, 0.1, 0.2),
 "forest": Vector3(0.15, 2, 0.3),
 "height": Vector3(5, 1300, 200),
 "moist": Vector3(0.42, 2, 0.12),
+"river": Vector3(-1, 0.25, 0.15),
 "slope": Vector3(-1, 0.28, 0.08)
 }
 cluster_scale = 300.0
@@ -72,6 +175,8 @@ seed = 23
 scale_range = Vector2(0.75, 1.25)
 edge_scale = 0.45
 sink = 0.4
+height_jitter = 0.15
+tint_regions = true
 shadow_distance = 320.0
 sway_height = 11.0
 material_overrides = {
@@ -80,6 +185,9 @@ material_overrides = {
 "color_b": Color(0.44, 0.54, 0.15, 1),
 "color_dry": Color(0.72, 0.42, 0.15, 1),
 "dry_amount": 0.55,
+"region_strength": 0.85,
+"region_tint_b": Color(0.4, 0.15, 0.48, 1),
+"region_tint_c": Color(0.06, 0.4, 0.42, 1),
 "variation": 0.45
 }
 }
@@ -87,7 +195,149 @@ collision = 1
 collision_size = Vector2(0.45, 3)
 collision_distance = 70.0
 
-[sub_resource type="Resource" id="Resource_2atc5"]
+[sub_resource type="Resource" id="Resource_m2467"]
+script = ExtResource("1_n8ok1")
+name = "parasol_b"
+meshes = PackedStringArray("parasol_b_lod0", "parasol_b_lod1")
+lod_distances = PackedFloat32Array(90)
+far_mesh = "parasol_b_lod2"
+far_start = 700.0
+cell_size = 128.0
+max_distance = 3000.0
+fade_length = 60.0
+grid_res = 4
+exact_height = true
+density = 0.0008666666666666666
+rules = {
+"beach": Vector3(-1, 0.1, 0.2),
+"forest": Vector3(0.15, 2, 0.3),
+"height": Vector3(5, 1300, 200),
+"moist": Vector3(0.42, 2, 0.12),
+"river": Vector3(-1, 0.25, 0.15),
+"slope": Vector3(-1, 0.28, 0.08)
+}
+cluster_scale = 300.0
+cluster_threshold = 0.05
+cluster_soft = 0.4
+seed = 24
+scale_range = Vector2(0.75, 1.25)
+edge_scale = 0.45
+sink = 0.4
+height_jitter = 0.15
+tint_regions = true
+shadow_distance = 320.0
+sway_height = 11.0
+material_overrides = {
+"far_foliage": {
+"color_a": Color(0.26, 0.4, 0.12, 1),
+"color_b": Color(0.44, 0.54, 0.15, 1),
+"color_dry": Color(0.72, 0.42, 0.15, 1),
+"dry_amount": 0.55,
+"region_strength": 0.85,
+"region_tint_b": Color(0.4, 0.15, 0.48, 1),
+"region_tint_c": Color(0.06, 0.4, 0.42, 1),
+"variation": 0.45
+}
+}
+collision = 1
+collision_size = Vector2(0.45, 3)
+collision_distance = 70.0
+
+[sub_resource type="Resource" id="Resource_np16n"]
+script = ExtResource("1_n8ok1")
+name = "parasol_c"
+meshes = PackedStringArray("parasol_c_lod0", "parasol_c_lod1")
+lod_distances = PackedFloat32Array(90)
+far_mesh = "parasol_c_lod2"
+far_start = 700.0
+cell_size = 128.0
+max_distance = 3000.0
+fade_length = 60.0
+grid_res = 4
+exact_height = true
+density = 0.0008666666666666666
+rules = {
+"beach": Vector3(-1, 0.1, 0.2),
+"forest": Vector3(0.15, 2, 0.3),
+"height": Vector3(5, 1300, 200),
+"moist": Vector3(0.42, 2, 0.12),
+"river": Vector3(-1, 0.25, 0.15),
+"slope": Vector3(-1, 0.28, 0.08)
+}
+cluster_scale = 300.0
+cluster_threshold = 0.05
+cluster_soft = 0.4
+seed = 25
+scale_range = Vector2(0.75, 1.25)
+edge_scale = 0.45
+sink = 0.4
+height_jitter = 0.15
+tint_regions = true
+shadow_distance = 320.0
+sway_height = 11.0
+material_overrides = {
+"far_foliage": {
+"color_a": Color(0.26, 0.4, 0.12, 1),
+"color_b": Color(0.44, 0.54, 0.15, 1),
+"color_dry": Color(0.72, 0.42, 0.15, 1),
+"dry_amount": 0.55,
+"region_strength": 0.85,
+"region_tint_b": Color(0.4, 0.15, 0.48, 1),
+"region_tint_c": Color(0.06, 0.4, 0.42, 1),
+"variation": 0.45
+}
+}
+collision = 1
+collision_size = Vector2(0.45, 3)
+collision_distance = 70.0
+
+[sub_resource type="Resource" id="Resource_t1ngj"]
+script = ExtResource("1_n8ok1")
+name = "parasol_savanna"
+meshes = PackedStringArray("parasol_b_lod0", "parasol_b_lod1")
+lod_distances = PackedFloat32Array(90)
+far_mesh = "parasol_b_lod2"
+far_start = 700.0
+cell_size = 128.0
+max_distance = 3000.0
+fade_length = 60.0
+grid_res = 4
+exact_height = true
+density = 0.00035
+rules = {
+"beach": Vector3(-1, 0.1, 0.2),
+"forest": Vector3(-1, 0.3, 0.15),
+"river": Vector3(-1, 0.25, 0.15),
+"savanna": Vector3(0.3, 2, 0.2),
+"slope": Vector3(-1, 0.2, 0.06)
+}
+seed = 27
+scale_range = Vector2(0.8, 1.35)
+edge_scale = 0.45
+sink = 0.4
+height_jitter = 0.1
+shadow_distance = 320.0
+sway_height = 11.0
+material_overrides = {
+"far_foliage": {
+"color_a": Color(0.26, 0.4, 0.12, 1),
+"color_b": Color(0.44, 0.54, 0.15, 1),
+"color_dry": Color(0.72, 0.42, 0.15, 1),
+"dry_amount": 0.55,
+"region_strength": 0.85,
+"region_tint_b": Color(0.4, 0.15, 0.48, 1),
+"region_tint_c": Color(0.06, 0.4, 0.42, 1),
+"variation": 0.45
+},
+"leaves": {
+"dry_amount": 0.9
+}
+}
+collision = 1
+collision_size = Vector2(0.45, 3)
+collision_distance = 70.0
+
+[sub_resource type="Resource" id="Resource_fl525"]
 script = ExtResource("1_n8ok1")
 name = "fernpalm"
 meshes = PackedStringArray("fernpalm_lod0", "fernpalm_lod1")
@@ -99,13 +349,14 @@ max_distance = 3000.0
 fade_length = 60.0
 grid_res = 4
 exact_height = true
-density = 0.003
+density = 0.0011
 rules = {
 "beach": Vector3(-1, 0.6, 0.3),
 "forest": Vector3(0.05, 2, 0.2),
 "height": Vector3(2, 420, 90),
 "lat": Vector3(-1, 0.5, 0.1),
 "moist": Vector3(0.5, 2, 0.12),
+"river": Vector3(-1, 0.3, 0.15),
 "slope": Vector3(-1, 0.25, 0.08)
 }
 cluster_scale = 140.0
@@ -115,6 +366,8 @@ seed = 37
 scale_range = Vector2(0.75, 1.3)
 edge_scale = 0.45
 sink = 0.3
+height_jitter = 0.15
+tint_regions = true
 shadow_distance = 320.0
 sway_height = 9.0
 material_overrides = {
@@ -123,6 +376,9 @@ material_overrides = {
 "color_b": Color(0.46, 0.62, 0.2, 1),
 "color_dry": Color(0.62, 0.56, 0.3, 1),
 "dry_amount": 0.35,
+"region_strength": 0.85,
+"region_tint_b": Color(0.4, 0.15, 0.48, 1),
+"region_tint_c": Color(0.06, 0.4, 0.42, 1),
 "variation": 0.4
 }
 }
@@ -130,7 +386,105 @@ collision = 1
 collision_size = Vector2(0.3, 4)
 collision_distance = 70.0
 
-[sub_resource type="Resource" id="Resource_kx0v8"]
+[sub_resource type="Resource" id="Resource_jcros"]
+script = ExtResource("1_n8ok1")
+name = "fernpalm_b"
+meshes = PackedStringArray("fernpalm_b_lod0", "fernpalm_b_lod1")
+lod_distances = PackedFloat32Array(90)
+far_mesh = "fernpalm_b_lod2"
+far_start = 700.0
+cell_size = 128.0
+max_distance = 3000.0
+fade_length = 60.0
+grid_res = 4
+exact_height = true
+density = 0.0011
+rules = {
+"beach": Vector3(-1, 0.6, 0.3),
+"forest": Vector3(0.05, 2, 0.2),
+"height": Vector3(2, 420, 90),
+"lat": Vector3(-1, 0.5, 0.1),
+"moist": Vector3(0.5, 2, 0.12),
+"river": Vector3(-1, 0.3, 0.15),
+"slope": Vector3(-1, 0.25, 0.08)
+}
+cluster_scale = 140.0
+cluster_threshold = 0.1
+cluster_soft = 0.3
+seed = 38
+scale_range = Vector2(0.75, 1.3)
+edge_scale = 0.45
+sink = 0.3
+height_jitter = 0.15
+tint_regions = true
+shadow_distance = 320.0
+sway_height = 9.0
+material_overrides = {
+"far_foliage": {
+"color_a": Color(0.26, 0.47, 0.13, 1),
+"color_b": Color(0.46, 0.62, 0.2, 1),
+"color_dry": Color(0.62, 0.56, 0.3, 1),
+"dry_amount": 0.35,
+"region_strength": 0.85,
+"region_tint_b": Color(0.4, 0.15, 0.48, 1),
+"region_tint_c": Color(0.06, 0.4, 0.42, 1),
+"variation": 0.4
+}
+}
+collision = 1
+collision_size = Vector2(0.3, 4)
+collision_distance = 70.0
+
+[sub_resource type="Resource" id="Resource_j0n45"]
+script = ExtResource("1_n8ok1")
+name = "fernpalm_c"
+meshes = PackedStringArray("fernpalm_c_lod0", "fernpalm_c_lod1")
+lod_distances = PackedFloat32Array(90)
+far_mesh = "fernpalm_c_lod2"
+far_start = 700.0
+cell_size = 128.0
+max_distance = 3000.0
+fade_length = 60.0
+grid_res = 4
+exact_height = true
+density = 0.0011
+rules = {
+"beach": Vector3(-1, 0.6, 0.3),
+"forest": Vector3(0.05, 2, 0.2),
+"height": Vector3(2, 420, 90),
+"lat": Vector3(-1, 0.5, 0.1),
+"moist": Vector3(0.5, 2, 0.12),
+"river": Vector3(-1, 0.3, 0.15),
+"slope": Vector3(-1, 0.25, 0.08)
+}
+cluster_scale = 140.0
+cluster_threshold = 0.1
+cluster_soft = 0.3
+seed = 39
+scale_range = Vector2(0.75, 1.3)
+edge_scale = 0.45
+sink = 0.3
+height_jitter = 0.15
+tint_regions = true
+shadow_distance = 320.0
+sway_height = 9.0
+material_overrides = {
+"far_foliage": {
+"color_a": Color(0.26, 0.47, 0.13, 1),
+"color_b": Color(0.46, 0.62, 0.2, 1),
+"color_dry": Color(0.62, 0.56, 0.3, 1),
+"dry_amount": 0.35,
+"region_strength": 0.85,
+"region_tint_b": Color(0.4, 0.15, 0.48, 1),
+"region_tint_c": Color(0.06, 0.4, 0.42, 1),
+"variation": 0.4
+}
+}
+collision = 1
+collision_size = Vector2(0.3, 4)
+collision_distance = 70.0
+
+[sub_resource type="Resource" id="Resource_j2qpl"]
 script = ExtResource("1_n8ok1")
 name = "bush_round"
 meshes = PackedStringArray("bush_round_lod0", "bush_round_lod1")
@@ -155,6 +509,8 @@ seed = 51
 scale_range = Vector2(0.6, 1.5)
 align_to_normal = 0.3
 sink = 0.12
+height_jitter = 0.2
+tint_regions = true
 shadow_distance = 90.0
 sway_height = 1.5
 material_overrides = {
@@ -166,7 +522,7 @@ material_overrides = {
 }
 }
 
-[sub_resource type="Resource" id="Resource_m2467"]
+[sub_resource type="Resource" id="Resource_cdywx"]
 script = ExtResource("1_n8ok1")
 name = "bush_quill"
 meshes = PackedStringArray("bush_quill_lod0")
@@ -200,7 +556,40 @@ material_overrides = {
 }
 }
 
-[sub_resource type="Resource" id="Resource_np16n"]
+[sub_resource type="Resource" id="Resource_2bk07"]
+script = ExtResource("1_n8ok1")
+name = "tundra_shrub"
+meshes = PackedStringArray("bush_quill_lod0")
+lod_distances = PackedFloat32Array()
+max_distance = 260.0
+density = 0.05
+rules = {
+"height": Vector3(2, 9000, 50),
+"rock": Vector3(-1, 0.5, 0.2),
+"slope": Vector3(-1, 0.35, 0.1),
+"snow": Vector3(-1, 0.3, 0.2),
+"tundra": Vector3(0.35, 2, 0.2)
+}
+cluster_scale = 30.0
+cluster_threshold = -0.1
+seed = 58
+scale_range = Vector2(0.35, 0.75)
+align_to_normal = 0.5
+sink = 0.03
+shadow_distance = 50.0
+sway_height = 0.8
+material_overrides = {
+"frond": {
+"color_a": Color(0.45, 0.24, 0.12, 1),
+"color_b": Color(0.62, 0.48, 0.2, 1),
+"dry_amount": 0.2,
+"duty": 0.7,
+"leaflets": 9.0,
+"slant": 2.4
+}
+}
+
+[sub_resource type="Resource" id="Resource_8er1p"]
 script = ExtResource("1_n8ok1")
 name = "fern"
 meshes = PackedStringArray("fern_lod0")
@@ -224,7 +613,7 @@ sink = 0.03
 cast_shadows = false
 sway_height = 0.8
 
-[sub_resource type="Resource" id="Resource_t1ngj"]
+[sub_resource type="Resource" id="Resource_ul3yx"]
 script = ExtResource("1_n8ok1")
 name = "grass"
 meshes = PackedStringArray("grass_lod0", "grass_lod1")
@@ -236,25 +625,29 @@ thin_start = 20.0
 thin_keep = 0.25
 density = 2.0
 rules = {
-"beach": Vector3(-1, 0.25, 0.2),
-"desert": Vector3(-1, 0.55, 0.2),
+"beach": Vector3(-1, 0.2, 0.15),
+"desert": Vector3(-1, 0.45, 0.2),
 "forest": Vector3(-1, 0.8, 0.3),
 "height": Vector3(1.5, 3000, 60),
+"river": Vector3(-1, 0.35, 0.15),
 "rock": Vector3(-1, 0.45, 0.2),
+"scree": Vector3(-1, 0.4, 0.2),
 "slope": Vector3(-1, 0.3, 0.07),
-"snow": Vector3(-1, 0.2, 0.15)
+"snow": Vector3(-1, 0.2, 0.15),
+"tundra": Vector3(-1, 0.85, 0.2)
 }
-cluster_scale = 14.0
-cluster_threshold = -0.45
-cluster_soft = 0.5
+cluster_scale = 9.0
+cluster_threshold = -0.35
+cluster_soft = 0.45
 seed = 61
-scale_range = Vector2(0.7, 1.35)
+scale_range = Vector2(0.6, 1.4)
 edge_scale = 0.55
 align_to_normal = 0.7
+height_jitter = 0.25
 cast_shadows = false
 sway_height = 0.6
 
-[sub_resource type="Resource" id="Resource_fl525"]
+[sub_resource type="Resource" id="Resource_a7bvd"]
 script = ExtResource("1_n8ok1")
 name = "grass_tall"
 meshes = PackedStringArray("grass_tall_lod0")
@@ -280,15 +673,15 @@ align_to_normal = 0.5
 cast_shadows = false
 sway_height = 1.1
 
-[sub_resource type="Resource" id="Resource_jcros"]
+[sub_resource type="Resource" id="Resource_e00l4"]
 script = ExtResource("1_n8ok1")
 name = "flowers"
 meshes = PackedStringArray("flower_a_lod0")
 lod_distances = PackedFloat32Array()
 cell_size = 32.0
-max_distance = 55.0
+max_distance = 60.0
 fade_length = 12.0
-density = 0.22
+density = 0.55
 rules = {
 "forest": Vector3(-1, 0.5, 0.2),
 "height": Vector3(2, 2400, 60),
@@ -297,16 +690,41 @@ rules = {
 "slope": Vector3(-1, 0.25, 0.06),
 "snow": Vector3(-1, 0.1, 0.1)
 }
-cluster_scale = 16.0
-cluster_threshold = 0.2
-cluster_soft = 0.25
+cluster_scale = 22.0
+cluster_threshold = 0.3
+cluster_soft = 0.15
 seed = 71
 scale_range = Vector2(0.8, 1.4)
 align_to_normal = 0.6
+height_jitter = 0.2
 cast_shadows = false
 sway_height = 0.5
 
-[sub_resource type="Resource" id="Resource_j0n45"]
+[sub_resource type="Resource" id="Resource_ix5rk"]
+script = ExtResource("1_n8ok1")
+name = "reeds"
+meshes = PackedStringArray("grass_tall_lod0")
+lod_distances = PackedFloat32Array()
+cell_size = 32.0
+max_distance = 90.0
+fade_length = 15.0
+density = 1.2
+rules = {
+"river": Vector3(0.04, 0.75, 0.08),
+"slope": Vector3(-1, 0.3, 0.08),
+"snow": Vector3(-1, 0.2, 0.1)
+}
+cluster_scale = 8.0
+cluster_threshold = -0.3
+cluster_soft = 0.4
+seed = 65
+scale_range = Vector2(1, 1.7)
+align_to_normal = 0.3
+height_jitter = 0.3
+cast_shadows = false
+sway_height = 1.6
+
+[sub_resource type="Resource" id="Resource_bcdqc"]
 script = ExtResource("1_n8ok1")
 name = "glowbulbs"
 meshes = PackedStringArray("flower_b_lod0")
@@ -328,7 +746,7 @@ align_to_normal = 0.4
 cast_shadows = false
 sway_height = 0.7
 
-[sub_resource type="Resource" id="Resource_j2qpl"]
+[sub_resource type="Resource" id="Resource_qe0lg"]
 script = ExtResource("1_n8ok1")
 name = "pebbles"
 model = "res://assets/models/rocks.glb"
@@ -339,18 +757,22 @@ max_distance = 70.0
 fade_length = 15.0
 grid_res = 6
 exact_height = true
-density = 0.05
+density = 0.025
 rules = {
+"beach": Vector3(-1, 0.3, 0.2),
 "forest": Vector3(-1, 0.7, 0.3),
 "height": Vector3(-5, 9000, 20)
 }
+cluster_scale = 12.0
+cluster_threshold = 0.1
+cluster_soft = 0.3
 seed = 101
 scale_range = Vector2(0.7, 1.6)
 align_to_normal = 0.9
 sink = 0.02
 cast_shadows = false
 
-[sub_resource type="Resource" id="Resource_cdywx"]
+[sub_resource type="Resource" id="Resource_lebod"]
 script = ExtResource("1_n8ok1")
 name = "boulders"
 model = "res://assets/models/rocks.glb"
@@ -366,11 +788,12 @@ rules = {
 "height": Vector3(1, 9000, 20),
 "slope": Vector3(0.05, 0.9, 0.1)
 }
-cluster_scale = 90.0
-cluster_soft = 0.4
+cluster_scale = 45.0
+cluster_threshold = 0.15
+cluster_soft = 0.25
 seed = 103
-scale_range = Vector2(0.5, 2.6)
-edge_scale = 0.2
+scale_range = Vector2(0.7, 3.2)
+edge_scale = 0.1
 max_tilt_deg = 20.0
 align_to_normal = 0.5
 sink = 0.15
@@ -379,7 +802,7 @@ collision = 2
 collision_size = Vector2(0.7, 0.35)
 collision_distance = 50.0
 
-[sub_resource type="Resource" id="Resource_2bk07"]
+[sub_resource type="Resource" id="Resource_16j8l"]
 script = ExtResource("1_n8ok1")
 name = "boulders_b"
 model = "res://assets/models/rocks.glb"
@@ -395,9 +818,11 @@ rules = {
 "height": Vector3(1, 9000, 20),
 "rock": Vector3(0.2, 2, 0.2)
 }
+cluster_scale = 60.0
+cluster_soft = 0.3
 seed = 107
-scale_range = Vector2(0.6, 3)
-edge_scale = 0.3
+scale_range = Vector2(0.8, 3.6)
+edge_scale = 0.15
 max_tilt_deg = 25.0
 align_to_normal = 0.6
 sink = 0.2
@@ -406,7 +831,7 @@ collision = 2
 collision_size = Vector2(0.7, 0.4)
 collision_distance = 50.0
 
-[sub_resource type="Resource" id="Resource_8er1p"]
+[sub_resource type="Resource" id="Resource_ollxb"]
 script = ExtResource("1_n8ok1")
 name = "slabs"
 model = "res://assets/models/rocks.glb"
@@ -430,7 +855,7 @@ align_to_normal = 0.85
 sink = 0.1
 shadow_distance = 100.0
 
-[sub_resource type="Resource" id="Resource_ul3yx"]
+[sub_resource type="Resource" id="Resource_txire"]
 script = ExtResource("1_n8ok1")
 name = "rock_clusters"
 model = "res://assets/models/rocks.glb"
@@ -456,9 +881,57 @@ shadow_distance = 180.0
 collision = 3
 collision_distance = 50.0
 
+[sub_resource type="Resource" id="Resource_1bl1o"]
+script = ExtResource("1_n8ok1")
+name = "scree"
+model = "res://assets/models/rocks.glb"
+meshes = PackedStringArray("scree_lod0", "scree_lod1")
+lod_distances = PackedFloat32Array(60)
+max_distance = 260.0
+grid_res = 6
+exact_height = true
+density = 0.03
+rules = {
+"scree": Vector3(0.2, 2, 0.2),
+"snow": Vector3(-1, 0.4, 0.2)
+}
+cluster_scale = 25.0
+cluster_threshold = -0.2
+seed = 115
+scale_range = Vector2(0.7, 1.6)
+align_to_normal = 0.85
+sink = 0.05
+shadow_distance = 80.0
+
+[sub_resource type="Resource" id="Resource_svu5j"]
+script = ExtResource("1_n8ok1")
+name = "tors"
+model = "res://assets/models/rocks.glb"
+meshes = PackedStringArray("tor_lod0", "tor_lod1")
+lod_distances = PackedFloat32Array(90)
+cell_size = 192.0
+max_distance = 650.0
+fade_length = 70.0
+grid_res = 6
+exact_height = true
+density = 0.0005
+rules = {
+"rock": Vector3(0.15, 2, 0.2),
+"slope": Vector3(-1, 0.35, 0.1),
+"snow": Vector3(-1, 0.4, 0.2)
+}
+cluster_scale = 220.0
+seed = 117
+scale_range = Vector2(1, 2.6)
+max_tilt_deg = 8.0
+align_to_normal = 0.3
+sink = 0.3
+shadow_distance = 260.0
+collision = 3
+
 [resource]
 script = ExtResource("2_33w37")
-layers = Array[ExtResource("1_n8ok1")]([SubResource("Resource_45p20"), SubResource("Resource_no7q4"), SubResource("Resource_2atc5"), SubResource("Resource_kx0v8"), SubResource("Resource_m2467"), SubResource("Resource_np16n"), SubResource("Resource_t1ngj"), SubResource("Resource_fl525"), SubResource("Resource_jcros"), SubResource("Resource_j0n45"), SubResource("Resource_j2qpl"), SubResource("Resource_cdywx"), SubResource("Resource_2bk07"), SubResource("Resource_8er1p"), SubResource("Resource_ul3yx")])
+layers = Array[ExtResource("1_n8ok1")]([SubResource("Resource_45p20"), SubResource("Resource_no7q4"), SubResource("Resource_2atc5"), SubResource("Resource_kx0v8"), SubResource("Resource_m2467"), SubResource("Resource_np16n"), SubResource("Resource_t1ngj"), SubResource("Resource_fl525"), SubResource("Resource_jcros"), SubResource("Resource_j0n45"), SubResource("Resource_j2qpl"), SubResource("Resource_cdywx"), SubResource("Resource_2bk07"), SubResource("Resource_8er1p"), SubResource("Resource_ul3yx"), SubResource("Resource_a7bvd"), SubResource("Resource_e00l4"), SubResource("Resource_ix5rk"), SubResource("Resource_bcdqc"), SubResource("Resource_qe0lg"), SubResource("Resource_lebod"), SubResource("Resource_16j8l"), SubResource("Resource_ollxb"), SubResource("Resource_txire"), SubResource("Resource_1bl1o"), SubResource("Resource_svu5j")])
 material_params = {
 "bark": {
 "color_a": Color(0.5, 0.42, 0.35, 1),
@@ -468,12 +941,20 @@ material_params = {
 "bark_palm": {
 "sway_amp": 0.02
 },
+"flower": {
+"patch_scale": 7.0
+},
 "frond": {
 "color_a": Color(0.26, 0.47, 0.13, 1),
 "color_b": Color(0.46, 0.62, 0.2, 1),
 "color_dry": Color(0.62, 0.56, 0.3, 1),
 "dry_amount": 0.35,
 "flutter_amp": 0.07,
+"night_glow": 0.25,
+"night_glow_color": Color(0.2, 0.85, 0.75, 1),
+"region_strength": 0.85,
+"region_tint_b": Color(0.4, 0.15, 0.48, 1),
+"region_tint_c": Color(0.06, 0.4, 0.42, 1),
 "sway_amp": 0.02,
 "translucency": 0.6,
 "variation": 0.4
@@ -488,6 +969,11 @@ material_params = {
 "color_dry": Color(0.72, 0.42, 0.15, 1),
 "dry_amount": 0.55,
 "flutter_amp": 0.06,
+"night_glow": 0.25,
+"night_glow_color": Color(0.2, 0.85, 0.75, 1),
+"region_strength": 0.85,
+"region_tint_b": Color(0.4, 0.15, 0.48, 1),
+"region_tint_c": Color(0.06, 0.4, 0.42, 1),
 "sway_amp": 0.016,
 "translucency": 0.6,
 "variation": 0.45
@@ -498,14 +984,22 @@ material_params = {
 "color_dry": Color(0.52, 0.47, 0.25, 1),
 "dry_amount": 0.15,
 "flutter_amp": 0.05,
+"night_glow": 0.12,
+"night_glow_color": Color(0.2, 0.85, 0.75, 1),
+"region_strength": 0.85,
+"region_tint_b": Color(0.4, 0.15, 0.48, 1),
+"region_tint_c": Color(0.06, 0.4, 0.42, 1),
 "sway_amp": 0.012,
 "translucency": 0.6,
 "variation": 0.4
 },
 "rock": {
 "color_cover": Color(0.32, 0.4, 0.16, 1),
-"cover_amount": 0.4,
-"snow_amount": 1.0
+"cover_amount": 0.45,
+"lichen_amount": 0.7,
+"snow_amount": 1.0,
+"top_amount": 0.35,
+"top_color": Color(0.56, 0.52, 0.46, 1)
 }
 }
 max_altitude = 3600.0

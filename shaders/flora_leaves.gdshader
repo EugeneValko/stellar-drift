@@ -31,6 +31,7 @@ varying float v_fade;
 varying vec3 v_tint;
 varying float v_ao;
 varying float v_tip;
+varying float v_glow;
 
 void vertex() {
 	vec3 inst = MODEL_MATRIX[3].xyz;
@@ -49,7 +50,10 @@ void vertex() {
 	vec3 base = mix(color_a, color_b, clamp(r * variation * 2.0, 0.0, 1.0));
 	float dry = clamp(dry_amount * (1.0 - INSTANCE_CUSTOM.z) * 1.6 - 0.15 + (fract(r * 7.13) - 0.5) * 0.3, 0.0, 1.0);
 	v_tint = mix(base, color_dry, dry * dry);
+	v_tint = flora_region_tint(v_tint, INSTANCE_CUSTOM.w, r);
 	v_tint *= 0.85 + 0.3 * fract(r * 13.7);
+	// a share of the plants glow faintly at their tips at night
+	v_glow = night_glow > 0.0 ? flora_night(up) * step(fract(r * 5.71), 0.35) * night_glow : 0.0;
 	v_ao = COLOR.b;
 	v_tip = COLOR.g;
 }
@@ -129,6 +133,9 @@ void fragment() {
 	AO = v_ao;
 	AO_LIGHT_AFFECT = 0.55;
 	BACKLIGHT = c * translucency * (0.5 + 0.5 * v_ao);
+	if (v_glow > 0.0) {
+		EMISSION = night_glow_color * v_glow * smoothstep(0.55, 1.0, v_tip) * mix(0.6, 1.0, vein);
+	}
 	if (debug_mode == 1) {
 		BACKLIGHT = vec3(0.0);
 	} else if (debug_mode == 2) {
