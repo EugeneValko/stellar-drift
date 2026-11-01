@@ -1,0 +1,67 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://src/ship/ship.gd" id="1_ship"]
+[ext_resource type="PackedScene" path="res://scenes/ship/ship_visual.tscn" id="2_vis"]
+[ext_resource type="Script" path="res://src/ship/ship_camera.gd" id="3_cam"]
+[ext_resource type="Script" path="res://src/ship/ship_fx.gd" id="4_fx"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_hull"]
+friction = 0.6
+bounce = 0.1
+
+[sub_resource type="CapsuleShape3D" id="Shape_fuselage"]
+radius = 1.35
+height = 19.6
+
+[sub_resource type="BoxShape3D" id="Shape_nacelle"]
+size = Vector3(2.1, 2, 10.5)
+
+[sub_resource type="ConvexPolygonShape3D" id="Shape_wing"]
+points = PackedVector3Array(-1.6, 0, -1.5, 1.6, 0, -1.5, -7.4, -0.3, 4.2, 7.4, -0.3, 4.2, -7.4, -0.3, 6.2, 7.4, -0.3, 6.2, -1.6, 0, 8.5, 1.6, 0, 8.5, -1.6, -0.55, -1.5, 1.6, -0.55, -1.5, -7.4, -0.75, 4.2, 7.4, -0.75, 4.2, -7.4, -0.75, 6.2, 7.4, -0.75, 6.2, -1.6, -0.55, 8.5, 1.6, -0.55, 8.5)
+
+[sub_resource type="BoxShape3D" id="Shape_spine"]
+size = Vector3(1.4, 1.2, 9)
+
+[node name="Ship" type="RigidBody3D"]
+mass = 22000.0
+physics_material_override = SubResource("PhysicsMaterial_hull")
+script = ExtResource("1_ship")
+
+[node name="ShipVisual" parent="." instance=ExtResource("2_vis")]
+
+[node name="Fuselage" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.1, -0.4)
+shape = SubResource("Shape_fuselage")
+
+[node name="NacelleL" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.8, -0.05, 4.6)
+shape = SubResource("Shape_nacelle")
+
+[node name="NacelleR" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8, -0.05, 4.6)
+shape = SubResource("Shape_nacelle")
+
+[node name="Wing" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_wing")
+
+[node name="Spine" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 4.5)
+shape = SubResource("Shape_spine")
+
+[node name="CockpitCamera" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.12, -3.8)
+fov = 76.0
+near = 0.05
+far = 500000.0
+
+[node name="CameraRig" type="Node3D" parent="."]
+top_level = true
+script = ExtResource("3_cam")
+
+[node name="ChaseCamera" type="Camera3D" parent="CameraRig"]
+fov = 68.0
+near = 0.5
+far = 5e+06
+
+[node name="FX" type="Node3D" parent="."]
+script = ExtResource("4_fx")
