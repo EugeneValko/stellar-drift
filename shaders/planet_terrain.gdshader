@@ -133,12 +133,30 @@ vec3 tri_w(vec3 n) {
 	return w / (w.x + w.y + w.z);
 }
 
+// Triplanar lookups skip projections with negligible weight (pow-8 weights: on most pixels only
+// one or two planes contribute). Explicit gradients keep mip selection valid inside the branches.
+const float TRI_EPS = 0.004;
+
 vec4 tri(sampler2D t, vec3 p, vec3 w) {
-	return texture(t, p.zy) * w.x + texture(t, p.xz) * w.y + texture(t, p.xy) * w.z;
+	vec3 dx = dFdx(p);
+	vec3 dy = dFdy(p);
+	vec4 r = vec4(0.0);
+	if (w.x > TRI_EPS) { r += textureGrad(t, p.zy, dx.zy, dy.zy) * w.x; }
+	if (w.y > TRI_EPS) { r += textureGrad(t, p.xz, dx.xz, dy.xz) * w.y; }
+	if (w.z > TRI_EPS) { r += textureGrad(t, p.xy, dx.xy, dy.xy) * w.z; }
+	return r;
 }
 
+// Blurred lookup (gradients scaled like a mip bias).
 vec4 tri_bias(sampler2D t, vec3 p, vec3 w, float bias) {
-	return texture(t, p.zy, bias) * w.x + texture(t, p.xz, bias) * w.y + texture(t, p.xy, bias) * w.z;
+	float k = exp2(bias);
+	vec3 dx = dFdx(p) * k;
+	vec3 dy = dFdy(p) * k;
+	vec4 r = vec4(0.0);
+	if (w.x > TRI_EPS) { r += textureGrad(t, p.zy, dx.zy, dy.zy) * w.x; }
+	if (w.y > TRI_EPS) { r += textureGrad(t, p.xz, dx.xz, dy.xz) * w.y; }
+	if (w.z > TRI_EPS) { r += textureGrad(t, p.xy, dx.xy, dy.xy) * w.z; }
+	return r;
 }
 
 // Triplanar normal map, whiteout blend, model space. z is rebuilt from xy (robust to RG-only
@@ -149,9 +167,14 @@ vec3 nrm_xy(vec4 t, float s) {
 }
 
 vec3 tri_nrm(sampler2D t, vec3 p, vec3 n, vec3 w, float s) {
-	vec3 tx = nrm_xy(texture(t, p.zy), s);
-	vec3 ty = nrm_xy(texture(t, p.xz), s);
-	vec3 tz = nrm_xy(texture(t, p.xy), s);
+	vec3 dx = dFdx(p);
+	vec3 dy = dFdy(p);
+	vec3 tx = vec3(0.0, 0.0, 1.0);
+	vec3 ty = vec3(0.0, 0.0, 1.0);
+	vec3 tz = vec3(0.0, 0.0, 1.0);
+	if (w.x > TRI_EPS) { tx = nrm_xy(textureGrad(t, p.zy, dx.zy, dy.zy), s); }
+	if (w.y > TRI_EPS) { ty = nrm_xy(textureGrad(t, p.xz, dx.xz, dy.xz), s); }
+	if (w.z > TRI_EPS) { tz = nrm_xy(textureGrad(t, p.xy, dx.xy, dy.xy), s); }
 	vec3 nx = vec3(tx.xy + n.zy, abs(tx.z) * n.x);
 	vec3 ny = vec3(ty.xy + n.xz, abs(ty.z) * n.y);
 	vec3 nz = vec3(tz.xy + n.xy, abs(tz.z) * n.z);
@@ -166,7 +189,7 @@ float band_tile(float dist, float base, float bias, out float f) {
 	return min(base * exp2(2.0 * i), 512.0);
 }
 
-// Fall-line streaks in one triplanar plane: noise stretched along the projection of the local
+// Fall-line rills in one triplanar plane: channels stretched along the projection of the local
 // "up" on that plane (rills, couloirs, rock-fall stains). The frame rotates with `up` (~1 deg/km on
 // Terra): a smooth, invisible warp, no seams inside a chunk.
 float streak_plane(sampler2D t, vec2 q, vec2 upp) {
@@ -177,7 +200,11 @@ float streak_plane(sampler2D t, vec2 q, vec2 upp) {
 	vec2 u2 = upp / l;
 	float a = dot(q, u2);
 	float s = dot(q, vec2(-u2.y, u2.x));
-	return texture(t, vec2(s / 240.0, a / 1900.0)).b * 0.6 + texture(t, vec2(s / 64.0, a / 520.0)).r * 0.4;
+	// discrete channels: crests of the ridged channel, broken up along their length
+	float c1 = smoothstep(0.62, 0.86, texture(t, vec2(s / 220.0, a / 1100.0)).b);
+	float c2 = smoothstep(0.66, 0.88, texture(t, vec2(s / 60.0, a / 300.0)).b);
+	float brk = smoothstep(0.3, 0.6, texture(t, vec2(s / 400.0, a / 500.0)).a);
+	return clamp(c1 * (0.5 + 0.5 * brk) + c2 * 0.6 * brk, 0.0, 1.0);
 }
 
 void fragment() {
@@ -212,13 +239,13 @@ void fragment() {
 	float lat = abs(up.y);
 	float curv = v_mask.a - 0.5;
 	float concave = smoothstep(0.0, 0.12, curv);
-	// fall-line streaks on slopes (mean 0.5: ScatterBiome treats it as its mean, like n1)
-	float streak = 0.5;
+	// rills / couloirs down the fall line on slopes (0..1, mostly 0; ScatterBiome ignores it like n1)
+	float rill = 0.0;
 	float steep = smoothstep(0.06, 0.22, slope);
 	if (steep > 0.0) {
-		streak = streak_plane(tex_noise, p.zy, up.zy) * w.x + streak_plane(tex_noise, p.xz, up.xz) * w.y
+		rill = streak_plane(tex_noise, p.zy, up.zy) * w.x + streak_plane(tex_noise, p.xz, up.xz) * w.y
 			+ streak_plane(tex_noise, p.xy, up.xy) * w.z;
-		streak = mix(0.5, streak, steep);
+		rill *= steep;
 	}
 
 	// ---------- biome weights (SYNC: ScatterBiome.evaluate_into) ----------
@@ -226,9 +253,9 @@ void fragment() {
 	float snow_h = snow_line * (1.0 - polar_snow * lat * lat) + (macro + n2) * snow_line * 0.15;
 	// snow collects in gullies, couloirs and on flats, thins out on convex ridges and steep faces
 	float snow_in = hb + (n1 * 0.6 + (nband.b - 0.5)) * 420.0 - slope * 900.0 + curv * 900.0
-		+ (streak - 0.5) * 900.0;
+		+ rill * 700.0;
 	float snow = smoothstep(snow_h - 180.0, snow_h + 180.0, snow_in);
-	float rock_slope = smoothstep(0.13, 0.3, slope + n1 * 0.08 + n2 * 0.1 + (0.5 - streak) * 0.12);
+	float rock_slope = smoothstep(0.13, 0.3, slope + n1 * 0.08 + n2 * 0.1 + rill * 0.1);
 	// alpine zone: scree and bare rock between the tree line and the snow line
 	float alpine = smoothstep(snow_h * 0.5, snow_h * 0.75, hb + n2 * 400.0 + n1 * 120.0);
 	float rock = max(rock_slope, smoothstep(0.35, 0.85, v_mask.r + n2 * 0.4) * (1.0 - snow * 0.7));
@@ -314,7 +341,7 @@ void fragment() {
 	rk *= 1.0 + smoothstep(0.94, 0.99, sin(sh * 0.61 + nband.g) * 0.5 + 0.5) * strata_strength * 0.4;
 	rk *= 0.85 + 0.3 * nband.g;
 	// rills / rock-fall stains down the fall line; greyer, colder rock up high
-	rk *= mix(0.68, 1.25, smoothstep(0.2, 0.8, streak));
+	rk *= mix(1.06, 0.62, rill);
 	rk = mix(rk, vec3(dot(rk, vec3(0.33))) * vec3(0.95, 0.98, 1.04), smoothstep(0.3, 0.9, hb / max(snow_line, 1.0)) * 0.45);
 	rk = mix(rk, rk * 0.72, concave * 0.8);     // darker, wetter gullies
 	rk *= 0.92 + 0.16 * smoothstep(0.3, 0.9, dot(ng, up));   // weathered, lighter ledges
@@ -449,10 +476,12 @@ void fragment() {
 		// Nyx: dark eerie ground, faint glowing crystal veins
 		vec4 v32 = tri(tex_ground, p / 32.0, w);
 		vec4 v8 = tri(tex_ground, p / 8.0, w);
-		float vein = max(v32.b * smoothstep(0.45, 0.7, nmid.b), v8.b * smoothstep(0.55, 0.75, nmid.g) * 0.7);
+		// thin, branching veins: sharpened crack mask, only in some regions, brighter where they meet
+		float vein = max(v32.b * v32.b * smoothstep(0.45, 0.7, nmid.b), v8.b * v8.b * smoothstep(0.6, 0.8, nmid.g) * 0.6);
+		vein *= 0.6 + 0.4 * smoothstep(0.3, 0.7, nband.r);
 		float pulse = 0.75 + 0.25 * sin(TIME * 0.6 + (p.x + p.z) * 0.02);
-		col = mix(col, col * 0.4, vein);
-		emit += color_accent * vein * 0.35 * pulse * (1.0 - smoothstep(400.0, 3000.0, dist));
+		col = mix(col, col * 0.45, vein);
+		emit += color_accent * vein * 0.16 * pulse * (1.0 - smoothstep(400.0, 3000.0, dist));
 		glint = 0.4;
 	}
 

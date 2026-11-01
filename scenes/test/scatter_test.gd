@@ -160,7 +160,7 @@ func apply_capture_preset(preset: String) -> void:
 			look = _toward_best(d, 600.0, func(b: Dictionary) -> float: return b["height"] * 0.002 - b["slope"] * 3.0)
 			look = (look + d * 0.05).normalized()
 			az = 150.0
-			elev = 14.0
+			elev = 30.0
 		"nyx_crystals":
 			var s := _find_site(rnd, func(b: Dictionary) -> float: return 1.0 - b["slope"] * 6.0 - b["rock"])
 			d = s

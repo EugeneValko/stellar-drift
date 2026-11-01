@@ -231,10 +231,11 @@ sink = 0.05
 shadow_distance = 60.0
 material_overrides = {
 "crystal": {
-"color_body": Color(0.75, 0.62, 0.1, 1),
-"color_glow": Color(1, 0.9, 0.3, 1),
-"color_rim": Color(1, 0.95, 0.6, 1),
-"glow_energy": 0.35
+"color_body": Color(0.5, 0.42, 0.08, 1),
+"color_glow": Color(0.9, 0.75, 0.2, 1),
+"color_rim": Color(0.8, 0.7, 0.3, 1),
+"glow_energy": 0.06,
+"roughness": 0.6
 }
 }
 

@@ -341,8 +341,8 @@ func _volcanic(vex: bool) -> ScatterRuleSet:
 			"rules": {"lava": Vector3(0.05, 0.4, 0.06), "slope": Vector3(-1.0, 0.4, 0.1)},
 			"cluster_scale": 40.0, "cluster_threshold": 0.15, "scale_range": Vector2(0.25, 0.7),
 			"max_tilt_deg": 25.0, "align_to_normal": 0.6, "sink": 0.05, "shadow_distance": 60.0,
-			"material_overrides": {"crystal": {"color_body": Color(0.75, 0.62, 0.1), "color_glow": Color(1.0, 0.9, 0.3),
-				"color_rim": Color(1.0, 0.95, 0.6), "glow_energy": 0.35}}}),
+			"material_overrides": {"crystal": {"color_body": Color(0.5, 0.42, 0.08), "color_glow": Color(0.9, 0.75, 0.2),
+				"color_rim": Color(0.8, 0.7, 0.3), "glow_energy": 0.06, "roughness": 0.6}}}),
 	]
 	return rs
 
