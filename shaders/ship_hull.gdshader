@@ -340,9 +340,9 @@ void fragment() {
 	// --- grime ---
 	float gn = fbm(p * 1.3 + vec3(0.0, 3.0, 0.0));
 	float streak = vnoise(vec3(p.x * 9.0, p.y * 0.8, p.z * 9.0));
-	float gm = clamp((1.0 - ao) * 1.4 + cavity * 0.9, 0.0, 1.0) * (0.55 + 0.45 * gn);
+	float gm = clamp((1.0 - ao) * 1.2 + cavity * 0.9, 0.0, 1.0) * (0.75 + 0.25 * gn);
 	gm += smoothstep(0.62, 0.95, streak) * 0.35 * smoothstep(0.3, -0.3, n.y) * gn;
-	gm += smoothstep(0.55, 0.9, gn) * 0.10;
+	gm += smoothstep(0.6, 0.95, gn) * 0.05;
 	gm = clamp(gm * grime, 0.0, 1.0);
 	col = mix(col, col * grime_color * 2.2, gm);
 	rough = mix(rough, 0.75, gm * 0.6);
