@@ -5,3 +5,5 @@
 - Установлены Godot 4.7.2 + шаблоны, lavapipe, Xvfb, ffmpeg, Blender 5.2.3. Скрипт `tools/setup_env.sh`.
 - Проверено: скриншот Forward+ из облака (~25 с/кадр), Blender headless → GLB, локальная сборка `.exe` (105 МБ).
 - Добавлен CI: `.github/workflows/build-windows.yml` (nightly-релиз).
+- CI исправлен (чтение versions.env), первый успешный nightly: StellarDrift-windows-33e96fc.zip (38 МБ).
+- Запущены 4 агента параллельно (worktrees): космос+звезда, рельеф планет, атмосфера/океан/газ-гигант, корабль (Blender).

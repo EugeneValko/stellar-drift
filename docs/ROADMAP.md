@@ -8,7 +8,7 @@
 - [x] Скриншоты/видео из сцен (`tools/shot.sh`, `tools/movie.sh`, autoload `Capture`)
 - [x] Blender 5.2 headless → GLB
 - [x] Локальная сборка Windows `.exe`
-- [ ] GitHub Actions: nightly-сборка в Releases (проверить первый прогон)
+- [x] GitHub Actions: nightly-сборка в Releases (работает, ~1 мин)
 
 ## Этап 1 — Космос и звезда
 - [ ] Небо: звёзды, Млечный путь, туманности, пыль
