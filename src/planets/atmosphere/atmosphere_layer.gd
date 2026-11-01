@@ -41,7 +41,7 @@ const PRESETS := {
 		"mie_density": 3.0, "mie_color": Color(1, 0.9, 0.75), "mie_absorb": Vector3(0.1, 0.1, 0.1),
 		"mie_g": 0.8, "ozone_density": 2.0, "ozone_height": 7000.0, "intensity": PI,
 		"multi_scatter": 0.0, "ms_strength": 1.4, "ms_lift_deg": 4.5, "sun_path_scale": 2.6,
-		"twilight_tint": Vector3(1.25, 0.9, 0.95), "twilight_tint_mie": Vector3(1.8, 0.85, 0.3),
+		"twilight_tint": Vector3(1.32, 0.9, 0.95), "twilight_tint_mie": Vector3(2.1, 0.9, 0.25),
 		"emission": Vector3(0.45e-6, 1.0e-6, 0.8e-6),   # faint teal airglow band at night
 		"night_light": Vector3(0.018, 0.024, 0.042),    # starlight + airglow + giant-shine (ambient)
 	},
