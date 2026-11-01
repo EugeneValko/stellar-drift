@@ -27,6 +27,9 @@ var _look := Vector2.ZERO
 
 func _ready() -> void:
 	near = 0.1
+	# move before SolarSystem (-100) and Star: scaled-space transforms are computed from the
+	# camera position of THIS frame (a one-frame lag would drag far bodies along at speed)
+	process_priority = -1000
 
 
 func _unhandled_input(event: InputEvent) -> void:

@@ -284,7 +284,7 @@ func _partial_weather(r: SolarSystem.BodyRec, n: Vector3, look: Vector3) -> void
 				var d := (n * r.radius + (f * (8000.0 + 9000.0 * k) + side * sgn * 9000.0)).normalized()
 				c += maxf(r.clouds.weather_at(d).x, 0.0)
 				cnt += 1.0
-		var v := absf(c / cnt - 0.4)
+		var v := absf(c / cnt - 0.25)
 		if v < best:
 			best = v
 			best_a = a
@@ -323,10 +323,10 @@ func _terra_orbit() -> void:
 	var t := _rec("Terra Nova")
 	var ds := _dir_to("Terra Nova", "Selene")
 	var da := _dir_to("Terra Nova", "Aurelion")
-	var mid := (ds * 0.6 + da * 0.4).normalized()
-	var u := (-mid + Vector3.UP * 0.22).normalized()
-	var off := u * 200000.0
-	var look := mid * 70000.0
+	var mid := (ds + da).normalized()
+	var u := (-mid + Vector3.UP * 0.25).normalized()
+	var off := u * 205000.0
+	var look := mid * 60000.0
 	_place_space(t, off, look, Vector3.UP)
 	cam.fov = 62.0
 
