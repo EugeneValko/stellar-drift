@@ -325,15 +325,15 @@ func apply_capture_preset(preset: String) -> void:
 			set_sun_at(d, fwd, 20.0, 150.0)
 			place_ship(d, 260.0, fwd, 2.0, Vector3.ZERO, Ship.Mode.ATMOSPHERE)
 			set_ship_velocity(-ship.global_basis.z * 430.0)
-			fx.force_vapor = 0.7
+			fx.force_vapor = 0.8
 			fx.force_thrust = 1.0
-			rig.view_override = _orbit_cam.bind(Vector3(7.0, 3.2, 22.0), Vector3(0, 0.0, -10.0))
+			rig.view_override = _orbit_cam.bind(Vector3(15.0, 3.5, 14.0), Vector3(0, 0.0, -9.0))
 		"cockpit":
-			var d := offset_dir(peak, Vector3.UP, -9000.0)
+			var d := offset_dir(peak, Vector3.UP, -70000.0)
 			var fwd := tangent_toward(d, peak)
-			set_sun_at(d, fwd, 26.0, 140.0)
-			place_ship(d, 700.0, fwd, -3.0, Vector3.ZERO, Ship.Mode.ATMOSPHERE)
-			set_ship_velocity(-ship.global_basis.z * 250.0)
+			set_sun_at(d, fwd, 35.0, 150.0)
+			place_ship(d, 26000.0, fwd, -38.0, Vector3.ZERO, Ship.Mode.SPACE)
+			set_ship_velocity(-ship.global_basis.z * 1800.0)
 			rig.set_view(ShipCameraRig.View.COCKPIT)
 		"landed":
 			var d := find_flat_near(peak)

@@ -554,6 +554,8 @@ func _update_vapor(_dt: float, vdir: Vector3, speed: float, B: Basis) -> void:
 	var turn := clampf(w * speed / 250.0, 0.0, 1.0) * clampf((ship.density - 0.15) / 0.3, 0.0, 1.0) \
 		* clampf(speed / 120.0, 0.0, 1.0)
 	var wt := maxf(vp, turn)
+	if ship.capture_hold:
+		wt = 0.0   # stills render in slow real time: particles would be sparse slashes
 	var vl := B.transposed() * vdir
 	for p in _wing_trails:
 		p.emitting = wt > 0.05

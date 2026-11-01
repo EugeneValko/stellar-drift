@@ -38,5 +38,5 @@ void fragment() {
 	vec4 vp = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, depth, 1.0);
 	float soft = clamp((-vp.z / vp.w - (-VERTEX.z)) / 0.8, 0.0, 1.0);
 	ALBEDO = color;
-	ALPHA = clamp(band * (0.15 + 0.85 * pow(rim, 1.5)) * mix(0.45, 1.0, n) * amount * 0.75, 0.0, 1.0) * soft;
+	ALPHA = clamp(band * pow(rim, 2.0) * mix(0.45, 1.0, n) * amount * 0.75, 0.0, 1.0) * soft;
 }

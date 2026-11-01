@@ -17,6 +17,7 @@ enum View { CHASE, COCKPIT }
 @export var base_fov := 68.0
 @export var cockpit_fov := 76.0
 @export var shake_scale := 1.0
+@export var cockpit_eye_offset := Vector3(0.0, 0.18, 0.0)
 
 var ship: Ship
 var view: int = View.CHASE
@@ -141,7 +142,9 @@ func _process(dt: float) -> void:
 		cockpit.far = 5.0e5 if far < 1.0e7 else 3.0e6
 		var eye: Node3D = ship.visual.get_marker("PilotEye") if ship.visual else null
 		var ep := eye.position if eye else Vector3(0, 1.12, -3.8)
-		cockpit.transform = Transform3D(Basis.from_euler(shr * 0.6), ep + sh * 0.08)
+		# eye slightly above the marker and pitched down a touch: over the glowing dash display
+		cockpit.transform = Transform3D(Basis.from_euler(Vector3(deg_to_rad(-6.0), 0, 0) + shr * 0.6),
+			ep + cockpit_eye_offset + sh * 0.08)
 
 
 func _noise(seed_v: float) -> float:
