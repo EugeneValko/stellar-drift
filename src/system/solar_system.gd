@@ -71,7 +71,7 @@ const PRESET_DIR := "res://src/planets/presets/"
 @export_group("Exposure")
 @export var auto_exposure := true
 @export var exposure_space := 1.0
-@export var exposure_day_surface := 0.9
+@export var exposure_day_surface := 1.05
 @export var exposure_night_surface := 2.6
 ## Background (stars, Milky Way) energy in a daylight sky (1 = space).
 @export var sky_day_energy := 0.006
@@ -497,7 +497,8 @@ func _apply_scale(r: BodyRec, k: float, cam: Camera3D) -> void:
 		var cam_local := r.node.to_local(cam.global_position)
 		t = Transform3D(Basis.from_scale(Vector3(k, k, k)), cam_local * (1.0 - k))
 	for v in r.visuals:
-		if is_instance_valid(v):
+		# avoid re-setting identity every frame (propagates to hundreds of terrain chunks)
+		if is_instance_valid(v) and v.transform != t:
 			v.transform = t
 
 

@@ -39,6 +39,9 @@ var mesh_instance: MeshInstance3D
 var material: ShaderMaterial
 var weather_viewport: SubViewport
 var _bake_mat: ShaderMaterial
+var _weather_img: Image
+var _weather_ready := false
+var _bake_serial := 0
 
 
 func setup(cfg: Variant = null) -> void:
@@ -58,6 +61,7 @@ func setup(cfg: Variant = null) -> void:
 		"cloud_detail_size": float(params.get("detail_size", 2000.0)),
 		"cloud_weather_seed": float(params.get("seed", 0.0)),
 		"cloud_rot_speed": float(params.get("rot_speed", 0.00002)),
+		"cloud_rot_offset": float(params.get("rot_offset", 0.0)),
 		"cloud_wind_vel": params.get("wind_vel", Vector3(6.0, 0.0, 3.0)),
 		"cloud_cyclones": int(params.get("cyclones", 7)),
 		"cloud_cyclone_strength": float(params.get("cyclone_strength", 1.0)),
@@ -66,6 +70,7 @@ func setup(cfg: Variant = null) -> void:
 	}
 	var cirrus_alt: float = float(params.get("cirrus_altitude", 3500.0))
 	_ensure_nodes(top + (cirrus_alt if float(params.get("cirrus_opacity", 0.4)) > 0.0 else 0.0))
+	_weather_ready = false
 	_bake_weather(int(params.get("weather_resolution", 2048)))
 	uniforms["cloud_weather_tex"] = weather_viewport.get_texture()
 	var render := {
@@ -117,12 +122,61 @@ func _bake_weather(width: int) -> void:
 	rect2.size = Vector2(width, width / 2)
 	LayerParams.apply_uniforms(_bake_mat, uniforms)
 	weather_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+	_mark_baked()
+
+
+## weather_at() becomes valid once the bake has actually been drawn.
+func _mark_baked() -> void:
+	_bake_serial += 1
+	var serial := _bake_serial
+	_weather_img = null
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	if serial == _bake_serial:
+		_weather_ready = true
 
 
 ## Re-bakes the weather map (e.g. after changing coverage/seed, or periodically for evolution).
 func rebake() -> void:
+	_weather_ready = false
 	LayerParams.apply_uniforms(_bake_mat, uniforms)
 	weather_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+	_mark_baked()
+
+
+## CPU readback of the baked weather (R = coverage, G = type) at a planet-local direction.
+## Slow the first time (GPU -> CPU copy); for tools / capture site selection, not per frame.
+## Returns Vector2(-1, -1) until the bake has been rendered.
+func weather_at(dir_local: Vector3) -> Vector2:
+	if not _weather_ready:
+		return Vector2(-1, -1)
+	if _weather_img == null:
+		var tex := weather_viewport.get_texture()
+		if tex == null:
+			return Vector2(-1, -1)
+		_weather_img = tex.get_image()
+		if _weather_img == null or _weather_img.is_empty():
+			_weather_img = null
+			return Vector2(-1, -1)
+	var d := dir_local.normalized()
+	var a: float = uniforms.get("cloud_rot_offset", 0.0)
+	d = Vector3(cos(a) * d.x - sin(a) * d.z, d.y, sin(a) * d.x + cos(a) * d.z)
+	var u := atan2(d.z, d.x) / TAU + 0.5
+	var v := acos(clampf(d.y, -1.0, 1.0)) / PI
+	var w := _weather_img.get_width()
+	var h := _weather_img.get_height()
+	var c := _weather_img.get_pixel(clampi(int(u * w), 0, w - 1), clampi(int(v * h), 0, h - 1))
+	return Vector2(c.r, c.g)
+
+
+## Rotates the whole weather map around the planet axis (radians) on the cloud material and
+## on shadow receivers (terrain / ocean materials that use cloud_shadow_*()).
+func set_rotation_offset(a: float, receivers: Array = []) -> void:
+	uniforms["cloud_rot_offset"] = a
+	params["rot_offset"] = a
+	material.set_shader_parameter("cloud_rot_offset", a)
+	for m: ShaderMaterial in receivers:
+		m.set_shader_parameter("cloud_rot_offset", a)
 
 
 func set_atmosphere(a: Variant) -> void:

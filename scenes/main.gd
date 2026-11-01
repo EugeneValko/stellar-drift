@@ -37,6 +37,14 @@ func _ready() -> void:
 			terra.ocean.material.set_shader_parameter(k.substr(3), v)
 		elif k.begins_with("tu_"):
 			terra.planet.terrain_material.set_shader_parameter(k.substr(3), v)
+		elif k == "hide":   # --hide=Terra_Nova/Atmosphere+Aurelion (body or body/component)
+			for item: String in String(Capture.args[k]).split("+"):
+				var parts := item.replace("_", " ").split("/")
+				var rec := system.get_body(parts[0])
+				if parts.size() == 1:
+					rec.node.visible = false
+				elif rec.planet:
+					rec.planet.get_component(parts[1]).visible = false
 	cam.make_current()
 	var capture_drives := Capture.active and (Capture.args.has("cam") or Capture.args.has("shots"))
 	if not capture_drives:
@@ -44,6 +52,12 @@ func _ready() -> void:
 
 
 func apply_capture_preset(preset: String) -> void:
+	# site selection reads the baked cloud weather back: wait until it has been rendered
+	var terra := system.get_body("Terra Nova")
+	for i in 10:
+		if terra.clouds == null or terra.clouds.weather_at(Vector3.UP).x >= 0.0:
+			break
+		await get_tree().process_frame
 	cam.fov = 60.0
 	cam.near = 0.1
 	cam.velocity = Vector3.ZERO
@@ -76,11 +90,15 @@ func apply_capture_preset(preset: String) -> void:
 		system.auto_exposure = false
 		system.exposure_space = float(Capture.args["exposure"])
 	var f := system.focus
+	if f:
+		var upv := (cam.global_position - f.node.global_position).normalized()
+		print("[main]   sun elev %.1f deg, sun_dir %s" % [rad_to_deg(asin(upv.dot(system.sun_dir))), str(system.sun_dir)])
 	for bn in ["Aurelion", "Selene", "Terra Nova", "Helios"]:
 		var bnode := system.get_body_node(bn)
 		var vis := not cam.is_position_behind(bnode.global_position)
 		var sp := cam.unproject_position(bnode.global_position) if vis else Vector2(-1, -1)
-		print("[main]   %s screen=%s dist=%.0f km" % [bn, str(sp), bnode.global_position.length() / 1000.0])
+		var rr := system.get_body(bn)
+		print("[main]   %s screen=%s dist=%.0f km k=%.5f prio=%d" % [bn, str(sp), bnode.global_position.length() / 1000.0, rr.k, rr.prio_base])
 	print("[main] %s: focus=%s alt=%.0f m, terrain built in %d ms" % [preset,
 		f.name if f else "-", _alt(f) if f else -1.0, Time.get_ticks_msec() - t0])
 
@@ -173,6 +191,41 @@ func _search_sun_circle(r: SolarSystem.BodyRec, s: Vector3, elev_deg: float, sco
 	return best
 
 
+## Cloud coverage (0..1) where the ray from surface normal n along `dir` crosses the cloud
+## layer (0 when unknown).
+func _cloud_cov(r: SolarSystem.BodyRec, n: Vector3, dir: Vector3) -> float:
+	if r.clouds == null:
+		return 0.0
+	var up := maxf(dir.dot(n), 0.05)
+	var c := 0.0
+	for ch: float in [1500.0, 2500.0, 3500.0, 4500.0]:
+		var p := n * r.radius + dir * (ch / up)
+		c = maxf(c, r.clouds.weather_at(p.normalized()).x)
+	return c
+
+
+## Rotates the weather map of body r (capture framing) so the sky along `dirs` from the
+## surface point n is as clear as possible (weights per direction).
+func _clear_weather(r: SolarSystem.BodyRec, n: Vector3, dirs: Array, weights: Array) -> void:
+	if r.clouds == null or r.clouds.weather_at(Vector3.UP).x < 0.0:
+		return
+	var recv: Array = [r.planet.terrain_material]
+	if r.ocean:
+		recv.append(r.ocean.material)
+	var best_a := 0.0
+	var best := INF
+	for i in 72:
+		var a := TAU * float(i) / 72.0
+		r.clouds.set_rotation_offset(a)
+		var c := 0.0
+		for j in dirs.size():
+			c += _cloud_cov(r, n, dirs[j]) * float(weights[j])
+		if c < best:
+			best = c
+			best_a = a
+	r.clouds.set_rotation_offset(best_a, recv)
+
+
 ## How much (deg) the terrain toward the sun rises above the sun elevation (0 = sunlit).
 func _sun_blocked(r: SolarSystem.BodyRec, n: Vector3, s: Vector3, sun_elev: float) -> float:
 	var f := _horizon_dir(n, s)
@@ -219,7 +272,7 @@ func _terra_limb_sunrise() -> void:
 	var dist := 128000.0
 	var top := t.atmo.get_top_radius() if t.atmo else t.radius
 	var alpha := asin((t.radius + 3000.0) / dist)       # limb of the visible planet
-	var ang := alpha - deg_to_rad(0.6)                # sun centre just above the limb
+	var ang := alpha + deg_to_rad(0.35)               # sun centre just above the solid limb
 	var w := s.cross(Vector3.UP).normalized()
 	# camera direction c: angle between -c and s equals `ang`
 	var c := (-s * cos(ang) + w * sin(ang)).normalized()
@@ -288,37 +341,43 @@ func _terra_ground() -> void:
 	var base := t.planet.config.get_base_level()
 	var best_n := Vector3.ZERO
 	var best := -INF
-	for e1: float in [10.0, 13.0]:
-		for e2: float in [15.0, 18.0]:
+	for e1: float in [14.0, 17.0]:
+		for e2: float in [12.0, 14.0]:
 			for n: Vector3 in _two_elev(s, da, e1, e2):
-				for jitter in 24:
+				for jitter in 40:
 					var nn := n
 					if jitter > 0:
 						var rng := RandomNumberGenerator.new()
 						rng.seed = jitter * 7919 + int(e1 * 13.0 + e2)
-						nn = (n + Vector3(rng.randf_range(-1, 1), rng.randf_range(-1, 1), rng.randf_range(-1, 1)) * 0.02).normalized()
+						nn = (n + Vector3(rng.randf_range(-1, 1), rng.randf_range(-1, 1), rng.randf_range(-1, 1)) * 0.05).normalized()
 					var h := _h(t, nn) - base
 					if h < 15.0 or h > 900.0:
 						continue
 					var f := _horizon_dir(nn, da)
 					var m := _max_ahead(t, nn, f, 9000.0, 6) - h
-					var e := 8.0 / t.radius
 					var tt := nn.cross(f)
-					var slope := absf(_h(t, (nn + f * e).normalized()) - _h(t, (nn - f * e).normalized())) \
-						+ absf(_h(t, (nn + tt * e).normalized()) - _h(t, (nn - tt * e).normalized()))
+					var slope := 0.0
+					for em: float in [10.0, 60.0, 200.0]:
+						var e := em / t.radius
+						slope += (absf(_h(t, (nn + f * e).normalized()) - _h(t, (nn - f * e).normalized())) \
+							+ absf(_h(t, (nn + tt * e).normalized()) - _h(t, (nn - tt * e).normalized()))) * 10.0 / em
 					# relief to the sides (framing), open view toward the giant, gentle ground
 					var side_m := maxf(_max_ahead(t, nn, (f + tt).normalized(), 7000.0, 5),
 						_max_ahead(t, nn, (f - tt).normalized(), 7000.0, 5)) - h
 					var shade := _sun_blocked(t, nn, s, e1)
+					var clouds := _cloud_cov(t, nn, s) * 2.0 + _cloud_cov(t, nn, da) * 3.0
 					var score := clampf(side_m, 0.0, 900.0) * 0.002 - maxf(m - 250.0, 0.0) * 0.01 \
-						- slope * 1.0 - shade * 3.0
+						- slope * 1.0 - shade * 3.0 - clouds * 2.0
 					if score > best:
 						best = score
 						best_n = nn
 	if best_n == Vector3.ZERO:
-		best_n = _two_elev(s, da, 14.0, 12.0)[0]
+		best_n = _two_elev(s, da, 18.0, 10.0)[0]
+	_clear_weather(t, best_n, [s, da, best_n], [3.0, 3.0, 1.0])
+	print("[main]   ground site: clouds sun %.2f view %.2f here %.2f" % [_cloud_cov(t, best_n, s),
+		_cloud_cov(t, best_n, da), _cloud_cov(t, best_n, best_n)])
 	var look := _horizon_dir(best_n, da)
-	look = (look + best_n * 0.2).normalized()
+	look = (look + best_n * 0.17).normalized()
 	_place_ground(t, best_n, 2.0, look)
 	cam.fov = 70.0
 
@@ -454,15 +513,17 @@ func _star_from_ignis() -> void:
 	var r := _rec("Ignis")
 	var s := system.sun_dir_from("Ignis")
 	var gen := r.planet.terrain.generator
-	var n := _search_sun_circle(r, s, 7.0, func(nn: Vector3) -> float:
+	var n := _search_sun_circle(r, s, 9.0, func(nn: Vector3) -> float:
 		var f := _horizon_dir(nn, s)
 		var lava := 0.0
 		for k in 4:
-			lava += gen.sample((nn * r.radius + f * (800.0 + 900.0 * k)).normalized(), 1e9).z
+			lava += gen.sample((nn * r.radius + f * (2500.0 + 1500.0 * k)).normalized(), 1e9).z
+		var here := gen.sample(nn, 1e9).z
 		var block := _max_ahead(r, nn, f, 12000.0, 6) - _h(r, nn)
-		return lava - maxf(block - 300.0, 0.0) * 0.004)
-	var look := (_horizon_dir(n, s) + n * 0.06).normalized()
-	_place_ground(r, n, 40.0, look)
+		# a lava channel in the middle distance, dark basalt underfoot, open view to the star
+		return minf(lava, 1.5) - here * 3.0 - maxf(block - 500.0, 0.0) * 0.004)
+	var look := (_horizon_dir(n, s) + n * 0.02).normalized()
+	_place_ground(r, n, 120.0, look)
 	cam.fov = 70.0
 
 
@@ -470,8 +531,13 @@ func _system_overview() -> void:
 	var a := _rec("Aurelion")
 	var s := system.sun_dir_from("Aurelion")
 	var w := s.cross(Vector3.UP).normalized()
-	var off := (-s * 0.82 + Vector3.UP * 0.32 + w * 0.48).normalized() * 2600000.0
-	var target := off + (s + w * -0.08 - Vector3.UP * 0.12).normalized() * 1.0e6
+	var dt := _dir_to("Aurelion", "Terra Nova")
+	var off := (-s * 0.55 + Vector3.UP * 0.32 - w * 0.75).normalized() * 2300000.0
+	# frame: Aurelion on one side, the star (with Terra/Selene near it) on the other
+	var to_a := (-off).normalized()
+	var to_star := (system.star_pos() - (_rec("Aurelion").pos + off)).normalized()
+	var target := off + (to_a * 0.5 + to_star * 0.5).normalized() * 1.0e6
+	var _dt := dt
 	_place_space(a, off, target, Vector3.UP)
 	cam.fov = 60.0
 

@@ -24,6 +24,7 @@ uniform float cloud_shape_size = 14000.0;     // m per shape noise tile
 uniform float cloud_detail_size = 2000.0;    // m per detail noise tile
 uniform float cloud_weather_seed = 0.0;
 uniform float cloud_rot_speed = 0.00002;     // weather drift around planet axis, rad/s
+uniform float cloud_rot_offset = 0.0;        // extra rotation of the weather map (rad)
 uniform vec3 cloud_wind_vel = vec3(6.0, 0.0, 3.0); // local evolution of shapes, m/s
 uniform int cloud_cyclones = 7;
 uniform float cloud_cyclone_strength = 1.0;
@@ -98,7 +99,7 @@ vec2 cloud_weather_procedural(vec3 dir) {
 
 // Baked weather lookup (equirect), with slow drift around the planet axis.
 vec2 cloud_weather_uv(vec3 dir) {
-	float a = TIME * cloud_rot_speed;
+	float a = TIME * cloud_rot_speed + cloud_rot_offset;
 	float ca = cos(a);
 	float sa = sin(a);
 	vec3 q = vec3(ca * dir.x - sa * dir.z, dir.y, sa * dir.x + ca * dir.z);
