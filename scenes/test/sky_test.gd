@@ -52,6 +52,7 @@ func _ready() -> void:
 		env.adjustment_contrast = float(Capture.args.get("contrast", "1.0"))
 	# movie mode (tools/movie.sh ... --no_game --cam=<preset>): no Capture run, apply it here
 	if not Capture.active and Capture.args.has("cam"):
+		main.help.hide()   # no "[F1]" hint in the clip
 		(func() -> void: apply_capture_preset(String(Capture.args["cam"]))).call_deferred()
 
 
