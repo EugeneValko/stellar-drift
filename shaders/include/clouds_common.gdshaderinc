@@ -166,7 +166,9 @@ float cloud_density_at(vec3 pl, float r, vec2 w, int lod) {
 		vec3 sq = vec3(sp.x * 0.8, sp.y * 2.4, sp.z * 0.8) * 0.5;
 		float st = cl_tex(sq + vec3(0.17, 0.0, 0.41)) * 0.55 + cl_tex(sq * 2.7 + vec3(0.5)) * 0.3
 			+ texture(cloud_detail_tex, sp * 0.9 + vec3(0.3)).r * 0.15;
-		float edge = smoothstep(0.1, 0.65, cov);
+		// edges: coverage fades out over a wide band and is broken up by the texture (no
+		// vertical "box" walls where the weather map changes quickly)
+		float edge = smoothstep(0.05, 0.75, cov + (st - 0.5) * 0.35);
 		float deck = edge * edge * clamp(0.62 + (st - 0.45) * 0.6, 0.0, 1.0);
 		// flat top (decks seen from above are smooth), soft base
 		float prof = smoothstep(0.0, 0.3, hn) * smoothstep(1.0, 0.82, hn + (st - 0.5) * 0.25);

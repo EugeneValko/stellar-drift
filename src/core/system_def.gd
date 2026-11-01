@@ -47,7 +47,7 @@ static func bodies() -> Array[Dictionary]:
 		"ocean": {},
 		"clouds": {"bottom": 1800.0, "top": 4600.0, "coverage": 0.33, "brightness": 2.2,
 			"cyclones": 5, "seed": 3.0, "shape_size": 7000.0, "detail_size": 1300.0,
-			"stratus": 0.85, "weather_contrast": 2.2},
+			"stratus": 0.85, "weather_contrast": 1.5},
 	})
 	out.append({
 		"name": "Selene", "kind": Kind.PLANET, "group": 2, "preset": "selene", "parent": "Terra Nova",

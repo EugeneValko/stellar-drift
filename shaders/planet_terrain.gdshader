@@ -34,7 +34,7 @@ uniform float detail_normal_strength = 1.0;
 group_uniforms lighting;
 uniform bool use_atmosphere = false;      // atmo_* uniforms are set (AtmosphereLayer.uniforms)
 uniform float sky_ambient_scale = 0.9;   // sky light (atmosphere) on the terrain
-uniform vec3 night_ambient = vec3(0.006, 0.007, 0.011);  // starlight / airglow floor (radiance)
+uniform vec3 night_ambient = vec3(0.025, 0.032, 0.055);  // starlight / airglow / planetshine floor (artistic)
 group_uniforms;
 
 uniform vec3 color_seabed : source_color = vec3(0.16, 0.18, 0.15);

@@ -112,6 +112,7 @@ func apply_capture_preset(preset: String) -> void:
 		"aurelion_rings": _aurelion_rings()
 		"vex_aurelion": _vex_aurelion()
 		"star_from_ignis": _star_from_ignis()
+		"terra_night_ground": _terra_night_ground()
 		"ignis_orbit": _orbit_view("Ignis", 3.4)
 		"glacia_orbit": _orbit_view("Glacia", 3.6)
 		"selene_orbit": _orbit_view("Selene", 4.0)
@@ -617,3 +618,33 @@ func _orbit_view(body: String, dist_r: float) -> void:
 	_place_space(r, off, Vector3.ZERO, Vector3.UP)
 	cam.fov = 45.0
 	var _w := w
+
+
+## Night side of Terra: sun 25 deg below the horizon, Aurelion (opposite the star) high in the
+## sky — checks the night exposure / starlight floor.
+func _terra_night_ground() -> void:
+	var t := _rec("Terra Nova")
+	var s := system.sun_dir_from("Terra Nova")
+	var da := _dir_to("Terra Nova", "Aurelion")
+	var base := t.planet.config.get_base_level()
+	var best_n := Vector3.ZERO
+	var best := -INF
+	for n: Vector3 in _two_elev(s, da, -25.0, 30.0):
+		for j in 30:
+			var rng := RandomNumberGenerator.new()
+			rng.seed = j * 104729 + 7
+			var nn := (n + Vector3(rng.randf_range(-1, 1), rng.randf_range(-1, 1), rng.randf_range(-1, 1)) * 0.05).normalized()
+			var h := _h(t, nn) - base
+			if h < 10.0 or h > 1500.0:
+				continue
+			var f := _horizon_dir(nn, da)
+			var relief := _max_ahead(t, nn, f, 12000.0, 6) - h
+			var score := clampf(relief, 0.0, 1500.0) * 0.002 - maxf(relief - 1500.0, 0.0) * 0.01
+			if score > best:
+				best = score
+				best_n = nn
+	if best_n == Vector3.ZERO:
+		best_n = _two_elev(s, da, -25.0, 30.0)[0]
+	var look := (_horizon_dir(best_n, da) + best_n * 0.3).normalized()
+	_place_ground(t, best_n, 2.0, look)
+	cam.fov = 70.0
