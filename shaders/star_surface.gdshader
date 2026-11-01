@@ -72,12 +72,15 @@ void fragment() {
 		vec3 gw = gp * 0.42 + vec3(0.0, t * 0.03, 0.0);
 		gp += vec3(sn_gnoise(gw), sn_gnoise(gw + 17.3), sn_gnoise(gw + 41.7)) * 0.55;
 		vec3 v = cells(gp, t * 0.35);
-		float lw = 0.32 + 0.3 * fract(v.z * 13.7);            // lane width varies per granule
+		float lw = 0.18 + 0.22 * fract(v.z * 13.7);           // narrow lanes, width varies per granule
 		float lane = smoothstep(0.0, lw, v.y - v.x);
-		float cellb = 1.0 - smoothstep(0.1, 1.0, v.x);
+		float cellb = 1.0 - smoothstep(0.0, 0.9, v.x);
+		cellb *= cellb;                                        // soft, domed granule tops
 		// some large "exploding" granules with a darker centre
-		float expl = smoothstep(0.82, 0.95, v.z) * (1.0 - smoothstep(0.0, 0.35, v.x)) * 0.45;
-		gran = (lane * 0.55 + cellb * 0.45 - expl) * (0.65 + 0.7 * v.z) - 0.62;
+		float expl = smoothstep(0.82, 0.95, v.z) * (1.0 - smoothstep(0.0, 0.35, v.x)) * 0.4;
+		gran = (lane * 0.45 + cellb * 0.55 - expl) * (0.7 + 0.6 * v.z) - 0.55;
+		// organic modulation (no visible mosaic)
+		gran *= 0.75 + 0.5 * (sn_gnoise(gp * 0.27 + 9.1) * 0.5 + 0.5);
 		// fine sub-granular texture
 		float fine_fade = 1.0 - smoothstep(0.25, 0.6, fw * granule_scale * 3.0);
 		gran += 0.18 * fine_fade * sn_gnoise(gp * 3.0 + vec3(0.0, t * 0.2, 0.0));
@@ -87,7 +90,8 @@ void fragment() {
 	// --- mesogranulation: larger convection cells that read from ~2000 km
 	float m_fade = 1.0 - smoothstep(0.3, 0.7, fw * meso_scale);
 	vec3 mv = cells(n * meso_scale + so * 0.7, t * 0.12);
-	float meso = ((1.0 - smoothstep(0.0, 1.1, mv.x)) * (0.5 + mv.z) * 0.8 + smoothstep(0.0, 0.5, mv.y - mv.x) * 0.25 - 0.5) * m_fade;
+	// wave 4: meso cells only modulate brightness softly (their lanes read as a net)
+	float meso = ((1.0 - smoothstep(0.0, 1.2, mv.x)) * (0.5 + mv.z) * 0.8 - 0.42) * m_fade * 0.55;
 
 	// --- supergranulation / mottling (always resolvable)
 	vec3 sp = n * supergranule_scale + so * 0.5;
@@ -104,8 +108,8 @@ void fragment() {
 	float act = belt * spot_amount;
 	float spot_f = (sn1 * 0.8 + sn2 * 0.35) - (0.44 - 0.30 * act);
 	// wave 4: soft, wide penumbra and a gradual umbra edge
-	float pen = smoothstep(-0.012, 0.05, spot_f) * step(0.001, act);
-	float umb = smoothstep(0.05, 0.1, spot_f) * step(0.001, act);
+	float pen = smoothstep(-0.045, 0.03, spot_f) * step(0.001, act);
+	float umb = smoothstep(0.065, 0.13, spot_f) * step(0.001, act);
 	float fil = 0.5;
 	if (pen > 0.001) {
 		// filaments run radially out of the spot: streak noise aligned with the gradient of the
