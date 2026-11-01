@@ -14,3 +14,4 @@
 - Влит этап 2a (ветка worktree-agent-ae8880ba5a545a7ba): рельеф планет, 6 пресетов. Отчёт `docs/reports/stage2_terrain.md`.
 - Навигатор: autoload `Universe` (реестр тел, гравитация, плотность атмосферы, floating origin), `Controls` (раскладка + текст F1). Planet реализует интерфейс тела.
 - Влита волна 2D (ветка worktree-agent-a39a69a1827d2ebad): Player, GameMode, HUD, F1. Отчёт `docs/reports/wave2_player_ui.md` (там же инструкция по подключению в main).
+- Влита волна 2C (ветка worktree-agent-a375ead7b7a66ef87): флора и камни. Отчёт `docs/reports/wave2_flora.md`.
