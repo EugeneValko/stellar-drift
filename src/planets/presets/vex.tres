@@ -1,0 +1,63 @@
+[gd_resource type="Resource" script_class="PlanetConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/planets/planet_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+planet_name = "Vex"
+type = 3
+radius = 12000.0
+seed = 2024
+height_amplitude = 2000.0
+continent_scale = 15000.0
+continent_octaves = 4
+continent_bias = 0.05
+continent_height = 300.0
+ocean_depth = 250.0
+coast_width = 0.08
+warp_scale = 9000.0
+warp_strength = 3000.0
+mountain_scale = 3500.0
+mountain_octaves = 5
+mountain_height = 900.0
+mountain_sharpness = 1.8
+mountain_mask_scale = 9000.0
+mountain_coverage = 0.35
+mountain_plateau = 0.15
+gully_scale = 600.0
+gully_strength = 0.3
+hills_scale = 1200.0
+hills_height = 50.0
+rough_scale = 80.0
+rough_height = 2.5
+detail_scale = 10.0
+detail_height = 0.3
+canyon_scale = 6000.0
+canyon_depth = 180.0
+canyon_width = 0.05
+volcano_scale = 5000.0
+volcano_height = 1400.0
+volcano_density = 0.35
+crater_layers = 2
+crater_scale = 1600.0
+crater_depth = 0.2
+crater_density = 0.3
+maria_strength = 0.3
+moisture_scale = 9000.0
+moisture_bias = 0.0
+desert_belt = 0.0
+snow_line = 100000.0
+polar_snow = 0.0
+color_seabed = Color(0.25, 0.2, 0.08, 1)
+color_sand = Color(0.8, 0.7, 0.3, 1)
+color_grass = Color(0.82, 0.72, 0.28, 1)
+color_forest = Color(0.65, 0.42, 0.16, 1)
+color_dry = Color(0.76, 0.62, 0.3, 1)
+color_desert = Color(0.88, 0.8, 0.45, 1)
+color_rock = Color(0.4, 0.3, 0.18, 1)
+color_rock2 = Color(0.16, 0.12, 0.08, 1)
+color_snow = Color(0.95, 0.93, 0.8, 1)
+color_lava = Color(1, 0.38, 0.06, 1)
+lava_intensity = 6.0
+strata_strength = 0.2
+macro_variation = 0.6

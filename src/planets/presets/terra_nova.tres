@@ -1,0 +1,58 @@
+[gd_resource type="Resource" script_class="PlanetConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/planets/planet_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+planet_name = "Terra Nova"
+type = 1
+radius = 60000.0
+seed = 1337
+height_amplitude = 7000.0
+has_ocean = true
+sea_level = 1500.0
+has_atmosphere = true
+has_clouds = true
+continent_scale = 70000.0
+continent_octaves = 6
+continent_bias = -0.07
+continent_height = 380.0
+ocean_depth = 2600.0
+coast_width = 0.03
+warp_scale = 40000.0
+warp_strength = 14000.0
+mountain_scale = 10000.0
+mountain_octaves = 7
+mountain_height = 4600.0
+mountain_sharpness = 1.8
+mountain_mask_scale = 40000.0
+mountain_coverage = 0.12
+mountain_plateau = 0.14
+gully_scale = 1500.0
+gully_strength = 0.3
+hills_scale = 3500.0
+hills_height = 130.0
+rough_scale = 140.0
+rough_height = 6.0
+detail_scale = 16.0
+detail_height = 0.6
+moisture_scale = 30000.0
+moisture_bias = 0.05
+desert_belt = 0.4
+snow_line = 4200.0
+polar_snow = 0.85
+beach_width = 18.0
+color_seabed = Color(0.33, 0.3, 0.22, 1)
+color_sand = Color(0.8, 0.72, 0.53, 1)
+color_grass = Color(0.2, 0.36, 0.1, 1)
+color_forest = Color(0.06, 0.17, 0.05, 1)
+color_dry = Color(0.5, 0.46, 0.26, 1)
+color_desert = Color(0.8, 0.6, 0.37, 1)
+color_rock = Color(0.4, 0.36, 0.32, 1)
+color_rock2 = Color(0.25, 0.23, 0.22, 1)
+color_snow = Color(0.93, 0.95, 1, 1)
+strata_strength = 0.2
+macro_variation = 0.3
+atmosphere_color = Color(0.35, 0.55, 1, 1)
+atmosphere_height = 8000.0
+ocean_color = Color(0.02, 0.09, 0.16, 1)
