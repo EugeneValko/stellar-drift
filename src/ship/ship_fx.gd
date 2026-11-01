@@ -75,6 +75,12 @@ func _ready() -> void:
 	_build_ground_dust()
 	_build_warp()
 	ship.warp_engaged.connect(func() -> void: _flash = 1.0)
+	# world-space dust cannot follow a floating-origin shift: drop the live particles (they would
+	# reappear around the ship, which sits at the new origin)
+	Universe.origin_shifted.connect(func(_d: Vector3) -> void:
+		var was := _ground_dust.emitting
+		_ground_dust.restart()
+		_ground_dust.emitting = was)
 	if Capture.active:
 		_t = 1.3
 

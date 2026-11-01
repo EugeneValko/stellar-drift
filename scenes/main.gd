@@ -900,6 +900,8 @@ func _game_preset(preset: String) -> void:
 	fx.force_warp = -1.0
 	fx.force_thrust = -1.0
 	fx.force_dust = -1.0
+	ship.thrust_norm = Vector3.ZERO   # frozen stills keep the last preset's engine glow otherwise
+	help._hint.visible = false        # the F1 hint belongs to the start frame only
 	var rig := ship.camera_rig as ShipCameraRig
 	rig.view_override = Callable()
 	rig.set_view(ShipCameraRig.View.CHASE)
