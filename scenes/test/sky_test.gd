@@ -65,6 +65,11 @@ func apply_capture_preset(preset: String) -> void:
 		await main.apply_capture_preset("terra_orbit")   # resets weather / camera state
 		_custom(preset)
 		sys.build_terrain_now(cam)
+		var f := sys.focus
+		if f:
+			var upv := (cam.global_position - f.node.global_position).normalized()
+			print("[sky_test] %s: sun elev %.1f deg, alt %.0f m" % [preset,
+				rad_to_deg(asin(upv.dot(sys.sun_dir))), main._alt(f)])
 	else:
 		await main.apply_capture_preset(preset)
 	_modifiers()
@@ -95,7 +100,8 @@ func _modifiers() -> void:
 
 
 func _sun_elev() -> float:
-	return float(Capture.args.get("sun_elev", "nan"))
+	# NaN = preset default (float("nan") parses as 0 in GDScript, so test the key)
+	return float(Capture.args["sun_elev"]) if Capture.args.has("sun_elev") else NAN
 
 
 func _custom(preset: String) -> void:
@@ -211,7 +217,7 @@ func _custom(preset: String) -> void:
 			var sgn := -signf(nrm.dot(sa))   # unlit side of the ring plane
 			var off3 := -sa * float(Capture.args.get("dist", "1500000")) + nrm * sgn * 170000.0
 			var w3 := sa.cross(nrm).normalized()
-			off3 += w3 * 90000.0
+			off3 += w3 * float(Capture.args.get("sun_off", "300")) * 1000.0   # ~R: star at the limb
 			main._place_space(a, off3, Vector3.ZERO, nrm)
 			cam.fov = 72.0
 		"orbit_terminator":

@@ -97,7 +97,7 @@ const PRESET_DIR := "res://src/planets/presets/"
 @export var exposure_golden_surface := 1.35
 @export var exposure_twilight_surface := 2.1
 ## Background (stars, Milky Way) energy in a daylight sky (1 = space).
-@export var sky_day_energy := 0.0015
+@export var sky_day_energy := 0.0005
 ## Stars near a sunlit planet seen from space (glare of the bright disc; 1 = no dimming).
 @export var sky_dayside_energy := 0.45
 ## Exposure adaptation speed (1/s); capture snaps instantly.
@@ -791,7 +791,8 @@ func _update_exposure(cam: Camera3D, dt: float) -> void:
 		target = lerpf(exposure_space, surf, inside)
 		if focus.atmo:
 			var day := smoothstep(-0.2, 0.03, sun_up)   # stars appear only after dusk
-			var dense := 1.0 - smoothstep(0.05 * h, 0.6 * h, alt)
+			# the daylight sky stays bright up to ~half the shell (stars only near its top)
+			var dense := 1.0 - smoothstep(0.45 * h, 1.1 * h, alt)
 			sky = lerpf(1.0, sky_day_energy, day * dense)
 		# glare of a sunlit planet filling the view from orbit: fewer, fainter stars
 		var lit := smoothstep(-0.05, 0.35, sun_up) * (1.0 - smoothstep(focus.radius * 1.5, focus.radius * 5.0, alt))

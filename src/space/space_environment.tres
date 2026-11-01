@@ -4,6 +4,8 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_sky"]
 shader = ExtResource("1_sky")
+shader_parameter/star_brightness = 1.1
+shader_parameter/spike_strength = 0.55
 
 [sub_resource type="Sky" id="Sky_space"]
 sky_material = SubResource("ShaderMaterial_sky")

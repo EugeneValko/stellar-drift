@@ -233,6 +233,18 @@ float cloud_shadow_local(vec3 pl, vec3 L_local) {
 	return 1.0 - cloud_shadow_strength * smoothstep(0.0, 0.35, d);
 }
 
+// Smooth variant for the air (atmosphere in-scattering): weather coverage only (no 3D shape
+// noise), so the few jittered atmosphere samples do not turn the shafts into grain.
+float cloud_shadow_air(vec3 pl, vec3 L_local) {
+	if (cloud_shadow_strength <= 0.0) return 1.0;
+	float rm = mix(cloud_bottom, cloud_top, 0.3);
+	vec2 hit = sd_ray_sphere(pl, L_local, rm);
+	if (hit.y <= 0.0 || hit.y < hit.x) return 1.0;
+	float t = hit.x > 0.0 ? hit.x : hit.y;
+	vec2 w = cloud_weather_fast(normalize(pl + L_local * t));
+	return 1.0 - cloud_shadow_strength * smoothstep(0.25, 0.75, w.x) * mix(0.6, 1.0, w.y);
+}
+
 // p: world-oriented planet-relative position in BODY units (divide by the node scale when the
 // body is a scaled-space proxy), L world sun dir, model: receiver MODEL_MATRIX (rotation of the
 // planet; a uniform scale is removed here).

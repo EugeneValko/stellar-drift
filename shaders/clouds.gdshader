@@ -203,11 +203,17 @@ void fragment() {
 			vec3 drift = vec3(TIME * 0.00004, 0.0, TIME * 0.00002);
 			// streaks stretched east-west (compressed latitude frequency), patchy mask
 			vec3 sq = dc * cirrus_scale + drift;
-			float s1 = cl_tex(vec3(sq.x * 5.0, sq.y * 22.0, sq.z * 5.0));
-			float s2 = cl_tex(vec3(sq.x * 13.0, sq.y * 55.0, sq.z * 13.0) + vec3(0.3));
+			// wave 4: domain-warped streaks (curved, hooked fibres instead of parallel dashes)
+			// plus a soft veil component (cirrostratus)
+			vec3 wq = vec3(cl_tex(sq * 1.3 + vec3(0.1)), cl_tex(sq * 1.3 + vec3(0.5, 0.2, 0.7)),
+				cl_tex(sq * 1.3 + vec3(0.9, 0.6, 0.3))) - 0.5;
+			vec3 sw = sq + wq * 0.4;
+			float s1 = cl_tex(vec3(sw.x * 5.0, sw.y * 22.0, sw.z * 5.0));
+			float s2 = cl_tex(vec3(sw.x * 13.0, sw.y * 55.0, sw.z * 13.0) + vec3(0.3));
 			float s3 = texture(cloud_detail_tex, dc * cirrus_scale * 40.0).r;
-			float mask = smoothstep(0.5, 0.72, cl_tex(sq * 1.7 + vec3(0.4)));
-			float dens = smoothstep(0.55, 0.9, s1 * 0.65 + s2 * 0.35 + s3 * 0.15) * mask;
+			float mask = smoothstep(0.45, 0.75, cl_tex(sq * 1.7 + vec3(0.4)));
+			float veil = smoothstep(0.48, 0.8, cl_tex(sq * 3.1 + vec3(0.7, 0.1, 0.2)));
+			float dens = (smoothstep(0.52, 0.92, s1 * 0.65 + s2 * 0.35 + s3 * 0.1) + veil * 0.3) * mask;
 			float cosv = max(abs(dot(rd, dcw)), 0.3);
 			float ca = (1.0 - exp(-dens * 0.25 / cosv)) * cirrus_opacity;
 			if (ca > 0.001) {

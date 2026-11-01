@@ -25,6 +25,7 @@ uniform float atmo_intensity = 3.14159;      // sun irradiance multiplier (PI = 
 uniform float atmo_multi_scatter = 0.35;     // cheap isotropic multiple-scattering term
 uniform float atmo_shadow_soft = 0.6;        // planet shadow softness, in rayleigh heights
 uniform float atmo_sun_path_scale = 2.2;     // >1 = redder sunsets (grazing sun paths only)
+uniform float atmo_sun_path_window = 3.0;    // path scale fades out above mus = 1 / window
 uniform int atmo_steps = 14;                 // view-ray samples (quality knob)
 // wave 4 (beauty): ozone on its own, taller profile (absorbs the long grazing twilight paths high
 // up -> blue hour / purple twilight instead of olive); <= 0 = on the Rayleigh profile (old look)
@@ -82,7 +83,7 @@ vec3 atmo_sun_optical_depth(float r, float mus) {
 	float co = atmo_ozone_height > 0.0 ? min(atmo_chapman(r, mus, atmo_ozone_height), 1e9) : cr;
 	// artistic: compressed planets have short grazing paths; lengthen them near the horizon so
 	// sunsets get Earth-like reddening without making the daytime sky denser
-	float k = 1.0 + (atmo_sun_path_scale - 1.0) * (1.0 - clamp(mus * 3.0, 0.0, 1.0));
+	float k = 1.0 + (atmo_sun_path_scale - 1.0) * (1.0 - clamp(mus * atmo_sun_path_window, 0.0, 1.0));
 	return (atmo_rayleigh * cr + atmo_ozone * co + (atmo_mie + atmo_mie_absorb) * cm) * k;
 }
 
@@ -170,7 +171,7 @@ vec3 atmo_ms_source(float r, float mus) {
 
 // Art-directed weight of a low sun at a sample (1 = sun on the horizon, 0 = high sun).
 float atmo_low_sun(float mus) {
-	return 1.0 - smoothstep(-0.02, 0.32, mus);
+	return 1.0 - smoothstep(-0.02, 0.2, mus);
 }
 
 // Single scattering along ro + rd*t, t in [0, t_max]. Returns in-scattered radiance (same
@@ -207,7 +208,7 @@ vec3 atmo_scatter(vec3 ro, vec3 rd, float t_max, int steps, float jitter, out ve
 #ifdef ATMO_CLOUD_SHADOWS
 		// volumetric cloud shadows in the air (crepuscular rays, dim air under overcast); the
 		// planet is not rotated, so world-oriented == planet-local here
-		if (r < cloud_top) tr *= cloud_shadow_local(p, L);
+		if (r < cloud_top) tr *= cloud_shadow_air(p, L);
 #endif
 		sum_r += tr * gr * (dr * ds);
 		sum_m += tr * mix(vec3(1.0), atmo_twilight_tint_mie, lo) * (dm * ds);

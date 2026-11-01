@@ -36,7 +36,7 @@ const PRESETS := {
 	# (bright horizon), art-directed low-sun tints (orange glow around the sun, pink sky)
 	"terra_nova": {
 		"radius": 60000.0, "height": 24000.0, "rayleigh_height": 2600.0, "mie_height": 750.0,
-		"rayleigh_density": 1.5, "rayleigh_tint": Vector3(1, 1, 1),
+		"rayleigh_density": 1.2, "rayleigh_tint": Vector3(1, 1, 1), "sun_path_window": 7.0,
 		"mie_density": 3.0, "mie_color": Color(1, 0.9, 0.75), "mie_absorb": Vector3(0.1, 0.1, 0.1),
 		"mie_g": 0.8, "ozone_density": 2.5, "ozone_height": 7000.0, "intensity": PI,
 		"multi_scatter": 0.0, "ms_strength": 1.4, "ms_lift_deg": 4.5, "sun_path_scale": 2.6,
@@ -66,8 +66,8 @@ const PRESETS := {
 	"aurelion": {  # gas giant haze: warm, thick high haze
 		"radius": 300000.0, "height": 40000.0, "rayleigh_height": 6000.0, "mie_height": 4000.0,
 		"rayleigh_density": 0.14, "rayleigh_tint": Vector3(0.8, 0.9, 1.0),
-		"mie_density": 0.22, "mie_color": Color(1.0, 0.88, 0.7), "mie_absorb": Vector3(0.05, 0.12, 0.3),
-		"mie_g": 0.7, "ozone_density": 0.0, "intensity": PI, "multi_scatter": 0.4,
+		"mie_density": 0.3, "mie_color": Color(1.0, 0.88, 0.7), "mie_absorb": Vector3(0.05, 0.12, 0.3),
+		"mie_g": 0.8, "ozone_density": 0.0, "intensity": PI, "multi_scatter": 0.2, "ms_strength": 0.6,
 	},
 }
 
@@ -136,6 +136,7 @@ static func make_uniforms(p: Dictionary) -> Dictionary:
 		"atmo_multi_scatter": float(p.get("multi_scatter", 0.35)),
 		"atmo_steps": steps,
 		"atmo_sun_path_scale": float(p.get("sun_path_scale", 2.2)),
+		"atmo_sun_path_window": float(p.get("sun_path_window", 3.0)),
 		"atmo_ozone_height": hz,
 		"atmo_ms_strength": float(p.get("ms_strength", 0.0)),
 		"atmo_ms_lift": deg_to_rad(float(p.get("ms_lift_deg", 4.0))),
@@ -183,7 +184,8 @@ func sun_transmittance(p: Vector3, l: Vector3) -> Vector3:
 	var cm := minf(_chapman(u, r, mus, u["atmo_mie_height"]), 1e9)
 	var hz: float = u.get("atmo_ozone_height", 0.0)
 	var co := minf(_chapman(u, r, mus, hz), 1e9) if hz > 0.0 else cr
-	var kk := 1.0 + (float(u["atmo_sun_path_scale"]) - 1.0) * (1.0 - clampf(mus * 3.0, 0.0, 1.0))
+	var kk := 1.0 + (float(u["atmo_sun_path_scale"]) - 1.0) \
+		* (1.0 - clampf(mus * float(u.get("atmo_sun_path_window", 3.0)), 0.0, 1.0))
 	var od: Vector3 = (u["atmo_rayleigh"] * cr + u["atmo_ozone"] * co + (u["atmo_mie"] + u["atmo_mie_absorb"]) * cm) * kk
 	var sh := 1.0
 	if mus < 0.0:
