@@ -93,7 +93,7 @@ func apply_capture_preset(preset: String) -> void:
 			ship.set_gear(false, true)
 			ship.set_hatch(false, true)
 			ship.set_thrust(0.6)
-			_look(Vector3(-13.0, 4.6, -18.5), Vector3(0.2, -0.2, -0.8), 38.0)
+			_look(Vector3(-11.5, 2.4, -15.5), Vector3(0.6, -0.1, -0.2), 44.0)
 			_light(key, Vector3(0.6, -0.55, 0.6), 2.8, warm)
 			_light(rim, Vector3(-0.2, -0.35, -0.95), 2.6, cool)
 	if thrust_override >= 0.0:

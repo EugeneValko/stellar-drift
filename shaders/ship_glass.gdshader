@@ -36,6 +36,6 @@ void fragment() {
 	ALBEDO = mix(tint, coating * 0.25, coating_strength * (0.3 + 0.7 * fr));
 	METALLIC = coating_strength * 0.6;
 	ROUGHNESS = roughness + sm * smudge * 0.12;
-	SPECULAR = 0.75;
+	SPECULAR = 1.0;
 	ALPHA = clamp(mix(base_alpha, 1.0, fr * 0.9), 0.0, 1.0);
 }

@@ -25,7 +25,10 @@ void fragment() {
 	float dia = 1.0 + diamonds * (0.5 + 0.5 * cos(v_t * 34.0 - tm * 2.0)) * (1.0 - v_t);
 	float flick = 0.93 + 0.07 * sin(tm * 61.0 + v_t * 20.0);
 	vec3 c = mix(color_start, color_end, smoothstep(0.0, 0.8, v_t));
-	float a = core * fall * dia * flick * thrust;
+	// fade when looking straight down the plume axis (avoids a glowing ball seen from the front)
+	vec3 axis = normalize((VIEW_MATRIX * MODEL_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
+	float side = 1.0 - 0.85 * pow(abs(dot(axis, VIEW)), 3.0);
+	float a = core * fall * dia * flick * thrust * side;
 	ALBEDO = c * intensity * a;
 	ALPHA = 1.0;
 }

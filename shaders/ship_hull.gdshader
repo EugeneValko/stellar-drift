@@ -40,6 +40,9 @@ uniform float markings : hint_range(0.0, 1.0) = 0.0;
 uniform vec3 accent_color : source_color = vec3(0.95, 0.36, 0.07);
 uniform vec3 marking_dark : source_color = vec3(0.045, 0.048, 0.055);
 uniform vec3 hazard_color : source_color = vec3(0.92, 0.70, 0.10);
+uniform float saddle : hint_range(0.0, 1.0) = 1.0;
+uniform vec3 number_color : source_color = vec3(0.82, 0.83, 0.84);
+uniform vec3 saddle_color : source_color = vec3(0.13, 0.135, 0.145);
 
 uniform float brushed : hint_range(0.0, 1.0) = 0.0;
 uniform float heat_tint : hint_range(0.0, 1.0) = 0.0;
@@ -219,6 +222,11 @@ void fragment() {
 	float mk = markings;
 	if (mk > 0.0) {
 		float ax = abs(p.x);
+		// graphite dorsal saddle over the engine deck (chevron front edge)
+		float sad = smoothstep(0.25, 0.4, n.y) * step(-2.3 + ax * 1.25, p.z) * step(p.z, 9.5)
+				* (1.0 - smoothstep(nac_x + 0.7, nac_x + 0.75, ax));
+		col = mix(col, saddle_color * (0.95 + 0.1 * pid), sad * saddle * mk);
+		metal = mix(metal, 0.45, sad * saddle * mk);
 		// nacelle dorsal accent stripes
 		float dx = abs(ax - nac_x);
 		float topf = smoothstep(0.55, 0.8, n.y);
@@ -238,6 +246,10 @@ void fragment() {
 		float chev = (step(0.30, perp) * step(perp, 0.42) + step(0.50, perp) * step(perp, 0.54));
 		chev *= step(5.6, along) * step(along, 8.1) * wingtop;
 		col = mix(col, accent_color, chev * mk);
+		// dark thermal-protection band along the wing leading edge (top and bottom)
+		float wingz = step(-0.75, p.y) * step(p.y, 0.15) * step(1.75, ax);
+		float leband = (1.0 - smoothstep(0.16, 0.18, perp)) * step(-0.3, perp) * step(along, 9.6) * wingz;
+		col = mix(col, marking_dark * 1.4, leband * mk);
 		// thin pinstripe along the fuselage flank
 		float flank = smoothstep(0.6, 0.85, an.x) * step(ax, 1.6);
 		float pin = step(0.10, p.y) * step(p.y, 0.135) + step(0.16, p.y) * step(p.y, 0.17);
@@ -249,7 +261,7 @@ void fragment() {
 			vec2 uv = vec2(-(p.z - 7.55) * side, p.y - 1.42) / 0.30;
 			uv.x += uv.y * 0.18; // italic
 			float num = digit(uv - vec2(-0.62, 0.0), 0) + digit(uv - vec2(0.62, 0.0), 7);
-			col = mix(col, marking_dark, clamp(num, 0.0, 1.0) * mk);
+			col = mix(col, number_color, clamp(num, 0.0, 1.0) * mk);
 		}
 		// hazard stripes around the belly hatch
 		float belly = smoothstep(0.6, 0.85, -n.y);

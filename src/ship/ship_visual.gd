@@ -31,7 +31,7 @@ const NAV_LIGHT_ENERGY := 0.35
 @export var hatch_time := 2.0
 @export var canopy_time := 1.6
 @export var nav_lights := true
-@export var engine_light_energy := 6.0
+@export var engine_light_energy := 2.5
 @export var plume_length := 7.0
 @export var start_gear_deployed := true
 
@@ -155,7 +155,7 @@ func _build_engine_fx() -> void:
 			if layer == 0:
 				mat.set_shader_parameter("color_start", Color(0.85, 0.95, 1.0))
 				mat.set_shader_parameter("color_end", Color(0.45, 0.65, 1.0))
-				mat.set_shader_parameter("intensity", 3.0)
+				mat.set_shader_parameter("intensity", 2.2)
 				mat.set_shader_parameter("diamonds", 0.9)
 			else:
 				mat.set_shader_parameter("intensity", 1.0)
@@ -180,7 +180,7 @@ func _build_engine_fx() -> void:
 		light.light_color = Color(0.55, 0.75, 1.0)
 		light.omni_range = 9.0 if not aux else 5.0
 		light.omni_attenuation = 1.6
-		light.position = Vector3(0, 0, -1.2)
+		light.position = Vector3(0, 0, -2.0)
 		light.shadow_enabled = false
 		m.add_child(light)
 		_engine_lights.append(light)

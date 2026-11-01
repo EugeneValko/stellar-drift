@@ -40,13 +40,13 @@ from mathutils.bvhtree import BVHTree
 NOSE_Y = 10.30            # nose tip
 TAIL_Y = -8.4             # fuselage rear bulkhead
 FUSE_HALF_W = 1.60        # max fuselage half width
-FUSE_TOP = 1.05           # max fuselage height above chine line
+FUSE_TOP = 1.18           # max fuselage height above chine line
 FUSE_BOTTOM = 0.88        # max fuselage depth below chine line
 
 NAC_X = 2.80              # engine nacelle centre offset
 NAC_Z = -0.05
-NAC_HALF_W = 0.95
-NAC_HALF_H = 0.84
+NAC_HALF_W = 1.0
+NAC_HALF_H = 0.94
 NAC_FRONT_Y = -0.6
 NAC_REAR_Y = -8.6
 NOZZLE_LEN = 1.25
@@ -136,22 +136,24 @@ def rot_x(deg):
 # ----------------------------------------------------------------------------------------------
 FW = pchip([(-8.4, 1.36), (-6.0, 1.50), (-2.0, FUSE_HALF_W), (1.0, FUSE_HALF_W), (3.0, 1.57), (5.0, 1.48),
             (6.5, 1.38), (8.0, 1.20), (9.0, 1.00), (9.7, 0.74), (10.1, 0.44), (10.3, 0.14)])
-FHT = pchip([(-8.4, 0.70), (-6.0, 0.90), (-3.0, 1.00), (0.0, FUSE_TOP), (2.5, 0.98), (4.5, 0.87), (6.5, 0.69),
-             (8.0, 0.50), (9.0, 0.36), (9.7, 0.23), (10.3, 0.07)])
+FHT = pchip([(-8.4, 0.78), (-6.0, 1.02), (-3.0, 1.13), (0.0, FUSE_TOP), (2.5, 1.10), (4.5, 0.97), (6.5, 0.78),
+             (8.0, 0.58), (9.0, 0.44), (9.7, 0.31), (10.3, 0.12)])
 FHB = pchip([(-8.4, 0.62), (-6.0, 0.82), (-2.0, FUSE_BOTTOM), (2.0, FUSE_BOTTOM), (5.0, 0.82), (7.0, 0.66),
-             (8.5, 0.44), (9.3, 0.30), (9.9, 0.17), (10.3, 0.05)])
+             (8.5, 0.48), (9.3, 0.36), (9.9, 0.24), (10.3, 0.08)])
 FCH = pchip([(-8.4, 0.04), (-3.0, 0.10), (1.0, 0.17), (5.0, 0.18), (8.5, 0.17), (9.8, 0.10), (10.3, 0.02)])  # chine blade
 FZC = pchip([(-8.4, 0.05), (0.0, 0.0), (6.0, -0.05), (9.0, -0.09), (10.3, -0.12)])
-FNT = pchip([(-8.4, 2.8), (0.0, 2.6), (6.0, 2.5), (10.3, 2.3)])
+FNT = pchip([(-8.4, 3.0), (0.0, 2.9), (6.0, 2.7), (10.3, 2.4)])
 FMB = pchip([(-8.4, 3.6), (0.0, 3.6), (7.0, 3.2), (10.3, 2.6)])
 
-NA = pchip([(NAC_REAR_Y, 0.80), (-7.6, 0.85), (-4.0, NAC_HALF_W), (-1.6, 0.85), (NAC_FRONT_Y, 0.79)])
-NB = pchip([(NAC_REAR_Y, 0.70), (-7.6, 0.75), (-4.0, NAC_HALF_H), (-1.6, 0.75), (NAC_FRONT_Y, 0.71)])
+NA = pchip([(NAC_REAR_Y, 0.86 * NAC_HALF_W), (-7.6, 0.93 * NAC_HALF_W), (-4.0, NAC_HALF_W), (-1.6, 0.98 * NAC_HALF_W),
+            (NAC_FRONT_Y, 0.92 * NAC_HALF_W)])
+NB = pchip([(NAC_REAR_Y, 0.84 * NAC_HALF_H), (-7.6, 0.92 * NAC_HALF_H), (-4.0, NAC_HALF_H), (-1.6, 0.97 * NAC_HALF_H),
+            (NAC_FRONT_Y, 0.92 * NAC_HALF_H)])
 NAC_N = 3.2
 
 CW = pchip([(CANOPY_Y0, 0.40), (3.0, 0.76), (4.0, 0.86), (5.2, 0.85), (6.3, 0.70), (7.0, 0.44), (CANOPY_Y1, 0.08)])
-CT = pchip([(CANOPY_Y0, 1.19), (3.1, 1.42), (4.2, 1.50), (5.3, 1.43), (6.3, 1.18), (7.0, 0.93), (CANOPY_Y1, 0.76)])
-SPINE_T = pchip([(-7.7, 0.88), (-6.0, 1.08), (-3.0, 1.19), (0.5, 1.23), (CANOPY_Y0 + 0.1, 1.21)])
+CT = pchip([(CANOPY_Y0, 1.31), (3.1, 1.54), (4.2, 1.62), (5.3, 1.54), (6.3, 1.30), (7.0, 1.04), (CANOPY_Y1, 0.86)])
+SPINE_T = pchip([(-7.7, 0.98), (-6.0, 1.21), (-3.0, 1.32), (0.5, 1.36), (CANOPY_Y0 + 0.1, 1.33)])
 
 
 def spow(v, e):
@@ -222,7 +224,8 @@ def tag_new(bm, before_faces, mat):
         f.material_index = mat
 
 
-def loft(bm, rings, mat, cap0=True, cap1=True, seg_mat=None, pole0=None, pole1=None, closed=True, cap_mats=None):
+def loft(bm, rings, mat, cap0=True, cap1=True, seg_mat=None, pole0=None, pole1=None, closed=True, cap_mats=None,
+         ring_mats=None):
     """Stitch equal-sized rings. seg_mat(i) -> material for the band between ring i and i+1."""
     vrings = [[bm.verts.new(p) for p in r] for r in rings]
     n = len(rings[0])
@@ -235,7 +238,7 @@ def loft(bm, rings, mat, cap0=True, cap1=True, seg_mat=None, pole0=None, pole1=N
         for j in rng:
             k = (j + 1) % n
             f = bm.faces.new((a[j], a[k], b[k], b[j]))
-            f.material_index = m
+            f.material_index = ring_mats[j] if ring_mats is not None and m == mat else m
     if pole0 is not None:
         pv = bm.verts.new(pole0)
         for j in range(n):
@@ -563,7 +566,7 @@ def build_fins():
 def build_deck():
     """Blended engine deck between fuselage and nacelles (turns the rear into one wide lifting body)."""
     bm = bmesh.new()
-    top = pchip([(-8.3, 0.50), (-7.0, 0.58), (-3.2, 0.56), (-1.9, 0.30), (-1.0, WING_Z + 0.12)])
+    top = pchip([(-8.3, 0.62), (-7.0, 0.70), (-3.2, 0.68), (-1.9, 0.36), (-1.0, WING_Z + 0.12)])
     for side in (1, -1):
         rings = []
         ys = [lerp(-8.3, -1.0, i / 16) for i in range(17)]
@@ -588,7 +591,7 @@ def build_spine():
         hw_b = hw_t + 0.16
         rings.append([Vector((hw_b, y, base)), Vector((hw_t, y, top - 0.04)), Vector((hw_t - 0.06, y, top)),
                       Vector((-hw_t + 0.06, y, top)), Vector((-hw_t, y, top - 0.04)), Vector((-hw_b, y, base))])
-    loft(bm, rings, DARK)
+    loft(bm, rings, HULL, ring_mats=[HULL, HULL, DARK, HULL, HULL, HULL], cap_mats=(HULL, HULL))
     return obj_from_bm("Spine", bm)
 
 
@@ -634,7 +637,8 @@ def build_nozzles():
         y1 = NAC_REAR_Y - NOZZLE_LEN
         prof = [  # (y, scale, material of band to next)
             (y0, 0.95, TRIM), (y0 - 0.3, 0.95, TRIM), (y0 - 0.32, 1.0, TRIM), (y0 - 0.5, 1.0, TRIM),
-            (y0 - 0.52, 0.97, TRIM), (y1 + 0.12, 1.0, TRIM), (y1, 0.99, TRIM), (y1 - 0.01, 0.86, ENGINE),
+            (y0 - 0.52, 0.97, TRIM), (y1 + 0.12, 1.0, TRIM), (y1, 0.99, EMIT), (y1 - 0.012, 0.93, TRIM),
+            (y1 - 0.012, 0.87, TRIM), (y1, 0.86, ENGINE),
             (y1 + 0.5, 0.80, ENGINE), (y0 - 0.25, 0.70, ENGINE),
         ]
         rings = [superellipse_ring(cx, NAC_Z, a0 * s, b0 * s, NAC_N, y) for (y, s, _) in prof]
@@ -691,11 +695,15 @@ def build_details():
              Vector((-0.012, y_a - 0.32, zt + 0.55)), Vector((-0.012, y_a - 0.05, zt + 0.55))]
     loft(bm, [ring0, ring1], DARK)
     del blade
+    # radiator slats on the spine
+    for i in range(14):
+        y = lerp(-0.9, -5.2, i / 13)
+        add_box(bm, (0, y, SPINE_T(y) + 0.025), (0.5, 0.07, 0.07), TRIM)
     # sensor dome under the nose
     add_sphere(bm, (0, 8.7, fuse_belly_z(0, 8.7) + 0.02), 0.16, GLASS, segs=14, rings=8, scale=(1, 1.4, 0.6))
     # intake splitter vanes (inside intakes)
     for side in (1, -1):
-        add_box(bm, (NAC_X * side, NAC_FRONT_Y - 0.4, NAC_Z), (0.04, 0.8, NAC_HALF_H * 1.4), TRIM)
+        add_box(bm, (NAC_X * side, NAC_FRONT_Y - 0.4, NAC_Z), (0.04, 0.8, NAC_HALF_H * 1.4), DARK)
     return obj_from_bm("Details", bm)
 
 
@@ -1077,12 +1085,12 @@ def main():
     remove(pocket)
 
     gf_h = Vector((0, GEAR_FRONT_Y, fuse_belly_z(0, GEAR_FRONT_Y) + GEAR_HINGE_DEPTH))
-    gear_f, cut_f = build_gear("GearFront", gf_h, -90.0, fuse_belly_z, 0.34, 0.30)
+    gear_f, cut_f = build_gear("GearFront", gf_h, -90.0, fuse_belly_z, 0.34, 0.25)
     gears = [gear_f]
     cuts = [cut_f]
     for side, nm in ((1, "GearRearR"), (-1, "GearRearL")):
         h = Vector((NAC_X * side, GEAR_REAR_Y, nac_belly_z(0, GEAR_REAR_Y) + GEAR_HINGE_DEPTH))
-        g, c = build_gear(nm, h, 90.0, lambda x, y, s=side: nac_belly_z(x, y), 0.42, 0.36)
+        g, c = build_gear(nm, h, 90.0, lambda x, y, s=side: nac_belly_z(x, y), 0.42, 0.30)
         gears.append(g)
         cuts.append(c)
     for c in cuts:

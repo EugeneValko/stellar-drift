@@ -6,4 +6,4 @@
 resource_name = "ShipEngineInner"
 shader = ExtResource("1")
 shader_parameter/thrust = 0.0
-shader_parameter/max_energy = 12.0
+shader_parameter/max_energy = 3.5
