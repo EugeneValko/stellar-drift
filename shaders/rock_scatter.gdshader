@@ -100,7 +100,7 @@ void fragment() {
 	// cover layer on up-facing faces (moss in wet areas, snow where the biome is snowy)
 	float top = dot(nw, normalize(v_up));
 	float edge = n1.r * 0.35 + n0.a * 0.25;
-	float moss = smoothstep(0.35, 0.75, top + edge - 0.15) * clamp(cover_amount * (0.3 + v_custom.z), 0.0, 1.0);
+	float moss = smoothstep(0.55, 0.9, top + edge - 0.2) * clamp(cover_amount * (0.3 + v_custom.z), 0.0, 1.0);
 	float snow = smoothstep(0.25, 0.55, top + edge * 0.6 - 0.1) * clamp(snow_amount * v_custom.w * 1.5, 0.0, 1.0);
 	c = mix(c, color_cover * (0.75 + 0.5 * n1.a), moss);
 	c = mix(c, color_snow * (0.92 + 0.08 * n1.r), snow);

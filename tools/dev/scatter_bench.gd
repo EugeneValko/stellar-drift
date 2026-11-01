@@ -83,8 +83,10 @@ func _initialize() -> void:
 		total += ms
 		OS.delay_msec(2)
 	st = scatter.get_stats()
-	print("[bench] moved %.0f m at %.0f m/s: main thread avg %.3f ms, worst %.2f ms, queued %d, upload max %.2f ms" % [
-		speed * frames / 60.0, speed, total / frames, worst, st["queued"], st["max_upload_ms"]])
+	print("[bench] moved %.0f m at %.0f m/s: main thread avg %.3f ms, worst %.2f ms, queued %d" % [
+		speed * frames / 60.0, speed, total / frames, worst, st["queued"]])
+	print("[bench]   max upload %.2f ms, max scan %.2f ms, max dispatch+bodies %.2f ms" % [st["max_upload_ms"],
+		st["max_scan_ms"], st["max_dispatch_bodies_ms"]])
 	scatter.clear()
 	planet.queue_free()
 	quit()

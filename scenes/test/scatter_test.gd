@@ -129,8 +129,8 @@ func apply_capture_preset(preset: String) -> void:
 			eye = 2.5
 			look = _toward_best(d, 120.0, func(b: Dictionary) -> float: return b["lava"])
 			look = (look + d * 0.05).normalized()
-			az = 150.0
-			elev = 14.0
+			az = 60.0
+			elev = 26.0
 			sun_color = Color(1.0, 0.85, 0.7)
 		"glacia_ice":
 			var s := _find_site(rnd, func(b: Dictionary) -> float:
@@ -239,8 +239,8 @@ func _ensure_planet(key: String) -> void:
 			env.ambient_light_color = Color(0.45, 0.6, 0.75)
 			env.ambient_light_energy = 0.55
 		"ignis":
-			env.ambient_light_color = Color(0.55, 0.36, 0.25)
-			env.ambient_light_energy = 0.45
+			env.ambient_light_color = Color(0.6, 0.4, 0.3)
+			env.ambient_light_energy = 0.6
 		_:
 			env.ambient_light_color = Color(0.12, 0.13, 0.16)
 			env.ambient_light_energy = 0.3

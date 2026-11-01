@@ -334,10 +334,11 @@ name = "pebbles"
 model = "res://assets/models/rocks.glb"
 meshes = PackedStringArray("pebbles_lod0")
 lod_distances = PackedFloat32Array()
-cell_size = 24.0
+cell_size = 40.0
 max_distance = 70.0
 fade_length = 15.0
 grid_res = 6
+exact_height = true
 density = 0.05
 rules = {
 "forest": Vector3(-1, 0.7, 0.3),
@@ -355,7 +356,7 @@ name = "boulders"
 model = "res://assets/models/rocks.glb"
 meshes = PackedStringArray("boulder_a_lod0", "boulder_a_lod1")
 lod_distances = PackedFloat32Array(60)
-cell_size = 96.0
+cell_size = 160.0
 max_distance = 450.0
 fade_length = 50.0
 grid_res = 6
@@ -384,7 +385,7 @@ name = "boulders_b"
 model = "res://assets/models/rocks.glb"
 meshes = PackedStringArray("boulder_b_lod0", "boulder_b_lod1")
 lod_distances = PackedFloat32Array(60)
-cell_size = 96.0
+cell_size = 160.0
 max_distance = 450.0
 fade_length = 50.0
 grid_res = 6
@@ -411,9 +412,10 @@ name = "slabs"
 model = "res://assets/models/rocks.glb"
 meshes = PackedStringArray("boulder_c_lod0", "boulder_c_lod1")
 lod_distances = PackedFloat32Array(50)
-cell_size = 96.0
+cell_size = 160.0
 max_distance = 300.0
 grid_res = 6
+exact_height = true
 density = 0.002
 rules = {
 "forest": Vector3(-1, 0.6, 0.3),
@@ -434,7 +436,7 @@ name = "rock_clusters"
 model = "res://assets/models/rocks.glb"
 meshes = PackedStringArray("rock_cluster_lod0", "rock_cluster_lod1")
 lod_distances = PackedFloat32Array(80)
-cell_size = 128.0
+cell_size = 160.0
 max_distance = 500.0
 fade_length = 60.0
 grid_res = 6
@@ -501,8 +503,8 @@ material_params = {
 "variation": 0.4
 },
 "rock": {
-"color_cover": Color(0.3, 0.4, 0.14, 1),
-"cover_amount": 0.55,
+"color_cover": Color(0.32, 0.4, 0.16, 1),
+"cover_amount": 0.4,
 "snow_amount": 1.0
 }
 }

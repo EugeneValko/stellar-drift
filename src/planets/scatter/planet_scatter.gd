@@ -70,7 +70,11 @@ var _stat_cells := 0
 var _stat_cell_ms := 0.0
 var _prof_upload := 0.0
 var _last_log := 0
+var _prof_scan := 0.0
+var _prof_bodies := 0.0
 var _manual_focus := false
+var _scan_cursor := 0
+var _grid_next := 0
 
 
 class LayerRT:
@@ -103,6 +107,8 @@ class LayerRT:
 	var sink := 0.0
 	var cache := {}
 	var scan_pos: Array[Vector3] = [Vector3(INF, INF, INF), Vector3(INF, INF, INF)]
+	var patch_keys: Array[Dictionary] = [{}, {}]
+	var cache_next := 0
 	var convex: Shape3D
 
 
@@ -124,6 +130,7 @@ class Patch:
 	var count := 0
 	var dist := 0.0
 	var body_queued := false
+	var buffer := PackedFloat32Array()   # CPU copy (collision layers only)
 
 
 class PatchJob:
@@ -274,6 +281,7 @@ func clear(drop_cache := true) -> void:
 		_grid_cache.clear()
 	for L in _layers:
 		L.scan_pos = [Vector3(INF, INF, INF), Vector3(INF, INF, INF)]
+		L.patch_keys = [{}, {}]
 	_active = false
 
 
@@ -351,7 +359,8 @@ func get_stats() -> Dictionary:
 			bodies += 1
 	return {"patch_nodes": nodes, "instances": inst, "tris_max": tris, "bodies": bodies,
 		"cells_built": _stat_cells, "avg_cell_ms": _stat_cell_ms / maxf(_stat_cells, 1),
-		"queued": _queue.size(), "jobs": _jobs.size(), "layers": per, "max_upload_ms": _prof_upload}
+		"queued": _queue.size(), "jobs": _jobs.size(), "layers": per, "max_upload_ms": _prof_upload,
+		"max_scan_ms": _prof_scan, "max_dispatch_bodies_ms": _prof_bodies}
 
 
 # ---------------------------------------------------------------------------------------------
@@ -365,9 +374,14 @@ func _process(_dt: float) -> void:
 	var t0 := Time.get_ticks_usec()
 	_collect(max_uploads_per_frame, upload_budget_ms)
 	_prof_upload = maxf(_prof_upload, (Time.get_ticks_usec() - t0) / 1000.0)
+	var t1 := Time.get_ticks_usec()
 	_scan(false)
+	var t2 := Time.get_ticks_usec()
 	_dispatch(max_jobs)
 	_create_bodies(max_bodies_per_frame)
+	var t3 := Time.get_ticks_usec()
+	_prof_scan = maxf(_prof_scan, (t2 - t1) / 1000.0)
+	_prof_bodies = maxf(_prof_bodies, (t3 - t2) / 1000.0)
 
 
 func _update_focus() -> void:
@@ -394,19 +408,36 @@ func _scan(force: bool) -> void:
 			clear(false)
 		return
 	_active = true
-	var lods_dirty := false
+	var did := false
+	# Non-forced: at most one layer ring per frame (round robin) to spread the main-thread cost.
+	var total := 0
 	for L in _layers:
-		for ring in (2 if L.has_far else 1):
-			var cs := L.cell_m * (L.src.far_factor if ring == 1 else 1)
-			var moved := _focus.distance_to(L.scan_pos[ring])
-			if not force and moved < cs * 0.3:
-				continue
-			L.scan_pos[ring] = _focus
-			_scan_ring(L, ring, alt)
-			lods_dirty = true
-	if lods_dirty:
+		total += 2 if L.has_far else 1
+	for step in total:
+		var idx := (_scan_cursor + step) % total
+		var L: LayerRT
+		var ring := 0
+		var c := 0
+		for LL in _layers:
+			var nr := 2 if LL.has_far else 1
+			if idx < c + nr:
+				L = LL
+				ring = idx - c
+				break
+			c += nr
+		var cs := L.cell_m * (L.src.far_factor if ring == 1 else 1)
+		if not force and _focus.distance_to(L.scan_pos[ring]) < cs * 0.3:
+			continue
+		L.scan_pos[ring] = _focus
+		_scan_ring(L, ring, alt)
+		did = true
+		if not force:
+			_scan_cursor = (idx + 1) % total
+			break
+	if did:
 		_update_lods()
 		_queue.sort_custom(func(a: PatchJob, b: PatchJob) -> bool: return a.prio < b.prio)
+		_evict_grids()
 
 
 func _scan_ring(L: LayerRT, ring: int, alt: float) -> void:
@@ -417,47 +448,59 @@ func _scan_ring(L: LayerRT, ring: int, alt: float) -> void:
 	var cell_r := cs * 0.8
 	var fdir := _focus.normalized()
 	var ground_r := radius + _ground_h
-	var g := fdir * ground_r
 	var wanted := {}
 	var rr := sqrt(maxf(0.0, (rmax + cell_r) * (rmax + cell_r) - alt * alt))
 	if rr > 0.0:
-		var t1 := fdir.cross(Vector3.UP if absf(fdir.y) < 0.9 else Vector3.RIGHT).normalized()
-		var t2 := fdir.cross(t1)
-		var step := cs * 0.5
-		var k := ceili(rr / step)
-		var lim := (rr / step) * (rr / step)
-		for y in range(-k, k + 1):
-			for x in range(-k, k + 1):
-				if x * x + y * y > lim + 1.0:
-					continue
-				var d := (g + t1 * (x * step) + t2 * (y * step)).normalized()
-				var c := dir_to_cell(d, n)
-				var key := _key(ring, L.index, c.x, c.y, c.z)
-				if wanted.has(key):
-					continue
-				var cdir := cell_center_dir(c.x, c.y, c.z, n)
-				var center := cdir * ground_r
-				if center.distance_to(_focus) > rmax + cell_r:
-					continue
-				wanted[key] = c
+		var c0 := dir_to_cell(fdir, n)
+		var k := ceili((rr + cell_r) / (cs * 0.7)) + 1
+		if c0.y - k >= 0 and c0.y + k < n and c0.z - k >= 0 and c0.z + k < n:
+			# common case: the ring stays on one cube face -> enumerate cells directly
+			for j in range(c0.z - k, c0.z + k + 1):
+				for i in range(c0.y - k, c0.y + k + 1):
+					var center := cell_center_dir(c0.x, i, j, n) * ground_r
+					if center.distance_to(_focus) <= rmax + cell_r:
+						wanted[_key(ring, L.index, c0.x, i, j)] = Vector3i(c0.x, i, j)
+		else:
+			# near a cube edge: sample the tangent disc and map samples to cells
+			var g := fdir * ground_r
+			var t1 := fdir.cross(Vector3.UP if absf(fdir.y) < 0.9 else Vector3.RIGHT).normalized()
+			var t2 := fdir.cross(t1)
+			var step := cs * 0.5
+			var ks := ceili(rr / step)
+			var lim := (rr / step) * (rr / step)
+			for y in range(-ks, ks + 1):
+				for x in range(-ks, ks + 1):
+					if x * x + y * y > lim + 1.0:
+						continue
+					var d := (g + t1 * (x * step) + t2 * (y * step)).normalized()
+					var c := dir_to_cell(d, n)
+					var key := _key(ring, L.index, c.x, c.y, c.z)
+					if wanted.has(key):
+						continue
+					var center := cell_center_dir(c.x, c.y, c.z, n) * ground_r
+					if center.distance_to(_focus) > rmax + cell_r:
+						continue
+					wanted[key] = c
 	# drop patches that left the ring (with hysteresis), queue new ones
-	for key in _patches.keys():
-		var p: Patch = _patches[key]
-		if p.layer != L or p.ring != ring or wanted.has(key):
+	var mine: Dictionary = L.patch_keys[ring]
+	for key in mine.keys():
+		if wanted.has(key):
 			continue
-		if p.center.distance_to(_focus) > rmax + cell_r + cs * 0.5:
+		var p: Patch = _patches.get(key)
+		if p == null:
+			mine.erase(key)
+		elif p.center.distance_to(_focus) > rmax + cell_r + cs * 0.5:
 			_free_patch(p)
 	for key in _pending.keys():
-		var j: PatchJob = _pending[key]
-		if j.layer == L and j.ring == ring and j.task < 0 and not wanted.has(key):
-			_queue.erase(j)
+		var jb: PatchJob = _pending[key]
+		if jb.layer == L and jb.ring == ring and jb.task < 0 and not wanted.has(key):
+			_queue.erase(jb)
 			_pending.erase(key)
 	for key in wanted:
-		var c: Vector3i = wanted[key]
 		if _patches.has(key):
 			continue
-		var cdir := cell_center_dir(c.x, c.y, c.z, n)
-		var center := cdir * ground_r
+		var c: Vector3i = wanted[key]
+		var center := cell_center_dir(c.x, c.y, c.z, n) * ground_r
 		var dist := center.distance_to(_focus)
 		if _pending.has(key):
 			(_pending[key] as PatchJob).prio = dist / maxf(rmax, 1.0) + ring * 0.5
@@ -476,17 +519,17 @@ func _scan_ring(L: LayerRT, ring: int, alt: float) -> void:
 		_pending[key] = job
 		_queue.append(job)
 	_evict_cache(L)
-	_evict_grids()
 
 
 func _evict_cache(L: LayerRT) -> void:
-	if L.cache.size() <= cache_limit:
+	if L.cache.size() <= maxi(cache_limit, L.cache_next):
 		return
 	var keep := L.src.max_distance + L.cell_m * 4.0
 	for ck in L.cache.keys():
 		var cd: CellData = L.cache[ck]
 		if cd.origin.distance_to(_focus) > keep:
 			L.cache.erase(ck)
+	L.cache_next = int(L.cache.size() * 1.5)
 
 
 func _update_lods() -> void:
@@ -563,7 +606,10 @@ func _upload(job: PatchJob) -> void:
 	p.center = job.center
 	p.radius = job.radius
 	p.count = job.count
+	if s.collision > 0 and job.ring == 0:
+		p.buffer = job.buffer
 	_patches[job.key] = p
+	L.patch_keys[job.ring][job.key] = true
 	if job.count == 0:
 		return
 	var mm := MultiMesh.new()
@@ -623,6 +669,7 @@ func _free_patch(p: Patch) -> void:
 		p.node = null
 	p.body = null
 	_patches.erase(p.key)
+	p.layer.patch_keys[p.ring].erase(p.key)
 	_body_queue.erase(p)
 
 
@@ -640,9 +687,10 @@ func _create_bodies(limit: int) -> void:
 		var s := p.layer.src
 		if p.dist > s.collision_distance * 1.3 + p.radius:
 			continue
+		# Shape owners on one StaticBody3D (no CollisionShape3D nodes: much cheaper to create).
 		var body := StaticBody3D.new()
 		body.name = "Collision"
-		var buf := p.node.multimesh.buffer
+		var buf := p.buffer
 		for i in p.count:
 			var q := i * FLOATS
 			var bx := Vector3(buf[q], buf[q + 4], buf[q + 8])
@@ -651,23 +699,28 @@ func _create_bodies(limit: int) -> void:
 			var o := Vector3(buf[q + 3], buf[q + 7], buf[q + 11])
 			var sc := by.length()
 			var basis := Basis(bx / sc, by / sc, bz / sc)
-			var cs := CollisionShape3D.new()
+			var shape: Shape3D
+			var xf: Transform3D
 			match s.collision:
 				1:
 					var cap := CapsuleShape3D.new()
 					cap.radius = s.collision_size.x * sc
 					cap.height = maxf(s.collision_size.y * sc, cap.radius * 2.0 + 0.01)
-					cs.shape = cap
-					cs.transform = Transform3D(basis, o + by * (s.collision_size.y * 0.5))
+					shape = cap
+					xf = Transform3D(basis, o + by * (s.collision_size.y * 0.5))
 				2:
 					var sp := SphereShape3D.new()
 					sp.radius = s.collision_size.x * sc
-					cs.shape = sp
-					cs.transform = Transform3D(basis, o + by * s.collision_size.y)
-				3:
-					cs.shape = p.layer.convex
-					cs.transform = Transform3D(Basis(bx, by, bz), o)
-			body.add_child(cs)
+					shape = sp
+					xf = Transform3D(basis, o + by * s.collision_size.y)
+				_:
+					shape = p.layer.convex
+					xf = Transform3D(Basis(bx, by, bz), o)
+			if shape == null:
+				continue
+			var owner := body.create_shape_owner(body)
+			body.shape_owner_add_shape(owner, shape)
+			body.shape_owner_set_transform(owner, xf)
 		p.node.add_child(body)
 		p.body = body
 		made += 1
@@ -849,7 +902,7 @@ func _sample_grid(n: int, G: int, face: int, i: int, j: int) -> CellGrid:
 
 ## Main thread: drop shared grids far from the focus.
 func _evict_grids() -> void:
-	if _grid_cache.size() < cache_limit * 2:
+	if _grid_cache.size() < maxi(cache_limit * 2, _grid_next):
 		return
 	var keep := 0.0
 	for L in _layers:
@@ -860,6 +913,7 @@ func _evict_grids() -> void:
 		var cg: CellGrid = _grid_cache[k]
 		if cg.origin.distance_to(_focus) > keep:
 			_grid_cache.erase(k)
+	_grid_next = int(_grid_cache.size() * 1.5)
 	_grid_mutex.unlock()
 
 
