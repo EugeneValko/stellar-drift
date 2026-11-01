@@ -290,6 +290,7 @@ func _partial_weather(r: SolarSystem.BodyRec, n: Vector3, look: Vector3) -> void
 			best = v
 			best_a = a
 	r.clouds.set_rotation_offset(best_a, recv)
+	print("[main]   weather rotated %.0f deg (coverage err %.2f)" % [rad_to_deg(best_a), best])
 
 
 ## How much (deg) the terrain toward the sun rises above the sun elevation (0 = sunlit).
@@ -359,7 +360,9 @@ func _terra_entry() -> void:
 		var h := _h(t, nn) - base
 		var f := _horizon_dir(nn, s.cross(nn))
 		var land := _max_ahead(t, nn, f, 60000.0, 8)
-		return -absf(h - 50.0) * 0.001 + clampf(land, 0.0, 3000.0) * 0.002 + nn.dot(da) * 2.0)
+		# temperate latitudes (no polar ice caps), land with relief ahead, toward the giant
+		return -absf(h - 50.0) * 0.001 + clampf(land, 0.0, 3000.0) * 0.002 + nn.dot(da) * 2.0 \
+			- smoothstep(0.35, 0.6, absf(nn.y)) * 6.0)
 	var look := _horizon_dir(n, s.cross(n))
 	# the horizon of a 60 km planet seen from 30 km is ~48 deg below the horizontal
 	var gr := _ground_r(t, n)

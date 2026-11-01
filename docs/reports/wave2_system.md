@@ -76,7 +76,11 @@ Aurelion за горами/облаками с Terra, звезда за лимб
 - **Экспозиция** (ручная, по контексту, плавно `adapt_speed`, при съёмке — сразу): космос 1.0, дневная поверхность
   1.05, ночная сторона у поверхности до 2.6 (тёмная, но читаемая). Внутри освещённой атмосферы звёзды/Млечный путь
   гасятся (`sky_energy` неба → 0.006, ступенями по 1/3 стопа — каждое изменение пересчитывает radiance-кубмапу).
-  Godot `background_energy_multiplier` на этот sky-шейдер не действует.
+  Godot `background_energy_multiplier` на этот sky-шейдер не действует. Звёзды проявляются только после заката
+  (солнце ниже −1.7°…−11°).
+- Ночная сторона: в шейдере рельефа «пол» амбиента `night_ambient` = (0.025, 0.032, 0.055) (звёзды/свечение/планетный
+  свет, художественно) — из космоса (экспозиция 1.0) ночная сторона почти чёрная, у поверхности (2.6) — тёмная, но
+  читаемая.
 
 ## 5. Ручки качества и производительность (п.7)
 
@@ -84,7 +88,7 @@ Aurelion за горами/облаками с Terra, звезда за лимб
 
 | Ручка | Где | По умолчанию | Влияние |
 |---|---|---|---|
-| `quality` 0/1/2 | `SolarSystem` | 1 | шаги атмосферы 8/12/16, облаков 32/56/96 (+3/4/5 к солнцу), волн океана 12/20/28, октавы гиганта |
+| `quality` 0/1/2 (`set_quality()` в рантайме) | `SolarSystem` | 1 | шаги атмосферы 8/12/16, облаков 32/56/96 (+3/4/5 к солнцу), волн океана 12/20/28, октавы гиганта |
 | `cloud_weather_resolution` | `SolarSystem` | 2048 | карта погоды (одноразовый bake), VRAM 16 МБ на планету |
 | `shadows_enabled`, `shadow_*` | `SolarSystem` | вкл | PSSM 4 сплита по рельефу фокус-планеты |
 | `rendering/lights_and_shadows/directional_shadow/size` | `project.godot` | 8192 (не менял) | на 2060 можно 4096, если тени дороги |
@@ -108,7 +112,8 @@ Aurelion за горами/облаками с Terra, звезда за лимб
 
 `system_overview`, `terra_orbit`, `terra_limb_sunrise`, `terra_entry` (30 км), `terra_low` (1 км, побережье+горы),
 `terra_ground` (2 м, Aurelion в небе), `terra_sunset_ground`, `selene_surface_terra_rise`, `ignis_low`, `glacia_low`,
-`aurelion_rings`, `vex_aurelion`, `star_from_ignis`. Аргументы: `--fov=`, `--exposure=` (ручная), `--no_shadows`,
+`aurelion_rings`, `vex_aurelion`, `star_from_ignis`; доп.: `terra_night_ground`, `ignis_orbit`, `glacia_orbit`,
+`selene_orbit`, `vex_orbit`. CPU-бенч: `godot --headless --path . scenes/main.tscn -- --bench=600`. Аргументы: `--fov=`, `--exposure=` (ручная), `--no_shadows`,
 `--cu_/--au_/--ou_/--tu_<uniform>=v` (облака/атмосфера/океан/рельеф Terra).
 
 ## 7. Как подключать корабль и игрока
@@ -141,7 +146,8 @@ Aurelion за горами/облаками с Terra, звезда за лимб
 - `src/planets/planet.gd` — `add_component(node, params = null)`.
 - `src/planets/planet_terrain.gd` — `render_layers`, `set_render_layers()`, `set_cast_shadows()`, `set_min_level()`.
 - `src/space/star.gd`, `src/planets/atmosphere/gas_giant.gd` — интерфейс тела Universe, группа `celestial_body`.
-- `src/planets/atmosphere/cloud_layer.gd` — `stratus`, `weather_contrast`, `weather_at()`.
+- `src/planets/atmosphere/cloud_layer.gd` — `stratus`, `weather_contrast`, `rot_offset`/`set_rotation_offset()`,
+  `weather_at()` (CPU-чтение карты погоды после bake).
 - Шейдеры слоёв/рельефа — см. §1. `debug_placeholder_terrain.gdshader` — только `sd_sun_dir()`.
 - `docs/ARCHITECTURE.md` (таблица, правила far/near, scaled space, свет), `docs/DECISIONS.md` (4 строки).
 - `project.godot` — **не менял**.
@@ -153,10 +159,11 @@ Aurelion за горами/облаками с Terra, звезда за лимб
 | `system_overview.png` | звезда с бликами, Aurelion серпом (освещён со стороны звезды — свет групп работает), тёмный диск Terra у звезды, ядро Млечного пути |
 | `terra_orbit.png` | Terra с орбиты 140 км: континенты, циклон, слоистые поля облаков; Aurelion с кольцами и Selene в кадре |
 | `terra_limb_sunrise.png` | восход из-за лимба: звезда выглядывает из атмосферы, силуэты облаков на лимбе, лучи |
-| `terra_entry.png` | 30 км: дуга горизонта, атмосфера, Selene и Aurelion над горизонтом |
+| `terra_entry.png` | 30 км: дуга горизонта, атмосфера, гладкая облачная дека, горы сквозь облака (умеренные широты) |
 | `terra_low.png` | 1 км: гора со снегом, лес, пляж, бирюзовое мелководье, тени облаков |
 | `terra_ground.png` | 2 м: побережье, горы, кучевые + перистые облака, **Aurelion с кольцами в дневном небе** |
 | `terra_sunset_ground.png` | закат над морем: блики, облака в контровом свете, дорожка |
+| `terra_night_ground.png` | ночная сторона: солнце −22°, читаемый тёмный рельеф (минимум амбиента + экспозиция 2.6), Aurelion в ночном небе |
 | `selene_surface_terra_rise.png` | Terra (17°) встаёт над горизонтом Selene |
 | `aurelion_rings.png` | у плоскости колец: щели, тень планеты на кольцах, Vex рядом |
 | `vex_aurelion.png` | с поверхности Vex: гигант ~40° и кольца через полнеба над серным рельефом |
@@ -188,6 +195,8 @@ Aurelion за горами/облаками с Terra, звезда за лимб
 - Очень далёкие тела < 1 px исчезают (нет «точек-звёзд» для планет).
 - Если два прозрачных слоя разных групп перекрываются при почти одинаковой дальности, порядок может «прыгнуть»
   (сортировка по центрам групп).
+- При near 0.05 (кокпит) диапазон тождества у поверхности Terra почти совпадает с F_max → сжатие между группами слабое
+  (p ≈ 0.02), порядок перекрытия далёких групп держится только при большой разнице дальностей. Рекомендация: near 0.1.
 - `frame_ms` CPU-бенч в облаке зашумлён (4 ядра делят 4 агента): `SolarSystem._frame` ≈ 0.7 мс avg при телепорте
   каждый кадр (в игре меньше); быстрый спуск с орбиты нагружает пул потоков рельефа — все планеты делят
   WorkerThreadPool.
