@@ -105,6 +105,7 @@ godot --headless --fixed-fps 60 -s tools/dev/playtest.gd -- session from=selene 
 |---|---|---|
 | load | PASS | сессия готова за 20,6–23,6 с (headless, 4 ядра) |
 | start_state | PASS | SHIP, LANDED, шасси, тело Terra Nova, камера погони, фокус = корабль, солнце 30,0° |
+| freecam_toggle | PASS | V: FREECAM, камера/фокус Universe/`SolarSystem.active_camera()` = свободная камера, ввод корабля выкл; отлёт на 600 м — под кораблём держится второй фокус рельефа; V — снова камера/фокус/ввод корабля (режим `quick`) |
 | takeoff_terra | PASS | 24 с: HOVER → ATMOSPHERE → SPACE, 43,7 км (над атмосферой 25,5 км), max нагрев 0,94 (полный газ сквозь плотный воздух), X — остановка |
 | target_selene | PASS | T (перебор тел по дальности) находит Selene |
 | autopilot_selene | PASS | 53 с: Selene за горизонтом Terra — облёт по касательной, CRUISE до 68 км/с, остановка на 5 км, 0 м/с |

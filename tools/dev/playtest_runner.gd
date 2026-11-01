@@ -1,7 +1,7 @@
 extends Node
 ## Scripted playtest of the real game (scenes/main.tscn: GameMode + Ship + Player + SolarSystem).
 ##
-##   godot --headless --fixed-fps 60 -s tools/dev/playtest.gd -- [session|soak|extras|all] [soak_sec=180] [seed=1]
+##   godot --headless --fixed-fps 60 -s tools/dev/playtest.gd -- [session|soak|extras|all|quick] [soak_sec=180] [seed=1] [from=selene] [pace=1]
 ## (this file is the runner Node; tools/dev/playtest.gd is a tiny SceneTree bootstrap that loads
 ## it after the autoloads exist)
 ##
@@ -45,7 +45,7 @@ var _messages: Array[String] = []
 
 func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
-		if a in ["session", "soak", "extras", "all"]:
+		if a in ["session", "soak", "extras", "all", "quick"]:
 			mode = a
 		elif a.begins_with("soak_sec="):
 			soak_sec = float(a.substr(9))
@@ -73,6 +73,7 @@ func _run() -> void:
 	ship.hud_message.connect(func(m: String) -> void: _messages.append(m))
 	await _frames(30)
 	_check_start()
+	await _check_freecam()
 	if mode == "session" or mode == "all":
 		await _session()
 	if mode == "extras" or mode == "all":
@@ -168,6 +169,27 @@ func _check_start() -> void:
 	_result("start_state", ok, "state=%s landed=%s gear=%s body=%s cam=%s focus=%s sun=%.1f° alt=%.2f m" % [
 		game.get_state_name(), ship.landed, ship.gear_down, h["body_name"], cam.name if cam else "-",
 		Universe.focus.name if Universe.focus else "-", sun_el, ship.altitude])
+
+
+## V: free camera takes over (camera, focus), flies 600 m away; the terrain under the landed ship
+## keeps its fine LOD (second focus); V again returns to the ship camera.
+func _check_freecam() -> void:
+	game.toggle_freecam()
+	await _frames(5)
+	var fc := game.free_camera as Camera3D
+	var ok1: bool = game.state == GameMode.State.FREECAM and fc != null and get_viewport().get_camera_3d() == fc \
+		and Universe.focus == fc and system.active_camera() == fc and not ship.input_enabled
+	fc.global_position += ship.up_dir * 400.0 + fc.global_basis.z * 450.0
+	await _frames(60)
+	var terra := (system.get_body("Terra Nova").planet as Planet).terrain
+	var focus2 := terra.has_focus2
+	game.toggle_freecam()
+	await _frames(5)
+	var ok2: bool = game.state == GameMode.State.SHIP and get_viewport().get_camera_3d() == ship.get_camera() \
+		and Universe.focus == ship and ship.input_enabled
+	await _frames(30)
+	_result("freecam_toggle", ok1 and ok2 and focus2, "V: state FREECAM, camera/focus = free camera, ship input off: %s; terrain 2nd focus under the ship while away: %s; V again -> SHIP camera/focus/input: %s" % [
+		ok1, focus2, ok2])
 
 
 # ------------------------------------------------------------------ session
