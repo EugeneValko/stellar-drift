@@ -484,6 +484,42 @@ func safe_orbit_altitude(b: Node3D) -> float:
 	return maxf(maxf(2.0 * ah, 0.3 * b.get_body_radius()), 5000.0)
 
 
+## Autopilot heading: straight at the target unless another body (e.g. the planet we just took off
+## from, with the target below its horizon) is in the way — then along the tangent of that body's
+## clearance sphere (radius + 0.8 x its safe orbit altitude); inside the sphere: climb out first.
+func _autopilot_aim(dir: Vector3, dist: float) -> Vector3:
+	var p := global_position
+	var aim := dir
+	var worst := INF
+	for b in Universe.get_bodies():
+		if b == target:
+			continue
+		var c: Vector3 = b.global_position - p
+		var along := c.dot(dir)
+		if along <= 0.0 or along >= dist:
+			continue
+		var ro: float = b.get_body_radius() + 0.8 * safe_orbit_altitude(b)
+		var miss := (c - dir * along).length()
+		if miss >= ro or along >= worst:
+			continue
+		worst = along
+		var L := c.length()
+		var cn := c / L
+		var axis := cn.cross(dir)
+		if axis.length_squared() < 1e-8:
+			axis = cn.cross(Vector3.UP if absf(cn.y) < 0.9 else Vector3.RIGHT)
+		axis = axis.normalized()
+		if L <= ro * 1.02:
+			# inside the clearance sphere: climb away from the body, leaning toward the target side
+			var out := -cn
+			var side := axis.cross(cn).normalized()
+			aim = (out * 1.0 + side * 0.6).normalized()
+		else:
+			var ang := asin(clampf(ro / L, 0.0, 1.0)) + deg_to_rad(3.0)
+			aim = cn.rotated(axis, ang)
+	return aim
+
+
 ## Planets have ground; the gas giant and the star do not (pressure / heat floor instead).
 func _is_solid(b: Node3D) -> bool:
 	return b is Planet
@@ -752,7 +788,7 @@ func _update_autopilot(_dt: float) -> void:
 	var d := to.length()
 	var dsurf: float = d - target.get_body_radius()
 	var orbit := safe_orbit_altitude(target)
-	var aim := to / maxf(d, 1.0)
+	var aim := _autopilot_aim(to / maxf(d, 1.0), d)
 	steer_dir = aim
 	steer_up = Vector3.ZERO
 	if dsurf <= orbit * 1.03:
