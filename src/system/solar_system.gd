@@ -99,7 +99,7 @@ const PRESET_DIR := "res://src/planets/presets/"
 ## Background (stars, Milky Way) energy in a daylight sky (1 = space).
 @export var sky_day_energy := 0.0005
 ## Stars near a sunlit planet seen from space (glare of the bright disc; 1 = no dimming).
-@export var sky_dayside_energy := 0.45
+@export var sky_dayside_energy := 0.3
 ## Share of the exposure boost (night / twilight on the ground) taken back on the star field
 ## (0 = stars get the full boost, 1 = stars look exactly as in space).
 @export var sky_exposure_compensation := 0.6

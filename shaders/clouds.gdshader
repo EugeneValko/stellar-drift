@@ -146,7 +146,7 @@ void fragment() {
 		// wave 4: seen from far away (orbit, high altitude) the self-shadowing is softened -
 		// cloud fields read as bright, flat-ish sheets with soft relief instead of lumpy
 		// "cauliflower" (the layer is very thick relative to this compressed planet)
-		float far_soft = smoothstep(30000.0, 120000.0, t);
+		float far_soft = smoothstep(15000.0, 90000.0, t);
 		od *= 1.0 - 0.45 * far_soft;
 		float f = (t - t0) / max(len, 1.0);
 		vec3 sunc = mix(sun_a, sun_b, f);
