@@ -152,6 +152,27 @@ func _exit_tree() -> void:
 	_jobs.clear()
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		# ChunkNode parent <-> children (and node <-> job) are reference cycles: break them,
+		# otherwise the whole quadtree leaks at exit (ObjectDB warning)
+		for j in _jobs:
+			WorkerThreadPool.wait_for_task_completion(j.task)
+		_jobs.clear()
+		var stack: Array[ChunkNode] = []
+		stack.append_array(_roots)
+		while not stack.is_empty():
+			var n: ChunkNode = stack.pop_back()
+			stack.append_array(n.children)
+			n.children.clear()
+			n.parent = null
+			n.job = null
+		_roots.clear()
+		_queue.clear()
+		_body_queue.clear()
+		_shown_list.clear()
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------

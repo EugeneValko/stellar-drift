@@ -851,7 +851,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	var wt := Vector3(st.y * rate.x, -st.x * rate.y, in_roll * rate.z)
 	if steer_dir != Vector3.ZERO:
 		wt = _steer_rates(B, steer_dir, steer_up, rate)
-	elif assist and body and not landed and (mode == Mode.HOVER or (altitude < 400.0 and speed < 90.0)):
+	elif assist and body and not landed and not wow and (mode == Mode.HOVER or (altitude < 400.0 and speed < 90.0)):
 		# auto-level toward local up when hovering / landing (player input overrides)
 		var err := Bt * B.y.cross(up_dir)
 		wt.x += err.x * 2.2 * (1.0 - absf(st.y))
