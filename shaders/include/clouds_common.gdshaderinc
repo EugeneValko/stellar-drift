@@ -1,7 +1,7 @@
 // Procedural cloud layer shared code.
 //  * cloud_weather_procedural(): planetary weather (fbm + domain warp + latitude circulation +
 //    cyclone swirls). Expensive -> baked once into an equirect texture (cloud_weather_bake).
-//  * cloud_weather(): 1 texture tap into the baked map (+ drift rotation over TIME).
+//  * cloud_weather(): bicubic lookup of the baked map (+ drift over TIME); _fast = 1 tap.
 //  * cloud_density_at(): 3D density inside the shell.
 //  * cloud_shadow_local()/cloud_shadow_m(): cheap shadow term for receivers (ocean, terrain).
 //    Receivers get uniforms from CloudLayer.get_shadow_uniforms() (cloud_shadow_strength > 0).
@@ -88,12 +88,21 @@ vec2 cloud_weather_procedural(vec3 dir) {
 }
 
 // Baked weather lookup (equirect), with slow drift around the planet axis.
-vec2 cloud_weather(vec3 dir) {
+vec2 cloud_weather_uv(vec3 dir) {
 	float a = TIME * cloud_rot_speed;
 	float ca = cos(a);
 	float sa = sin(a);
 	vec3 q = vec3(ca * dir.x - sa * dir.z, dir.y, sa * dir.x + ca * dir.z);
-	vec2 uv = vec2(atan(q.z, q.x) * 0.15915494 + 0.5, acos(clamp(q.y, -1.0, 1.0)) * 0.31830989);
+	return vec2(atan(q.z, q.x) * 0.15915494 + 0.5, acos(clamp(q.y, -1.0, 1.0)) * 0.31830989);
+}
+
+// Cheap single bilinear tap (light rays, shadows).
+vec2 cloud_weather_fast(vec3 dir) {
+	return texture(cloud_weather_tex, cloud_weather_uv(dir)).rg;
+}
+
+vec2 cloud_weather(vec3 dir) {
+	vec2 uv = cloud_weather_uv(dir);
 	// bicubic B-spline from 4 bilinear taps: C2-smooth coverage (bilinear creases would be
 	// extruded into vertical "curtains" by the density remap)
 	vec2 size = vec2(textureSize(cloud_weather_tex, 0));
@@ -155,7 +164,7 @@ float cloud_shadow_local(vec3 pl, vec3 L_local) {
 	if (hit.y <= 0.0 || hit.y < hit.x) return 1.0;
 	float t = hit.x > 0.0 ? hit.x : hit.y;
 	vec3 q = pl + L_local * t;
-	vec2 w = cloud_weather(normalize(q));
+	vec2 w = cloud_weather_fast(normalize(q));
 	float d = cloud_density_at(q, rm, w, 1);
 	return 1.0 - cloud_shadow_strength * smoothstep(0.0, 0.35, d);
 }

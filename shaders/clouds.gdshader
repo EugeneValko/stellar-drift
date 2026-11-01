@@ -111,7 +111,7 @@ void fragment() {
 		for (int j = 0; j < cloud_light_steps; j++) {
 			q += L_l * dl;
 			float rq = length(q);
-			od += cloud_density_at(q, rq, cloud_weather(q / rq), 1) * dl;
+			od += cloud_density_at(q, rq, cloud_weather_fast(q / rq), 1) * dl;
 			dl *= 2.0;
 		}
 		od *= cloud_density;

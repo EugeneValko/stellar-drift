@@ -96,7 +96,7 @@ func _build_terra() -> void:
 	terra_ocean.setup({"radius": R_TERRA, "atmosphere": terra_atmo, "quality": 2})
 	terra_clouds = CLOUDS_SCENE.instantiate()
 	terra.add_child(terra_clouds)
-	terra_clouds.setup({"radius": R_TERRA, "bottom": 1800.0, "top": 4300.0, "coverage": 0.45, "brightness": 2.2, "cyclones": 5,
+	terra_clouds.setup({"radius": R_TERRA, "bottom": 1800.0, "top": 4300.0, "coverage": 0.4, "brightness": 2.2, "cyclones": 5,
 		"atmosphere": terra_atmo, "ocean_radius": R_TERRA, "quality": 2})
 	terra_ocean.set_clouds(terra_clouds)
 	terra_clouds.apply_shadow_uniforms(terra_ground.material)
@@ -219,14 +219,18 @@ func apply_capture_preset(preset: String) -> void:
 	_set_sun(Vector3(1.0, 0.18, 0.32))
 	match preset:
 		"orbit":
-			var d := sun_dir.rotated(Vector3.UP, deg_to_rad(-55.0)).rotated(Vector3.RIGHT, deg_to_rad(-12.0))
-			_look(d * 175000.0, Vector3(0, 0, 0), Vector3.UP)
+			var yaw := float(Capture.args.get("orbit_yaw", "-72"))
+			var d := sun_dir.rotated(Vector3.UP, deg_to_rad(yaw)).rotated(Vector3.RIGHT, deg_to_rad(-12.0))
+			_look(d * 185000.0, Vector3(0, 0, 0), Vector3.UP)
 		"terminator":
-			# night side above the terminator, looking along the dusk line toward the limb
-			var a := sun_dir.cross(Vector3.UP).normalized()
-			var n := (a * 0.97 - sun_dir * 0.25).normalized()
-			var pos := n * (R_TERRA + 45000.0)
-			_look(pos, a.cross(sun_dir).normalized() * 0.0 + n * R_TERRA * 0.85 + sun_dir * 30000.0, n)
+			# above the dusk line on the night side, looking along the terminator
+			var u1 := sun_dir.cross(Vector3.UP).normalized()
+			var u2 := sun_dir.cross(u1).normalized()
+			var n := (u1 - sun_dir * 0.12).normalized()
+			var pos := n * (R_TERRA + float(Capture.args.get("term_alt", "38000")))
+			var ang := deg_to_rad(float(Capture.args.get("term_ang", "55")))
+			var tgt := (u1 * cos(ang) + u2 * sin(ang)).normalized() * R_TERRA
+			_look(pos, tgt, n)
 		"atmo_entry":
 			var n := _find_site(35.0, 0.0, 6000.0, 0.6)
 			var fr := _frame(n)
