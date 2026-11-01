@@ -1,0 +1,332 @@
+class_name ShipVisual
+extends Node3D
+## Visual side of the player ship: instances assets/models/ship.glb (child "Model"), swaps the imported
+## placeholder materials for the procedural ship shaders, and animates gear / hatch / canopy / engines /
+## nav lights. Pure visuals — no physics. Ship forward is -Z, up is +Y (see docs/reports/stage3_ship_model.md).
+##
+## API: set_thrust(0..1), set_gear(deployed, instant), set_hatch(open, instant), set_canopy(open, instant),
+##      get_marker(name) -> Node3D, get_markers(prefix) -> Array[Node3D].
+
+signal gear_changed(deployed: bool)
+signal hatch_changed(open: bool)
+
+const MATERIALS := {
+	"Hull": preload("res://assets/materials/ship/hull.tres"),
+	"HullDark": preload("res://assets/materials/ship/hull_dark.tres"),
+	"Trim": preload("res://assets/materials/ship/trim.tres"),
+	"Glass": preload("res://assets/materials/ship/glass.tres"),
+	"Emissive": preload("res://assets/materials/ship/emissive.tres"),
+	"EngineInner": preload("res://assets/materials/ship/engine_inner.tres"),
+}
+const PLUME_SHADER := preload("res://shaders/ship_plume.gdshader")
+const MARKER_PREFIXES := ["EngineExhaust_", "Thruster_", "NavLight_", "PilotSeat", "PilotEye", "ExitPoint",
+	"GroundPoint", "CameraChase"]
+# Fallbacks if glTF extras are missing (degrees around local X; see tools/blender/ship.py).
+const DEFAULT_RETRACT := {"GearFront": -90.0, "GearRearL": 90.0, "GearRearR": 90.0}
+const DEFAULT_HATCH_OPEN := -40.0
+const DEFAULT_CANOPY_OPEN := 32.0
+const NAV_LIGHT_ENERGY := 0.35
+
+@export var gear_time := 2.4
+@export var hatch_time := 2.0
+@export var canopy_time := 1.6
+@export var nav_lights := true
+@export var engine_light_energy := 6.0
+@export var plume_length := 7.0
+@export var start_gear_deployed := true
+
+var thrust := 0.0
+var gear_deployed := true
+var hatch_open := false
+var canopy_open := false
+
+var _model: Node3D
+var _mats: Dictionary = {}          # slot name -> ShaderMaterial (per-instance duplicates)
+var _markers: Dictionary = {}       # name -> Node3D
+var _gears: Array[Node3D] = []
+var _gear_angles: Dictionary = {}   # node -> retract radians
+var _hatch: Node3D
+var _hatch_angle := deg_to_rad(DEFAULT_HATCH_OPEN)
+var _canopy: Node3D
+var _canopy_angle := deg_to_rad(DEFAULT_CANOPY_OPEN)
+var _gear_t := 1.0                  # 1 = deployed
+var _hatch_t := 0.0                 # 1 = open
+var _canopy_t := 0.0
+var _tweens: Dictionary = {}
+var _plumes: Array[Node3D] = []
+var _plume_mats: Array[ShaderMaterial] = []
+var _engine_lights: Array[OmniLight3D] = []
+var _nav: Array[Dictionary] = []    # {light, mesh_mat, color, kind}
+var _time := 0.0
+var _capture := false
+
+
+func _ready() -> void:
+	_model = get_node_or_null("Model") as Node3D
+	if _model == null:
+		push_error("ShipVisual: child 'Model' (ship.glb instance) missing")
+		return
+	var cap := get_node_or_null("/root/Capture")
+	_capture = cap != null and bool(cap.get("active"))
+	for k: String in MATERIALS:
+		_mats[k] = (MATERIALS[k] as ShaderMaterial).duplicate()
+	if _capture:
+		for k: String in ["Emissive", "EngineInner"]:
+			(_mats[k] as ShaderMaterial).set_shader_parameter("time_override", 1.3)
+	_collect(_model)
+	_build_engine_fx()
+	_build_nav_lights()
+	_set_gear_t(1.0 if start_gear_deployed else 0.0)
+	gear_deployed = start_gear_deployed
+	_set_hatch_t(0.0)
+	_set_canopy_t(0.0)
+	set_thrust(thrust)
+
+
+func _collect(node: Node) -> void:
+	for c in node.get_children():
+		var n3 := c as Node3D
+		if n3 == null:
+			continue
+		var nm := String(n3.name)
+		for pre: String in MARKER_PREFIXES:
+			if nm.begins_with(pre):
+				_markers[nm] = n3
+		if nm.begins_with("Gear"):
+			_gears.append(n3)
+			_gear_angles[n3] = deg_to_rad(float(_extra(n3, "retract_deg", DEFAULT_RETRACT.get(nm, 90.0))))
+		elif nm == "Hatch":
+			_hatch = n3
+			_hatch_angle = deg_to_rad(float(_extra(n3, "open_deg", DEFAULT_HATCH_OPEN)))
+		elif nm == "Canopy":
+			_canopy = n3
+			_canopy_angle = deg_to_rad(float(_extra(n3, "open_deg", DEFAULT_CANOPY_OPEN)))
+		var mi := n3 as MeshInstance3D
+		if mi != null and mi.mesh != null:
+			_apply_materials(mi)
+		_collect(n3)
+
+
+func _extra(n: Node, key: String, fallback: Variant) -> Variant:
+	if n.has_meta("extras"):
+		var ex: Variant = n.get_meta("extras")
+		if ex is Dictionary and (ex as Dictionary).has(key):
+			return ex[key]
+	return fallback
+
+
+func _apply_materials(mi: MeshInstance3D) -> void:
+	var mesh := mi.mesh
+	for i in mesh.get_surface_count():
+		var src := mesh.surface_get_material(i)
+		var key := src.resource_name if src != null else ""
+		if key == "" and mesh is ArrayMesh:
+			key = (mesh as ArrayMesh).surface_get_name(i)
+		if _mats.has(key):
+			mi.set_surface_override_material(i, _mats[key])
+		else:
+			push_warning("ShipVisual: unknown material slot '%s' on %s" % [key, mi.name])
+	# Separate animated parts: give the shader their rest offset in ship space so patterns line up.
+	var rest := _model.global_transform.affine_inverse() * mi.global_transform
+	mi.set_instance_shader_parameter("part_offset", rest.origin)
+
+
+# ------------------------------------------------------------------ engines
+func _build_engine_fx() -> void:
+	for nm: String in _markers:
+		if not nm.begins_with("EngineExhaust_"):
+			continue
+		var m: Node3D = _markers[nm]
+		var r := float(_extra(m, "radius", 0.55))
+		var aux := String(_extra(m, "kind", "main")) == "aux"
+		for layer in 2:
+			var plen := plume_length * (0.55 if aux else 1.0) * (0.45 if layer == 0 else 1.0)
+			var cyl := CylinderMesh.new()
+			cyl.top_radius = r * (0.8 if layer == 0 else 1.0)
+			cyl.bottom_radius = r * (0.15 if layer == 0 else 0.45)
+			cyl.height = plen
+			cyl.radial_segments = 24
+			cyl.rings = 8
+			cyl.cap_top = false
+			cyl.cap_bottom = false
+			var mat := ShaderMaterial.new()
+			mat.shader = PLUME_SHADER
+			mat.set_shader_parameter("plume_len", plen)
+			if layer == 0:
+				mat.set_shader_parameter("color_start", Color(0.85, 0.95, 1.0))
+				mat.set_shader_parameter("color_end", Color(0.45, 0.65, 1.0))
+				mat.set_shader_parameter("intensity", 3.0)
+				mat.set_shader_parameter("diamonds", 0.9)
+			else:
+				mat.set_shader_parameter("intensity", 1.0)
+				mat.set_shader_parameter("edge_soft", 2.5)
+				mat.set_shader_parameter("diamonds", 0.3)
+			if _capture:
+				mat.set_shader_parameter("time_override", 1.3)
+			var pivot := Node3D.new()
+			pivot.name = "Plume%d" % layer
+			m.add_child(pivot)
+			var mi := MeshInstance3D.new()
+			mi.mesh = cyl
+			mi.material_override = mat
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			# cylinder axis +Y -> marker -Z (plume direction); top cap (nozzle end) at the marker origin
+			mi.transform = Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, 0, -plen * 0.5))
+			pivot.add_child(mi)
+			_plumes.append(pivot)
+			_plume_mats.append(mat)
+		var light := OmniLight3D.new()
+		light.name = "EngineLight"
+		light.light_color = Color(0.55, 0.75, 1.0)
+		light.omni_range = 9.0 if not aux else 5.0
+		light.omni_attenuation = 1.6
+		light.position = Vector3(0, 0, -1.2)
+		light.shadow_enabled = false
+		m.add_child(light)
+		_engine_lights.append(light)
+
+
+func set_thrust(v: float) -> void:
+	thrust = clampf(v, 0.0, 1.0)
+	if _mats.is_empty():
+		return
+	(_mats["EngineInner"] as ShaderMaterial).set_shader_parameter("thrust", thrust)
+	for i in _plume_mats.size():
+		_plume_mats[i].set_shader_parameter("thrust", thrust)
+		_plumes[i].visible = thrust > 0.01
+		_plumes[i].scale = Vector3(1.0, 1.0, lerpf(0.5, 1.0, thrust))
+	for l in _engine_lights:
+		l.light_energy = engine_light_energy * thrust * thrust
+		l.visible = thrust > 0.01
+
+
+# ------------------------------------------------------------------ nav lights
+func _build_nav_lights() -> void:
+	var defs := {
+		"NavLight_L": [Color(1.0, 0.08, 0.05), "steady", Vector3(-0.35, 0.0, 0.0)],
+		"NavLight_R": [Color(0.1, 1.0, 0.25), "steady", Vector3(0.35, 0.0, 0.0)],
+		"NavLight_Top": [Color(1.0, 0.95, 0.9), "strobe", Vector3(0.0, 0.35, 0.0)],
+	}
+	for nm: String in defs:
+		if not _markers.has(nm):
+			continue
+		var m: Node3D = _markers[nm]
+		var col: Color = defs[nm][0]
+		var sph := SphereMesh.new()
+		sph.radius = 0.055
+		sph.height = 0.11
+		sph.radial_segments = 12
+		sph.rings = 6
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.albedo_color = col
+		var mi := MeshInstance3D.new()
+		mi.mesh = sph
+		mi.material_override = mat
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		m.add_child(mi)
+		var light := OmniLight3D.new()
+		light.light_color = col
+		light.omni_range = 2.5
+		light.light_energy = NAV_LIGHT_ENERGY
+		light.shadow_enabled = false
+		light.position = defs[nm][2]  # keep the point light off the hull (avoids a blown-out hot spot)
+		m.add_child(light)
+		_nav.append({"light": light, "mat": mat, "color": col, "kind": defs[nm][1], "mesh": mi})
+	_update_nav(0.0)
+
+
+func _update_nav(t: float) -> void:
+	for d: Dictionary in _nav:
+		var on := 1.0
+		if not nav_lights:
+			on = 0.0
+		elif _capture:
+			on = 1.0
+		elif d["kind"] == "strobe":
+			var ph := fmod(t, 1.4)
+			on = 1.0 if (ph < 0.06 or (ph > 0.16 and ph < 0.22)) else 0.0
+		else:
+			on = 0.35 + 0.65 * (0.5 + 0.5 * signf(sin(t * TAU * 0.5)))
+		var c: Color = d["color"]
+		(d["mat"] as StandardMaterial3D).albedo_color = c * (0.15 + 5.0 * on)
+		(d["light"] as OmniLight3D).light_energy = NAV_LIGHT_ENERGY * on
+		(d["mesh"] as MeshInstance3D).visible = nav_lights
+
+
+func _process(delta: float) -> void:
+	_time += delta
+	if not _nav.is_empty():
+		_update_nav(_time)
+
+
+# ------------------------------------------------------------------ gear / hatch / canopy
+func set_gear(deployed: bool, instant := false) -> void:
+	gear_deployed = deployed
+	_animate("gear", _set_gear_t, _gear_t, 1.0 if deployed else 0.0, gear_time, instant)
+	gear_changed.emit(deployed)
+
+
+func set_hatch(open: bool, instant := false) -> void:
+	hatch_open = open
+	_animate("hatch", _set_hatch_t, _hatch_t, 1.0 if open else 0.0, hatch_time, instant)
+	hatch_changed.emit(open)
+
+
+func set_canopy(open: bool, instant := false) -> void:
+	canopy_open = open
+	_animate("canopy", _set_canopy_t, _canopy_t, 1.0 if open else 0.0, canopy_time, instant)
+
+
+func is_gear_moving() -> bool:
+	return _tweens.has("gear") and (_tweens["gear"] as Tween).is_running()
+
+
+func _animate(key: String, setter: Callable, from: float, to: float, dur: float, instant: bool) -> void:
+	if _tweens.has(key):
+		(_tweens[key] as Tween).kill()
+		_tweens.erase(key)
+	if instant or not is_inside_tree():
+		setter.call(to)
+		return
+	var tw := create_tween()
+	tw.tween_method(setter, from, to, dur * absf(to - from)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_tweens[key] = tw
+
+
+func _set_gear_t(t: float) -> void:
+	_gear_t = t
+	for g in _gears:
+		# front gear leads on deploy, trails on retract
+		var k := t
+		if g.name == "GearFront":
+			k = clampf(t * 1.15, 0.0, 1.0)
+		else:
+			k = clampf(t * 1.15 - 0.15, 0.0, 1.0)
+		k = k * k * (3.0 - 2.0 * k)
+		g.rotation = Vector3(float(_gear_angles[g]) * (1.0 - k), 0.0, 0.0)
+
+
+func _set_hatch_t(t: float) -> void:
+	_hatch_t = t
+	if _hatch:
+		_hatch.rotation = Vector3(_hatch_angle * t, 0.0, 0.0)
+
+
+func _set_canopy_t(t: float) -> void:
+	_canopy_t = t
+	if _canopy:
+		_canopy.rotation = Vector3(_canopy_angle * t, 0.0, 0.0)
+
+
+# ------------------------------------------------------------------ markers
+func get_marker(marker_name: String) -> Node3D:
+	return _markers.get(marker_name, null)
+
+
+func get_markers(prefix: String) -> Array[Node3D]:
+	var out: Array[Node3D] = []
+	for k: String in _markers:
+		if k.begins_with(prefix):
+			out.append(_markers[k])
+	return out

@@ -1,0 +1,26 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://shaders/ship_hull.gdshader" id="1"]
+
+[resource]
+resource_name = "ShipHull"
+shader = ExtResource("1")
+shader_parameter/base_color = Color(0.60, 0.61, 0.62, 1)
+shader_parameter/base_color_alt = Color(0.56, 0.57, 0.585, 1)
+shader_parameter/alt_panel_ratio = 0.2
+shader_parameter/metallic = 0.12
+shader_parameter/roughness = 0.38
+shader_parameter/roughness_var = 0.1
+shader_parameter/specular = 0.5
+shader_parameter/clearcoat = 0.2
+shader_parameter/panel_line_width = 0.022
+shader_parameter/panel_line_dark = 0.65
+shader_parameter/rivet_amount = 0.35
+shader_parameter/edge_wear = 0.55
+shader_parameter/wear_color = Color(0.6, 0.61, 0.63, 1)
+shader_parameter/edge_highlight = 0.1
+shader_parameter/grime = 0.55
+shader_parameter/soot = 0.6
+shader_parameter/markings = 1.0
+shader_parameter/accent_color = Color(0.95, 0.36, 0.07, 1)
+shader_parameter/belly_amount = 1.0
