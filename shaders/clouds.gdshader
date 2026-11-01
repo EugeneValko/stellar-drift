@@ -1,0 +1,137 @@
+// Volumetric cloud shell (raymarched between cloud_bottom and cloud_top radii). Drawn on back
+// faces of a proxy sphere with depth test off -> works from space, inside and below the layer;
+// stops at the opaque scene depth and the ocean sphere. Lighting: short light march toward the
+// sun + multi-octave scattering approximation (silver lining / forward scattering), powder
+// darkening, sky ambient, atmospheric sun colour (sunsets) and aerial perspective in front of
+// the cloud. Output is premultiplied (alpha = 1 - transmittance).
+shader_type spatial;
+render_mode unshaded, cull_front, depth_test_disabled, depth_draw_never, blend_premul_alpha, fog_disabled;
+
+#include "res://shaders/include/atmosphere_common.gdshaderinc"
+#include "res://shaders/include/clouds_common.gdshaderinc"
+
+uniform sampler2D depth_tex : hint_depth_texture, filter_nearest, repeat_disable;
+
+group_uniforms cloud_render;
+uniform int cloud_steps = 40;
+uniform int cloud_light_steps = 4;
+uniform float cloud_light_step = 120.0;      // first light step (m), doubles each step
+uniform float cloud_max_distance = 70000.0;
+uniform float cloud_brightness = 1.0;
+uniform vec3 cloud_albedo : source_color = vec3(1.0);
+uniform float cloud_ambient = 1.0;
+uniform float cloud_ocean_radius = 0.0;       // >0: rays stop at the ocean sphere
+uniform float cloud_detail_distance = 25000.0; // beyond: no detail erosion
+uniform int cloud_ap_steps = 6;
+group_uniforms;
+
+void fragment() {
+	vec3 rd = normalize((INV_VIEW_MATRIX * vec4(normalize(VERTEX), 0.0)).xyz);
+	vec3 ro = CAMERA_POSITION_WORLD - NODE_POSITION_WORLD;
+	float r0 = length(ro);
+	vec2 top = sd_ray_sphere(ro, rd, cloud_top);
+	if (top.y < top.x || top.y <= 0.0) discard;
+	vec2 bot = sd_ray_sphere(ro, rd, cloud_bottom);
+	bool bot_hit = bot.y >= bot.x;
+	float t0;
+	float t1;
+	if (r0 > cloud_top) {
+		t0 = top.x;
+		t1 = (bot_hit && bot.x > 0.0) ? bot.x : top.y;
+	} else if (r0 >= cloud_bottom) {
+		t0 = 0.0;
+		t1 = (bot_hit && bot.x > 0.0) ? bot.x : top.y;
+	} else {
+		t0 = max(bot.y, 0.0);
+		t1 = top.y;
+	}
+	float sd = sd_scene_distance(texture(depth_tex, SCREEN_UV).r, SCREEN_UV, INV_PROJECTION_MATRIX);
+	t1 = min(t1, sd);
+	if (cloud_ocean_radius > 0.0) {
+		vec2 o = sd_ray_sphere(ro, rd, cloud_ocean_radius);
+		if (o.y >= o.x && o.x > 0.0) t1 = min(t1, o.x);
+	}
+	t1 = min(t1, t0 + cloud_max_distance);
+	if (t1 <= t0) discard;
+
+	mat3 to_local = transpose(mat3(MODEL_MATRIX));
+	vec3 ro_l = to_local * ro;
+	vec3 rd_l = to_local * rd;
+	vec3 L = sun_direction;
+	vec3 L_l = to_local * L;
+	float mu = dot(rd, L);
+
+	// per-pixel lighting terms (sun colour at entry/exit, sky ambient)
+	vec3 pa = ro + rd * t0;
+	vec3 pb = ro + rd * t1;
+	vec3 sun_a = atmo_sun_transmittance(pa, L);
+	vec3 sun_b = atmo_sun_transmittance(pb, L);
+	vec3 Esun = sun_color.rgb * sun_intensity * atmo_intensity * cloud_brightness;
+	vec3 pm = ro + rd * mix(t0, t1, 0.3);
+	vec3 sky_amb = atmo_sky_ambient(pm) / SD_PI;
+	float upl = max(dot(normalize(pm), L), 0.0);
+	vec3 ground_amb = vec3(0.12, 0.13, 0.12) * sun_color.rgb * sun_intensity * upl * 0.5;
+
+	// phase (dual-lobe HG, multi-octave)
+	float ph0 = mix(sd_hg(mu, 0.8), sd_hg(mu, -0.25), 0.25);
+	float ph1 = mix(sd_hg(mu, 0.4), sd_hg(mu, -0.12), 0.3);
+	float ph2 = SD_INV_4PI;
+
+	float len = t1 - t0;
+	float k = (r0 <= cloud_top && len > 8000.0) ? 1.7 : 1.0;
+	float jit = sd_ign(FRAGCOORD.xy);
+	vec3 col = vec3(0.0);
+	float T = 1.0;
+	float t_acc = 0.0;
+	float w_acc = 0.0;
+	int n = cloud_steps;
+	for (int i = 0; i < n; i++) {
+		float u0 = float(i) / float(n);
+		float u1 = float(i + 1) / float(n);
+		float a = t0 + len * pow(u0, k);
+		float b = t0 + len * pow(u1, k);
+		float ds = b - a;
+		float t = a + ds * jit;
+		vec3 pl = ro_l + rd_l * t;
+		float r = length(pl);
+		vec2 w = cloud_weather(pl / r);
+		if (w.x <= 0.01) continue;
+		int lod = t < cloud_detail_distance ? 0 : 1;
+		float d = cloud_density_at(pl, r, w, lod);
+		if (d <= 0.001) continue;
+		float sig = d * cloud_density;
+		// light march toward the sun
+		float od = 0.0;
+		float dl = cloud_light_step;
+		vec3 q = pl;
+		for (int j = 0; j < cloud_light_steps; j++) {
+			q += L_l * dl;
+			float rq = length(q);
+			od += cloud_density_at(q, rq, cloud_weather(q / rq), 1) * dl;
+			dl *= 2.0;
+		}
+		od *= cloud_density;
+		float f = (t - t0) / max(len, 1.0);
+		vec3 sunc = mix(sun_a, sun_b, f);
+		float powder = 1.0 - 0.6 * exp(-sig * 250.0);
+		vec3 S_sun = Esun * sunc * powder * (ph0 * exp(-od) + 0.5 * ph1 * exp(-od * 0.3) + 0.25 * ph2 * exp(-od * 0.1));
+		float hh = clamp((r - cloud_bottom) / (cloud_top - cloud_bottom), 0.0, 1.0);
+		vec3 S_amb = (sky_amb * mix(0.45, 1.0, hh) + ground_amb * (1.0 - hh)) * cloud_ambient;
+		vec3 S = (S_sun + S_amb) * cloud_albedo;
+		float tr = exp(-sig * ds);
+		col += T * S * (1.0 - tr);
+		t_acc += T * (1.0 - tr) * t;
+		w_acc += T * (1.0 - tr);
+		T *= tr;
+		if (T < 0.01) break;
+	}
+	float alpha = 1.0 - T;
+	if (alpha < 0.002) discard;
+	// aerial perspective between camera and the cloud
+	float tm = t_acc / max(w_acc, 1e-5);
+	vec3 Tap;
+	vec3 Lap = atmo_scatter(ro, rd, tm, cloud_ap_steps, jit, Tap);
+	col = col * Tap + Lap * alpha;
+	ALBEDO = col;
+	ALPHA = alpha;
+}
