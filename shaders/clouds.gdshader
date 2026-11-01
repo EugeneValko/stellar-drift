@@ -143,12 +143,17 @@ void fragment() {
 			dl *= 2.0;
 		}
 		od *= cloud_density;
+		// wave 4: seen from far away (orbit, high altitude) the self-shadowing is softened -
+		// cloud fields read as bright, flat-ish sheets with soft relief instead of lumpy
+		// "cauliflower" (the layer is very thick relative to this compressed planet)
+		float far_soft = smoothstep(30000.0, 120000.0, t);
+		od *= 1.0 - 0.45 * far_soft;
 		float f = (t - t0) / max(len, 1.0);
 		vec3 sunc = mix(sun_a, sun_b, f);
 		float powder = 1.0 - 0.6 * exp(-sig * 250.0);
 		vec3 S_sun = Esun * sunc * powder * (ph0 * exp(-od) + 0.5 * ph1 * exp(-od * 0.3) + 0.25 * ph2 * exp(-od * 0.1));
 		float hh = clamp((r - cloud_bottom) / (cloud_top - cloud_bottom), 0.0, 1.0);
-		vec3 S_amb = (sky_amb * mix(0.45, 1.0, hh) + ground_amb * (1.0 - hh)) * cloud_ambient;
+		vec3 S_amb = (sky_amb * mix(0.45 + 0.3 * far_soft, 1.0, hh) + ground_amb * (1.0 - hh)) * cloud_ambient;
 		vec3 S = (S_sun + S_amb) * cloud_albedo;
 		float tr = exp(-sig * ds);
 		col += T * S * (1.0 - tr);
