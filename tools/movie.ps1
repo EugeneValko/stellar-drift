@@ -8,7 +8,7 @@ $fps = if ($env:FPS) { [int]$env:FPS } else { 30 }
 $res = if ($env:RES) { $env:RES } else { "1920x1080" }
 $tmp = Join-Path ([IO.Path]::GetTempPath()) ("sd_movie_" + [guid]::NewGuid())
 New-Item -ItemType Directory $tmp | Out-Null
-& $Godot --path $root --write-movie (Join-Path $tmp "frame.png") --fixed-fps $fps --quit-after ($Seconds*$fps) --resolution $res $Scene -- @Rest 2>&1 | Where-Object { $_ -match "ERROR|SCRIPT" }
+& $Godot --path $root --write-movie (Join-Path $tmp "frame.png") --fixed-fps $fps --quit-after ($Seconds*$fps) --resolution $res --fullscreen $Scene -- @Rest 2>&1 | Where-Object { $_ -match "ERROR|SCRIPT" }
 $outFull = [IO.Path]::GetFullPath((Join-Path (Get-Location) $Out))
 New-Item -ItemType Directory -Force (Split-Path $outFull) | Out-Null
 if (Get-Command ffmpeg -ErrorAction SilentlyContinue) {

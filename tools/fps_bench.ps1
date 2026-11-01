@@ -3,4 +3,4 @@
 param([string]$Scene = "scenes/main.tscn", [int]$Seconds = 20)
 $root = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot "godot_path.ps1")
-& $Godot --path $root --resolution 1920x1080 --print-fps --quit-after ($Seconds*60) $Scene 2>&1 | Where-Object { $_ -match "FPS|ERROR" } | Select-Object -Last 15
+& $Godot --path $root --resolution 1920x1080 --fullscreen --print-fps --quit-after ($Seconds*60) $Scene 2>&1 | Where-Object { $_ -match "FPS|ERROR" } | Select-Object -Last 15

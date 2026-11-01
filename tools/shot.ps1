@@ -13,4 +13,5 @@ foreach ($a in $Rest) {
   else { $args2 += $a }
 }
 if (-not (Test-Path (Join-Path $root ".godot"))) { & $Godot --headless --path $root --import | Out-Null }
-& $Godot --path $root --resolution 1920x1080 $Scene -- @args2 2>&1 | Where-Object { $_ -match "capture|ERROR|SCRIPT" }
+# --fullscreen: on a 1920x1080 monitor a windowed 1080p window gets shrunk by the taskbar
+& $Godot --path $root --resolution 1920x1080 --fullscreen $Scene -- @args2 2>&1 | Where-Object { $_ -match "capture|ERROR|SCRIPT" }

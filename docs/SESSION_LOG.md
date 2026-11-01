@@ -7,3 +7,4 @@
 - Добавлен CI: `.github/workflows/build-windows.yml` (nightly-релиз).
 - CI исправлен (чтение versions.env), первый успешный nightly: StellarDrift-windows-33e96fc.zip (38 МБ).
 - Запущены 4 агента параллельно (worktrees): космос+звезда, рельеф планет, атмосфера/океан/газ-гигант, корабль (Blender).
+- Подключена локальная сессия на ПК пользователя (Remote Control, RTX 3060): рендер 1080p ≈ 1.8 с/кадр. Скрипты `tools/*.ps1`, `docs/LOCAL_RENDER.md`.
