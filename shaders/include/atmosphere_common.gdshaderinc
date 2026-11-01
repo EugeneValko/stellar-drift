@@ -165,6 +165,34 @@ vec3 atmo_transmittance(vec3 ro, vec3 rd, float t_max, int steps, float jitter) 
 	return exp(-od);
 }
 
+// Quad sharing for the full-screen atmosphere passes: the 4 pixels of a 2x2 quad march half the
+// samples each, at interleaved (randomly rotated) quarter offsets; atmo_quad_blend() then mixes in
+// the horizontal and vertical neighbours (1/2 own + 1/4 + 1/4). Halves the march cost; the result
+// is smooth anyway. Not across depth edges (sd jumps: terrain silhouettes).
+uniform bool atmo_quad_share = true;
+
+int atmo_quad_steps(int steps) {
+	return atmo_quad_share ? max((steps + 1) / 2, 4) : steps;
+}
+
+float atmo_quad_jitter(vec2 frag, float jitter) {
+	if (!atmo_quad_share) return jitter;
+	float px = mod(floor(frag.x), 2.0);
+	float py = mod(floor(frag.y), 2.0);
+	float rot = floor(fract(sin(dot(floor(frag * 0.5), vec2(39.346, 11.135))) * 43758.5453) * 4.0);
+	return (jitter + mod(px + 2.0 * py + rot, 4.0)) * 0.25;
+}
+
+// Must be called in uniform control flow (uses fine derivatives).
+vec3 atmo_quad_blend(vec3 v, vec2 frag, float sd) {
+	float okx = abs(dFdxFine(sd)) < max(0.02 * sd, 60.0) ? 1.0 : 0.0;
+	float oky = abs(dFdyFine(sd)) < max(0.02 * sd, 60.0) ? 1.0 : 0.0;
+	float hx = (mod(floor(frag.x), 2.0) < 0.5 ? 0.25 : -0.25) * okx;
+	float hy = (mod(floor(frag.y), 2.0) < 0.5 ? 0.25 : -0.25) * oky;
+	vec3 r = v + dFdxFine(v) * hx + dFdyFine(v) * hy;
+	return atmo_quad_share ? r : v;
+}
+
 // Approximate sky irradiance (hemisphere around the local up) at point p, for ambient light
 // on clouds / water / terrain. Uses one short zenith march.
 vec3 atmo_sky_ambient(vec3 p) {

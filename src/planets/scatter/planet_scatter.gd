@@ -47,6 +47,21 @@ const FACE_V: Array[Vector3] = [Vector3(0, 1, 0), Vector3(0, 1, 0), Vector3(0, 0
 @export var cache_limit := 4000
 ## Print progress of build_until_stable().
 @export var verbose := false
+## 0/1/2: scales layer shadow distances, far-ring reach, mesh LOD distances and ground-cover
+## density (QUALITY table). 2 = the rule set as authored. Changing it rebuilds all patches.
+@export_range(0, 2) var quality := 1:
+	set(v):
+		quality = clampi(v, 0, 2)
+		if _ready_to_run:
+			_init_runtime()
+
+## Per quality level: shadow distance, far-ring max distance, LOD switch distances, density of
+## dense small layers (grass/flowers/pebbles: cell_size < 48 m).
+const QUALITY := [
+	{"shadow": 0.45, "far": 0.6, "lod": 0.7, "cover": 0.6},
+	{"shadow": 0.7, "far": 0.8, "lod": 0.85, "cover": 0.8},
+	{"shadow": 1.0, "far": 1.0, "lod": 1.0, "cover": 1.0},
+]
 
 var config: PlanetConfig
 var planet: Planet
@@ -179,6 +194,32 @@ func _exit_tree() -> void:
 	_wait_jobs()
 
 
+## Copy of an authored layer with the QUALITY multipliers applied. Debug overrides on the command
+## line (after `--`): --scatter_quality=N, --scatter_shadow=x, --scatter_far=x, --scatter_lod=x,
+## --scatter_cover=x.
+func _scaled_layer(src: ScatterLayer) -> ScatterLayer:
+	var q: Dictionary = QUALITY[quality].duplicate()
+	var tree := Engine.get_main_loop() as SceneTree
+	var cap: Node = tree.root.get_node_or_null("Capture") if tree else null
+	if cap:
+		if cap.args.has("scatter_quality"):
+			q = QUALITY[clampi(int(cap.args["scatter_quality"]), 0, 2)].duplicate()
+		for k: String in ["shadow", "far", "lod", "cover"]:
+			if cap.args.has("scatter_" + k):
+				q[k] = float(cap.args["scatter_" + k])
+	var s: ScatterLayer = src.duplicate()
+	s.shadow_distance = src.shadow_distance * q.shadow
+	if s.far_mesh != "" and s.max_distance > s.far_start:
+		s.max_distance = maxf(src.max_distance * q.far, s.far_start + s.fade_length * 2.0)
+	var lods := PackedFloat32Array()
+	for d in src.lod_distances:
+		lods.append(d * q.lod)
+	s.lod_distances = lods
+	if src.cell_size < 48.0:
+		s.density = src.density * q.cover
+	return s
+
+
 func _init_runtime() -> void:
 	_wait_jobs()
 	clear()
@@ -199,6 +240,7 @@ func _init_runtime() -> void:
 		var s: ScatterLayer = rules.layers[li]
 		if s == null or not s.enabled:
 			continue
+		s = _scaled_layer(s)
 		var L := LayerRT.new()
 		L.src = s
 		L.index = li
