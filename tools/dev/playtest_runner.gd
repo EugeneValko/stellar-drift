@@ -415,8 +415,9 @@ func _extras() -> void:
 	var sea := Vector3.ZERO
 	var base := terra.planet.config.get_base_level()
 	var d0: Vector3 = main.get("start_site")
-	for i in 400:
-		var d := (d0 + Vector3(rng.randf_range(-1, 1), rng.randf_range(-1, 1), rng.randf_range(-1, 1)) * 0.08).normalized()
+	for i in 1200:
+		var spread := 0.04 + 0.6 * float(i) / 1200.0   # widening search around the start site
+		var d := (d0 + Vector3(rng.randf_range(-1, 1), rng.randf_range(-1, 1), rng.randf_range(-1, 1)) * spread).normalized()
 		if terra.planet.get_height(d) < base - 60.0:
 			sea = d
 			break
@@ -505,10 +506,14 @@ func _soak() -> void:
 			elif r < 0.27:
 				ship.set_gear(not ship.gear_down)
 			ship.throttle = rng.randf_range(-0.1, 1.0)
-			# keep the soak near a body: steer back if it climbed too far
-			if ship.altitude > 200000.0:
-				ship.steer_dir = -ship.up_dir
-				ship.set_mode(Ship.Mode.SPACE, true)
+			# keep the soak near the ground (contacts, collision streaming): dive back down often
+			if ship.altitude > 150.0 and rng.randf() < 0.45:
+				ship.in_move.y = -1.0
+				ship.in_move.z = rng.randf_range(-0.2, 1.0)
+				if rng.randf() < 0.5:
+					ship.steer_dir = (-ship.up_dir + (-ship.global_basis.z) * rng.randf_range(0.0, 1.5)).normalized()
+				if rng.randf() < 0.3:
+					ship.flight_assist = rng.randf() < 0.5   # FA off: unassisted crash into the ground
 		await _frames(1)
 		t += DT
 		modes_seen[ship.mode] = true
