@@ -333,7 +333,7 @@ func _build_sound() -> void:
 	var ga := GameAudio.instance
 	for pair: Array in [["Общая громкость", "Master"], ["Музыка", "Music"], ["Эффекты", "SFX"]]:
 		var bus: String = pair[1]
-		_slider_row(pair[0], ga.get_volume(bus) if ga else 0.8, func(x: float) -> void:
+		_slider_row(pair[0], ga.get_volume(bus) if ga else float(GameAudio.DEFAULTS[bus]), func(x: float) -> void:
 			if GameAudio.instance:
 				GameAudio.instance.set_volume(bus, x))
 	var sep := ColorRect.new()

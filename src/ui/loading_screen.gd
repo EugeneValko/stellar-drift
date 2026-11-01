@@ -107,10 +107,10 @@ func _draw_screen() -> void:
 	# backdrop
 	_root.draw_rect(Rect2(Vector2.ZERO, vs), Color(0.006, 0.009, 0.018))
 	# soft nebula glows (stacked translucent circles)
-	for g: Array in [[Vector2(0.72, 0.32), 0.55, Color(0.25, 0.32, 0.6, 0.012)], [Vector2(0.28, 0.6), 0.45, Color(0.45, 0.25, 0.5, 0.01)]]:
+	for g: Array in [[Vector2(0.72, 0.32), 0.55, Color(0.25, 0.32, 0.6, 0.0045)], [Vector2(0.28, 0.6), 0.45, Color(0.45, 0.25, 0.5, 0.0038)]]:
 		var c: Vector2 = g[0] * vs
-		for k in 14:
-			var r: float = float(g[1]) * vs.y * (1.0 - k / 14.0)
+		for k in 40:
+			var r: float = float(g[1]) * vs.y * (1.0 - k / 40.0)
 			_root.draw_circle(c, r, g[2])
 	# stars
 	for st: Array in _stars:
