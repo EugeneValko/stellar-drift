@@ -10,6 +10,7 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 [autoload]
 Capture="*res://src/core/capture.gd"
 Universe="*res://src/core/universe.gd"
+Controls="*res://src/core/controls.gd"
 
 [display]
 window/size/viewport_width=1920
