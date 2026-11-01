@@ -1,0 +1,109 @@
+[gd_resource type="Resource" script_class="ScatterRuleSet" format=3]
+
+[ext_resource type="Script" path="res://src/planets/scatter/scatter_layer.gd" id="1_n4uds"]
+[ext_resource type="Script" path="res://src/planets/scatter/scatter_rule_set.gd" id="2_bijhb"]
+
+[sub_resource type="Resource" id="Resource_4ra8a"]
+script = ExtResource("1_n4uds")
+name = "regolith_boulders"
+model = "res://assets/models/rocks.glb"
+meshes = PackedStringArray("boulder_b_lod0", "boulder_b_lod1")
+lod_distances = PackedFloat32Array(60)
+cell_size = 192.0
+max_distance = 500.0
+fade_length = 60.0
+grid_res = 6
+exact_height = true
+density = 0.004
+cluster_scale = 150.0
+cluster_threshold = -0.2
+cluster_soft = 0.4
+seed = 401
+scale_range = Vector2(0.4, 3.2)
+edge_scale = 0.3
+max_tilt_deg = 25.0
+align_to_normal = 0.6
+sink = 0.25
+shadow_distance = 200.0
+collision = 2
+collision_size = Vector2(0.7, 0.4)
+collision_distance = 50.0
+
+[sub_resource type="Resource" id="Resource_15q6y"]
+script = ExtResource("1_n4uds")
+name = "round_boulders"
+model = "res://assets/models/rocks.glb"
+meshes = PackedStringArray("boulder_a_lod0", "boulder_a_lod1")
+lod_distances = PackedFloat32Array(60)
+cell_size = 192.0
+fade_length = 50.0
+grid_res = 6
+exact_height = true
+density = 0.0025
+rules = {
+"slope": Vector3(0.04, 1, 0.06)
+}
+seed = 403
+scale_range = Vector2(0.5, 2.5)
+max_tilt_deg = 20.0
+align_to_normal = 0.5
+sink = 0.2
+shadow_distance = 160.0
+collision = 2
+collision_size = Vector2(0.7, 0.35)
+collision_distance = 50.0
+
+[sub_resource type="Resource" id="Resource_wk8l4"]
+script = ExtResource("1_n4uds")
+name = "rock_clusters"
+model = "res://assets/models/rocks.glb"
+meshes = PackedStringArray("rock_cluster_lod0", "rock_cluster_lod1")
+lod_distances = PackedFloat32Array(80)
+cell_size = 192.0
+max_distance = 500.0
+fade_length = 60.0
+grid_res = 6
+exact_height = true
+density = 0.0012
+rules = {
+"rock": Vector3(0.05, 2, 0.2)
+}
+seed = 405
+scale_range = Vector2(0.8, 2.4)
+max_tilt_deg = 12.0
+align_to_normal = 0.7
+sink = 0.15
+shadow_distance = 180.0
+collision = 3
+collision_distance = 50.0
+
+[sub_resource type="Resource" id="Resource_8mt7d"]
+script = ExtResource("1_n4uds")
+name = "pebbles"
+model = "res://assets/models/rocks.glb"
+meshes = PackedStringArray("pebbles_lod0")
+lod_distances = PackedFloat32Array()
+cell_size = 40.0
+max_distance = 70.0
+fade_length = 15.0
+grid_res = 4
+exact_height = true
+density = 0.14
+seed = 407
+scale_range = Vector2(0.7, 1.8)
+align_to_normal = 0.9
+sink = 0.02
+cast_shadows = false
+
+[resource]
+script = ExtResource("2_bijhb")
+layers = Array[ExtResource("1_n4uds")]([SubResource("Resource_4ra8a"), SubResource("Resource_15q6y"), SubResource("Resource_wk8l4"), SubResource("Resource_8mt7d")])
+material_params = {
+"rock": {
+"color_cover": Color(0.2, 0.19, 0.18, 1),
+"cover_amount": 0.7,
+"normal_strength": 1.3,
+"snow_amount": 0.0
+}
+}
+max_altitude = 2500.0

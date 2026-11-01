@@ -17,3 +17,4 @@ Thumbs.db
 # Agent worktrees / local Claude state
 .claude/worktrees/
 tools/.godot_path.txt
+__pycache__/
