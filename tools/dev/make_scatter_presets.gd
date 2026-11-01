@@ -11,8 +11,8 @@ const CRYST := "res://assets/models/crystals.glb"
 # --- Terra Nova palette ---
 const NEEDLES := {"color_a": Color(0.16, 0.32, 0.26), "color_b": Color(0.3, 0.5, 0.36),
 	"color_dry": Color(0.52, 0.47, 0.25), "dry_amount": 0.15, "variation": 0.4}
-const LEAVES := {"color_a": Color(0.3, 0.44, 0.13), "color_b": Color(0.52, 0.6, 0.18),
-	"color_dry": Color(0.74, 0.45, 0.16), "dry_amount": 0.7, "variation": 0.45}
+const LEAVES := {"color_a": Color(0.26, 0.4, 0.12), "color_b": Color(0.44, 0.54, 0.15),
+	"color_dry": Color(0.72, 0.42, 0.15), "dry_amount": 0.55, "variation": 0.45}
 const FRONDS := {"color_a": Color(0.26, 0.47, 0.13), "color_b": Color(0.46, 0.62, 0.2),
 	"color_dry": Color(0.62, 0.56, 0.3), "dry_amount": 0.35, "variation": 0.4}
 

@@ -120,6 +120,7 @@ void fragment() {
 	NORMAL = flora_view_safe_normal(NORMAL, VIEW);
 	vec3 c = v_tint * mix(0.8, 1.12, vein);
 	c *= 0.9 + 0.2 * lid;
+	c *= mix(0.55, 1.0, v_ao);   // darker crown interior (depth)
 	c = mix(c, c * vec3(1.15, 1.2, 0.9), v_tip * 0.35);
 	c = max(c, vec3(0.0));
 	ALBEDO = c;

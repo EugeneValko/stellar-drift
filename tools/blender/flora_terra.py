@@ -565,7 +565,7 @@ def grass(lod, seed=61, tall=False):
         ht = (tip.z + 0.03) / Hm
         mb.face([a0, b0, ti], [(0, t0), (1, t0), (0.5, 1)], [col(t0, h0), col(t0, h0), col(1.0, ht)],
                 [nrm] * 3, "grass")
-        if tall and b < 3:
+        if tall and b < 3 and False:   # seed heads read as floating leaves; disabled
             # seed head: a narrow strip continuing past the blade tip
             hd = (tip - pts[-1]).normalized()
             hs = [tip + hd * 0.035 * i for i in range(4)]

@@ -107,10 +107,10 @@ func apply_capture_preset(preset: String) -> void:
 					- (3.0 if b["height"] < 100.0 else 0.0))
 			d = s
 			eye = 2.0
-			look = _toward_lowest(d, 300.0)
-			look = (look - d * 0.08).normalized()
-			az = 160.0
-			elev = 30.0
+			look = _toward_best(d, 250.0, func(b: Dictionary) -> float: return b["rock"] - absf(b["slope"] - 0.2))
+			look = (look - d * 0.03).normalized()
+			az = 70.0
+			elev = 38.0
 		"from_air":
 			var s := _find_site(rnd, func(b: Dictionary) -> float:
 				return 2.0 - absf(b["forest"] - 0.75) * 3.0 - b["slope"] * 3.0 - b["snow"] * 5.0 \
