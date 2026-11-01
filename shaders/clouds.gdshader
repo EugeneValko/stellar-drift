@@ -23,6 +23,7 @@ uniform float cloud_ambient = 1.0;
 uniform float cloud_ocean_radius = 0.0;       // >0: rays stop at the ocean sphere
 uniform float cloud_detail_distance = 25000.0; // beyond: no detail erosion
 uniform int cloud_ap_steps = 6;
+uniform int cloud_debug = 0;
 group_uniforms;
 
 void fragment() {
@@ -84,7 +85,7 @@ void fragment() {
 	float T = 1.0;
 	float t_acc = 0.0;
 	float w_acc = 0.0;
-	int n = cloud_steps;
+	int n = cloud_debug == 1 ? 0 : cloud_steps;
 	for (int i = 0; i < n; i++) {
 		float u0 = float(i) / float(n);
 		float u1 = float(i + 1) / float(n);
@@ -126,6 +127,7 @@ void fragment() {
 		if (T < 0.01) break;
 	}
 	float alpha = 1.0 - T;
+	if (cloud_debug == 1) { vec2 wd = cloud_weather(normalize(to_local * pa)); col = vec3(wd.x, wd.y, 0.0); T = 0.0; alpha = 1.0; }
 	if (alpha < 0.002) discard;
 	// aerial perspective between camera and the cloud
 	float tm = t_acc / max(w_acc, 1e-5);

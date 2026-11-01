@@ -93,12 +93,24 @@ func _build_terra() -> void:
 	terra_ocean.setup({"radius": R_TERRA, "atmosphere": terra_atmo, "quality": 2})
 	terra_clouds = CLOUDS_SCENE.instantiate()
 	terra.add_child(terra_clouds)
-	terra_clouds.setup({"radius": R_TERRA, "bottom": 2200.0, "top": 5400.0, "coverage": 0.45, "brightness": 2.2, "cyclones": 5,
+	terra_clouds.setup({"radius": R_TERRA, "bottom": 2200.0, "top": 4800.0, "coverage": 0.45, "brightness": 2.2, "cyclones": 5,
 		"atmosphere": terra_atmo, "ocean_radius": R_TERRA, "quality": 2})
 	terra_ocean.set_clouds(terra_clouds)
 	terra_clouds.apply_shadow_uniforms(terra_ground.material)
 	if Capture.args.has("no_clouds"):
 		terra_clouds.visible = false
+	# debug overrides: --cu_<uniform>=v (clouds), --ou_ (ocean), --au_ (atmosphere), --tu_ (terrain)
+	for k: String in Capture.args:
+		var v: Variant = str_to_var(Capture.args[k])
+		if k.begins_with("cu_"):
+			terra_clouds.material.set_shader_parameter(k.substr(3), v)
+		elif k.begins_with("ou_"):
+			terra_ocean.material.set_shader_parameter(k.substr(3), v)
+		elif k.begins_with("au_"):
+			terra_atmo.mat_scatter.set_shader_parameter(k.substr(3), v)
+			terra_atmo.mat_transmit.set_shader_parameter(k.substr(3), v)
+		elif k.begins_with("tu_"):
+			terra_ground.material.set_shader_parameter(k.substr(3), v)
 	if Capture.args.has("atmo_debug"):
 		terra_atmo.mat_scatter.set_shader_parameter("atmo_debug", int(Capture.args["atmo_debug"]))
 	if Capture.args.has("ocean_debug"):

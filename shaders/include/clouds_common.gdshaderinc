@@ -20,8 +20,8 @@ uniform float cloud_bottom = 62200.0;        // shell radii, m
 uniform float cloud_top = 65200.0;
 uniform float cloud_coverage = 0.5;          // global coverage 0..1 (baked into weather)
 uniform float cloud_density = 0.03;          // extinction (1/m) at density 1
-uniform float cloud_shape_size = 8000.0;     // m per shape noise tile
-uniform float cloud_detail_size = 1300.0;    // m per detail noise tile
+uniform float cloud_shape_size = 14000.0;     // m per shape noise tile
+uniform float cloud_detail_size = 2000.0;    // m per detail noise tile
 uniform float cloud_weather_seed = 0.0;
 uniform float cloud_rot_speed = 0.00002;     // weather drift around planet axis, rad/s
 uniform vec3 cloud_wind_vel = vec3(6.0, 0.0, 3.0); // local evolution of shapes, m/s
@@ -59,7 +59,7 @@ vec2 cloud_weather_procedural(vec3 dir) {
 		float d = length(q - c);
 		if (d < rad * 3.0) {
 			float w = exp(-(d * d) / (rad * rad));
-			float ang = hemi * cloud_cyclone_strength * mix(3.5, 6.0, cl_hash1(fi + 21.0)) * w;
+			float ang = hemi * cloud_cyclone_strength * mix(2.5, 4.5, cl_hash1(fi + 21.0)) * w;
 			q = cl_rot_axis(q, c, ang);
 			boost += w * 0.18 - exp(-(d * d) / (rad * rad * 0.012)) * 0.5;  // dense spiral, clear eye
 		}
@@ -67,18 +67,23 @@ vec2 cloud_weather_procedural(vec3 dir) {
 	vec3 wq = q * 0.83 + vec3(cloud_weather_seed * 0.37);
 	vec3 warp = vec3(cl_tex(wq), cl_tex(wq + vec3(0.37, 0.11, 0.73)), cl_tex(wq + vec3(0.61, 0.83, 0.19))) - 0.5;
 	vec3 b = q + warp * 0.45;
+	// fine octave is NOT swirled (avoids grooved rings in cyclones)
+	vec3 b0 = dir + warp * 0.3;
+	// large systems + east-west elongated fronts + medium detail; contrast-expanded
 	float n = cl_tex(b * 1.13 + vec3(0.21)) * 0.52
-		+ cl_tex(b * 2.71 + vec3(0.53, 0.1, 0.4)) * 0.3
-		+ cl_tex(b * 6.93 + vec3(0.7)) * 0.18;
+		+ cl_tex(vec3(b.x * 2.3, b.y * 4.5, b.z * 2.3) + vec3(0.53, 0.1, 0.4)) * 0.3
+		+ cl_tex(b0 * 6.93 + vec3(0.7)) * 0.18;
+	n = (n - 0.5) * 2.0 + 0.5;
+	b = b0;
 	// planetary circulation: wet ITCZ, dry subtropics, stormy mid-latitudes
 	float lat = q.y;
 	float al = abs(lat);
-	float bias = 0.14 * exp(-pow(lat / 0.10, 2.0))
-		- 0.10 * exp(-pow((al - 0.42) / 0.14, 2.0))
-		+ 0.07 * exp(-pow((al - 0.75) / 0.16, 2.0));
-	float thr = mix(0.66, 0.36, cloud_coverage);
-	float cov = smoothstep(thr - 0.1, thr + 0.16, n + bias + boost);
-	float type = clamp(cl_tex(b * 4.1 + vec3(0.33)) * 1.6 - 0.35 + boost + 0.1 * exp(-pow(lat / 0.12, 2.0)), 0.0, 1.0);
+	float bias = 0.3 * exp(-pow(lat / 0.09, 2.0))
+		- 0.28 * exp(-pow((al - 0.40) / 0.14, 2.0))
+		+ 0.15 * exp(-pow((al - 0.74) / 0.16, 2.0));
+	float thr = mix(0.9, 0.1, cloud_coverage);
+	float cov = smoothstep(thr - 0.45, thr + 0.5, n + bias + boost * 1.5);
+	float type = clamp((cl_tex(b * 1.7 + vec3(0.33)) - 0.5) * 3.0 + 0.4 + boost + 0.2 * exp(-pow(lat / 0.12, 2.0)), 0.0, 1.0);
 	return vec2(cov, type);
 }
 
@@ -99,7 +104,7 @@ float cloud_density_at(vec3 pl, float r, vec2 w, int lod) {
 	float cov = w.x;
 	if (h <= 0.0 || h >= 1.0 || cov <= 0.01) return 0.0;
 	// cloud top height from weather type (flat stratocumulus .. towering cumulus)
-	float top = mix(0.22, 1.0, w.y * smoothstep(0.2, 0.7, cov)) * mix(0.6, 1.0, cov);
+	float top = mix(0.3, 1.0, w.y);
 	float hn = h / top;
 	if (hn >= 1.0) return 0.0;
 	vec3 drift = cloud_wind_vel * TIME;
@@ -108,7 +113,7 @@ float cloud_density_at(vec3 pl, float r, vec2 w, int lod) {
 	float s = cl_tex(sp) * 0.45 + cl_tex(sp * 0.29 + vec3(0.5)) * 0.25
 		+ texture(cloud_detail_tex, sp * 0.5 + vec3(0.13)).r * 0.30;
 	s = clamp((s - 0.25) * 1.9, 0.0, 1.0);
-	s = mix(s, 1.0, smoothstep(0.35, 1.0, cov) * 0.6);         // dense weather -> continuous decks
+	s = mix(s, 1.0, smoothstep(0.6, 1.0, cov) * 0.4);         // dense weather -> continuous decks
 	// coverage remap, then height gradient (flat base, soft rounded top), then dome rounding
 	float base = clamp((s - (1.0 - cov)) / max(cov, 0.05), 0.0, 1.0);
 	float grad = smoothstep(0.0, 0.07, h) * smoothstep(1.0, 0.7, hn);
