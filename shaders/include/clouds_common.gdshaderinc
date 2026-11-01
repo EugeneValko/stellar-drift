@@ -169,11 +169,12 @@ float cloud_shadow_local(vec3 pl, vec3 L_local) {
 	return 1.0 - cloud_shadow_strength * smoothstep(0.0, 0.35, d);
 }
 
-// p: world-oriented planet-relative position, L world sun dir, model: receiver MODEL_MATRIX
-// (rotation of the planet). Assumes no scale.
+// p: world-oriented planet-relative position in BODY units (divide by the node scale when the
+// body is a scaled-space proxy), L world sun dir, model: receiver MODEL_MATRIX (rotation of the
+// planet; a uniform scale is removed here).
 float cloud_shadow_m(mat3 model, vec3 p, vec3 L) {
 	if (cloud_shadow_strength <= 0.0) return 1.0;
-	mat3 to_local = transpose(model);
+	mat3 to_local = transpose(model) / length(model[0]);
 	return cloud_shadow_local(to_local * p, to_local * L);
 }
 

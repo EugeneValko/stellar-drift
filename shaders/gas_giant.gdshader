@@ -178,7 +178,7 @@ void fragment() {
 
 	// lighting (world space)
 	vec3 Nw = normalize(mat3(MODEL_MATRIX) * n);
-	vec3 L = sun_direction;
+	vec3 L = sd_sun_dir();
 	vec3 V = normalize(CAMERA_POSITION_WORLD - (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz);
 	float nl = dot(Nw, L);
 	float nv = max(dot(Nw, V), 0.0);

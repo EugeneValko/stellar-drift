@@ -20,6 +20,11 @@ extends Node3D
 const SHADER := preload("res://shaders/gas_giant.gdshader")
 const ATMO_SCENE := preload("res://scenes/planets/atmosphere.tscn")
 
+## Celestial-body interface (Universe): name, gravity, SOI = radius * soi_factor.
+@export var body_name := "Aurelion"
+@export var surface_gravity := 22.0
+@export var soi_factor := 8.0
+
 var params: Dictionary = {}
 var body: MeshInstance3D
 var material: ShaderMaterial
@@ -27,8 +32,13 @@ var atmosphere: AtmosphereLayer
 var rings: RingSystem
 
 
+func _ready() -> void:
+	add_to_group("celestial_body")
+
+
 func setup(cfg: Variant = null) -> void:
 	params = LayerParams.to_dict(cfg)
+	body_name = String(params.get("name", body_name))
 	var radius: float = params.get("radius", 300000.0)
 	var q: int = clampi(int(params.get("quality", 1)), 0, 2)
 	if body == null:
@@ -83,3 +93,30 @@ func setup(cfg: Variant = null) -> void:
 		material.set_shader_parameter("gg_ring_shadow", float(params.get("ring_shadow", 0.85)))
 	else:
 		material.set_shader_parameter("gg_ring_shadow", 0.0)
+
+
+# --- Celestial body interface for Universe (see src/core/universe.gd) ---
+
+func get_body_name() -> String:
+	return body_name
+
+
+func get_body_radius() -> float:
+	return float(params.get("radius", 300000.0))
+
+
+func get_soi_radius() -> float:
+	return get_body_radius() * soi_factor
+
+
+func get_surface_gravity() -> float:
+	return surface_gravity
+
+
+## Height of the visible haze layer (no solid surface: altitude is above the cloud tops).
+func get_atmosphere_height() -> float:
+	return atmosphere.get_top_radius() - get_body_radius() if atmosphere else 0.0
+
+
+func get_altitude_global(world_pos: Vector3) -> float:
+	return world_pos.distance_to(global_position) - get_body_radius()

@@ -32,7 +32,8 @@ group_uniforms;
 
 void fragment() {
 	vec3 rd = normalize((INV_VIEW_MATRIX * vec4(normalize(VERTEX), 0.0)).xyz);
-	vec3 ro = CAMERA_POSITION_WORLD - NODE_POSITION_WORLD;
+	float S = sd_node_scale(MODEL_MATRIX);   // scaled-space proxy: work in body units
+	vec3 ro = (CAMERA_POSITION_WORLD - NODE_POSITION_WORLD) / S;
 	float r0 = length(ro);
 	vec2 top = sd_ray_sphere(ro, rd, cloud_top);
 	bool has_cu = !(top.y < top.x || top.y <= 0.0);
@@ -50,7 +51,7 @@ void fragment() {
 		t0 = max(bot.y, 0.0);
 		t1 = top.y;
 	}
-	float sd = sd_scene_distance(texture(depth_tex, SCREEN_UV).r, SCREEN_UV, INV_PROJECTION_MATRIX);
+	float sd = sd_scene_distance(texture(depth_tex, SCREEN_UV).r, SCREEN_UV, INV_PROJECTION_MATRIX) / S;
 	t1 = min(t1, sd);
 	if (cloud_ocean_radius > 0.0) {
 		vec2 o = sd_ray_sphere(ro, rd, cloud_ocean_radius);
@@ -59,10 +60,10 @@ void fragment() {
 	t1 = min(t1, t0 + cloud_max_distance);
 	if (t1 <= t0) has_cu = false;
 
-	mat3 to_local = transpose(mat3(MODEL_MATRIX));
+	mat3 to_local = transpose(mat3(MODEL_MATRIX)) / S;
 	vec3 ro_l = to_local * ro;
 	vec3 rd_l = to_local * rd;
-	vec3 L = sun_direction;
+	vec3 L = sd_sun_dir();
 	vec3 L_l = to_local * L;
 	float mu = dot(rd, L);
 

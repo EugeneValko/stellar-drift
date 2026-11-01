@@ -95,6 +95,13 @@ const FLARE_SHADER := preload("res://shaders/star_flare.gdshader")
 ## Keeps the star inside a short camera far plane (Godot needs far/near <= ~1e7).
 @export var max_render_distance: float = 0.0
 
+@export_group("Body")
+## Celestial-body interface for Universe (see src/core/universe.gd).
+@export var body_name := "Helios"
+@export var surface_gravity := 30.0
+## Huge SOI: the star is the fallback dominant body anywhere in the system.
+@export var soi_radius := 1.0e12
+
 @export_group("Animation")
 @export var time_scale: float = 1.0:
 	set(v):
@@ -117,6 +124,8 @@ var _rebuild_queued := false
 
 
 func _ready() -> void:
+	if not Engine.is_editor_hint():
+		add_to_group("celestial_body")
 	_build()
 
 
@@ -402,3 +411,29 @@ static func blackbody(kelvin: float) -> Color:
 	var c := Color(pow(r, 2.2), pow(g, 2.2), pow(b, 2.2))
 	var m := maxf(c.r, maxf(c.g, c.b))
 	return Color(c.r / m, c.g / m, c.b / m)
+
+
+# --- Celestial body interface for Universe (see src/core/universe.gd) ---
+
+func get_body_name() -> String:
+	return body_name
+
+
+func get_body_radius() -> float:
+	return radius
+
+
+func get_soi_radius() -> float:
+	return soi_radius
+
+
+func get_surface_gravity() -> float:
+	return surface_gravity
+
+
+func get_atmosphere_height() -> float:
+	return 0.0
+
+
+func get_altitude_global(world_pos: Vector3) -> float:
+	return world_pos.distance_to(global_position) - radius

@@ -75,7 +75,7 @@ void fragment() {
 	NORMAL = normalize((VIEW_MATRIX * vec4(nrm, 0.0)).xyz);
 
 	vec3 p_rel = wpos - NODE_POSITION_WORLD;
-	vec3 L = sun_direction;
+	vec3 L = sd_sun_dir();
 	if (use_atmosphere) {
 		v_sun_tint = atmo_sun_transmittance(p_rel, L);
 		vec3 amb = atmo_sky_ambient(p_rel) * (0.6 + 0.4 * dot(nrm, n));

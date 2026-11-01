@@ -6,8 +6,17 @@
 //   CUSTOM2 xyz morph delta of odd edge vertices, w edge id + 1
 // All detail textures tile at power-of-two sizes <= 2048 m, so they are continuous across
 // chunks while the coordinates stay small (no float precision loss far from the origin).
+//
+// Lighting: custom light() so the sun is attenuated by the planet's atmosphere per vertex
+// (atmo_sun_transmittance -> red sunsets, planet shadow) and by cloud shadows per pixel; sky
+// ambient from the atmosphere model is added as emission. Works on scaled-space proxies
+// (distances divided by the node scale). The DirectionalLight3D must carry the UNATTENUATED
+// star colour (SolarSystem does that).
 shader_type spatial;
-render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+render_mode blend_mix, depth_draw_opaque, cull_back;
+
+#include "res://shaders/include/atmosphere_common.gdshaderinc"
+#include "res://shaders/include/clouds_common.gdshaderinc"
 
 uniform int planet_type = 0;          // PlanetConfig.PlanetType
 uniform float planet_radius = 10000.0;
@@ -21,6 +30,12 @@ uniform float strata_strength = 0.3;
 uniform float macro_variation = 0.35;
 uniform float lava_intensity = 0.0;
 uniform float detail_normal_strength = 1.0;
+
+group_uniforms lighting;
+uniform bool use_atmosphere = false;      // atmo_* uniforms are set (AtmosphereLayer.uniforms)
+uniform float sky_ambient_scale = 0.55;   // sky light (atmosphere) on the terrain
+uniform vec3 night_ambient = vec3(0.006, 0.007, 0.011);  // starlight / airglow floor (radiance)
+group_uniforms;
 
 uniform vec3 color_seabed : source_color = vec3(0.16, 0.18, 0.15);
 uniform vec3 color_sand : source_color = vec3(0.76, 0.68, 0.5);
@@ -43,6 +58,10 @@ varying vec3 v_dir;
 varying float v_moist;
 varying vec4 v_mask;
 varying vec3 v_nrm;
+varying vec3 v_sun_tint;
+varying vec3 v_sky_amb;
+varying float v_shadow;
+varying float v_f0;
 
 // Bit i set = edge i (0 bottom, 1 right, 2 top, 3 left) borders a coarser chunk.
 instance uniform int coarse_edges = 0;
@@ -61,6 +80,14 @@ void vertex() {
 	v_moist = CUSTOM1.w;
 	v_mask = COLOR;
 	v_nrm = NORMAL;
+	// atmosphere terms per vertex (smooth; chunks are dense): world-oriented, body units
+	v_sun_tint = vec3(1.0);
+	v_sky_amb = vec3(0.0);
+	if (use_atmosphere) {
+		vec3 pw = normalize(mat3(MODEL_MATRIX) * CUSTOM1.xyz) * (planet_radius + CUSTOM0.w);
+		v_sun_tint = atmo_sun_transmittance(pw, sd_sun_dir());
+		v_sky_amb = atmo_sky_ambient(pw);
+	}
 }
 
 vec3 tri_w(vec3 n) {
@@ -96,7 +123,8 @@ void fragment() {
 	vec3 up = normalize(v_dir);
 	vec3 ng = normalize(v_nrm);
 	vec3 w = tri_w(ng);
-	float dist = length(VERTEX);
+	float node_s = sd_node_scale(MODEL_MATRIX);
+	float dist = length(VERTEX) / node_s;     // body units (scaled-space proxies)
 	vec3 p = v_detail;
 	float hb = v_height - base_level;          // height above sea / base
 	float hn = v_height / height_amplitude;
@@ -242,8 +270,38 @@ void fragment() {
 	ALBEDO = col;
 	ROUGHNESS = rough;
 	SPECULAR = mix(mix(0.18, 0.35, rock), 0.5, snow);
+	v_f0 = 0.08 * SPECULAR;
 	AO = clamp(0.75 + curv * 1.5 + (1.0 - rock) * 0.1, 0.4, 1.0);
 	AO_LIGHT_AFFECT = 0.4;
-	EMISSION = emit;
+	// sky ambient (atmosphere) + night floor; cloud shadow for the sun term (planet-local)
+	float ao_amb = AO * (0.65 + 0.35 * clamp(dot(n, up), 0.0, 1.0));
+	EMISSION = emit + col * (v_sky_amb * sky_ambient_scale + night_ambient) * ao_amb;
+	v_shadow = 1.0;
+	if (cloud_shadow_strength > 0.0) {
+		mat3 to_local = transpose(mat3(MODEL_MATRIX)) / node_s;
+		v_shadow = cloud_shadow_local(up * (planet_radius + v_height), to_local * sd_sun_dir());
+	}
 	NORMAL = normalize((VIEW_MATRIX * (MODEL_MATRIX * vec4(n, 0.0))).xyz);
+}
+
+void light() {
+	// Burley-ish lambert + GGX specular; sun attenuated by atmosphere and cloud shadows
+	vec3 lc = LIGHT_COLOR * ATTENUATION / PI * v_sun_tint * v_shadow;
+	float ndl = clamp(dot(NORMAL, LIGHT), 0.0, 1.0);
+	float ndv = clamp(dot(NORMAL, VIEW), 1e-3, 1.0);
+	vec3 h = normalize(LIGHT + VIEW);
+	float ldh = clamp(dot(LIGHT, h), 0.0, 1.0);
+	float fd90 = 0.5 + 2.0 * ROUGHNESS * ldh * ldh;
+	float fl = 1.0 + (fd90 - 1.0) * pow(1.0 - ndl, 5.0);
+	float fv = 1.0 + (fd90 - 1.0) * pow(1.0 - ndv, 5.0);
+	DIFFUSE_LIGHT += lc * ndl * fl * fv;
+	float a = ROUGHNESS * ROUGHNESS;
+	float a2 = a * a;
+	float ndh = clamp(dot(NORMAL, h), 0.0, 1.0);
+	float dd = ndh * ndh * (a2 - 1.0) + 1.0;
+	float D = a2 / (PI * dd * dd);
+	float k = a * 0.5;
+	float vis = 0.25 / ((ndl * (1.0 - k) + k) * (ndv * (1.0 - k) + k));
+	float F = v_f0 + (1.0 - v_f0) * pow(1.0 - ldh, 5.0);
+	SPECULAR_LIGHT += lc * ndl * D * vis * F * PI;
 }
