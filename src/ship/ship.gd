@@ -149,6 +149,7 @@ var gear_contacts := 0
 var impact := 0.0                 # recent impact strength (camera shake), decays
 var boost_t := 0.0
 var pad_alt := INF                # lowest gear-pad height above the ground (near the surface)
+var ground_tilt := 0.0            # deg: slope of the ground plane under the pads (near the surface)
 var last_touchdown := 0.0         # vertical speed of the last touchdown (telemetry)
 var since_takeoff := 1.0e9        # s since the clamps were released
 var boom_t := 0.0                 # 1 at a sonic boom, decays (FX / camera)
@@ -398,6 +399,7 @@ func get_hud_data() -> Dictionary:
 		"target_safe_alt": safe_orbit_altitude(target) if tname != "" else 0.0,
 		"pad_alt": pad_alt if body and _is_solid(body) else -1.0,
 		"solid_ground": body != null and _is_solid(body),
+		"ground_tilt": ground_tilt,
 		"descent_limit": descent_limit(maxf(minf(altitude, pad_alt), 0.0), Universe.get_gravity(global_position).length()) if body else 0.0,
 	}
 
@@ -764,9 +766,14 @@ func _update_landing(dt: float) -> void:
 			_takeoff()
 		return
 	var s := vel.length()
+	# resting on an obstacle (a boulder / the hull on a ridge): pads just above the ground, not moving
+	var resting := gear_down and gear_contacts < 3 and pad_alt < 0.7 and s < 0.6 \
+		and angular_velocity.length() < 0.16 and body != null and _is_solid(body)
 	if gear_contacts >= 3 and s < 0.8 and angular_velocity.length() < 0.15 and in_move.y <= 0.05 \
 			and in_move.z <= 0.05:
 		_land_timer += dt
+	elif resting and in_move.y <= 0.05 and in_move.z <= 0.05 and absf(in_move.x) <= 0.05:
+		_land_timer += dt * 0.2      # ~2.5 s of rest -> clamps
 	else:
 		_land_timer = 0.0
 	if _land_timer > 0.5:
@@ -924,6 +931,11 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		if mode >= Mode.CRUISE:
 			vt.x = 0.0
 			vt.y = 0.0
+		# touchdown assist: hovering just above the ground with the gear down and no vertical input,
+		# the ship settles the last few decimetres by itself (no hovering 20 cm over the pads)
+		if gear_down and mode == Mode.HOVER and pad_alt < 0.9 and pad_alt > -0.3 and absf(in_move.y) < 0.05 \
+				and not landed and body and _is_solid(body) and (v - up_dir * v.dot(up_dir)).length() < 2.0:
+			vt += Bt * (-up_dir * 0.6)
 		var comp := -g - a_aero
 		if wow and in_move.y <= 0.05 and throttle <= 0.05:
 			comp = Vector3.ZERO   # weight on wheels: let the gear carry the ship
@@ -943,9 +955,13 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	# --- ground proximity limiter (assist): never descend faster than we can stop; the braking
 	# decel scales with local gravity (soft lunar touchdowns), pad height on uneven ground
 	pad_alt = altitude
+	ground_tilt = 0.0
 	if body and altitude < 40.0 and _is_solid(body):
 		for f in FEET:
 			pad_alt = minf(pad_alt, _ground_alt(body, pos + B * f))
+		var ng := _ground_plane_normal(pos, B)
+		if ng != Vector3.ZERO:
+			ground_tilt = rad_to_deg(ng.angle_to(up_dir))
 	if assist and body and altitude < 3000.0 and not _teleport and _is_solid(body):
 		var h := minf(altitude, pad_alt)
 		var vdown := -v.dot(up_dir)

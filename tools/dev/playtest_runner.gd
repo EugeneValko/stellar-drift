@@ -143,6 +143,10 @@ func _telemetry(tag: String, every := 2.0) -> void:
 		tag, frame * DT, h["mode_name"], h["altitude"], h["speed"], h["vertical_speed"], h["atmosphere_density"],
 		h["heat"], h["throttle"], h["autopilot"], h["body_name"], h["target_name"],
 		float(h["target_distance"]) / 1000.0, h["gear_down"], h["landed"], h["message"]])
+	if ship.altitude < 30.0 and not ship.landed and ship.body is Planet:
+		print("    near ground: alt %.2f pad %.2f contacts %d v %s w %.3f in_move %s up·B.y %.4f" % [ship.altitude,
+			ship.pad_alt, ship.gear_contacts, str(ship.vel), ship.angular_velocity.length(), str(ship.in_move),
+			ship.up_dir.dot(ship.global_basis.y)])
 
 
 func _true_pos(n: Node3D) -> Vector3:

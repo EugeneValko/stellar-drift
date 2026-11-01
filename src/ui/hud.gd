@@ -790,6 +790,11 @@ func _draw_landing(d: Dictionary, cam: Camera3D, vs: Vector2) -> void:
 	_text(Vector2(x - 14.0 * _s, ya + 4.0 * _s), "%.1f" % alt if alt < 100.0 else "%d" % roundi(alt), 13, Color(C_MAIN, a), 2)
 	_text(Vector2(x - 14.0 * _s, ya + 20.0 * _s), "SINK %.1f" % sink, 10, Color(col, a), 2)
 	_text(Vector2(x, y0 + 20.0 * _s), "RADAR ALT", 9, Color(C_DIM, C_DIM.a * a), 1, false)
+	var tilt := float(d.get("ground_tilt", 0.0))
+	if alt < 40.0:
+		var tc := C_DIM if tilt < 8.0 else (C_ACCENT if tilt < 15.0 else C_WARN)
+		_text(Vector2(x, y0 + 36.0 * _s), "SLOPE %d°" % roundi(tilt) if tilt < 15.0 else "UNEVEN GROUND %d°" % roundi(tilt),
+			9, Color(tc, a * (1.0 if tilt < 15.0 else 0.6 + 0.4 * sin(_time * 7.0))), 1, false)
 	if bool(d.get("gear_suggest", false)) or (alt < 60.0 and not bool(d.get("gear_down", true))):
 		var ga := a * (0.55 + 0.45 * sin(_time * 8.0))
 		_text(Vector2(x, y1 - 12.0 * _s), "GEAR UP", 11, Color(C_WARN, ga), 1, false)
