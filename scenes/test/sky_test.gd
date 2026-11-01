@@ -104,6 +104,15 @@ func _sun_elev() -> float:
 	return float(Capture.args["sun_elev"]) if Capture.args.has("sun_elev") else NAN
 
 
+## Open ground for the camera: no forest / rocks / snow around (ScatterBiome, as main's start site).
+func _bio_penalty(t: SolarSystem.BodyRec, n: Vector3) -> float:
+	var biome: ScatterBiome = t.scatter.biome if t.scatter else null
+	if biome == null:
+		return 0.0
+	var bio := biome.evaluate(n)
+	return float(bio["forest"]) * 3.0 + float(bio["rock"]) * 1.0 + float(bio["snow"]) * 2.0
+
+
 func _custom(preset: String) -> void:
 	var t: SolarSystem.BodyRec = main._rec("Terra Nova")
 	var sys: SolarSystem = main.system
@@ -125,8 +134,9 @@ func _custom(preset: String) -> void:
 				var back: float = main._max_ahead(t, nn, -f, 9000.0, 6) - h
 				var hills: float = main._max_ahead(t, nn, main._horizon_dir(nn, s.cross(nn)), 8000.0, 5) - h
 				# open sea toward the sun, some relief behind (anti-sun) and to the side
-				return -maxf(sea, 0.0) * 0.01 + clampf(hills, 0.0, 600.0) * 0.002 \
-					+ clampf(back, 0.0, 800.0) * 0.0015 - h * 0.002)
+				var sc := -maxf(sea, 0.0) * 0.01 + clampf(hills, 0.0, 600.0) * 0.002 \
+					+ clampf(back, 0.0, 800.0) * 0.0015 - h * 0.002
+				return sc - _bio_penalty(t, nn))
 			var f: Vector3 = main._horizon_dir(n, s)
 			var look: Vector3
 			if preset.ends_with("anti") and not Capture.args.has("keep_weather"):
@@ -175,12 +185,13 @@ func _custom(preset: String) -> void:
 				if h3 < 20.0 or h3 > 600.0 or absf(nn.y) > 0.6:
 					continue
 				var away: Vector3 = main._horizon_dir(nn, -s)
+				var pen := _bio_penalty(t, nn)
 				for rot: float in [-50.0, -25.0, 0.0, 25.0, 50.0]:
 					var f4 := away.rotated(nn, deg_to_rad(rot))
 					var near: float = main._max_ahead(t, nn, f4, 3000.0, 4) - h3
 					var far_m: float = main._max_ahead(t, nn, f4, 30000.0, 10) - h3
 					var sc := clampf(far_m, 0.0, 3000.0) * 0.002 - maxf(near - 120.0, 0.0) * 0.01 \
-						- maxf(t.clouds.weather_at(nn).x - 0.3, 0.0) * 2.0
+						- maxf(t.clouds.weather_at(nn).x - 0.3, 0.0) * 2.0 - pen
 					if sc > best:
 						best = sc
 						best_n = nn
@@ -195,7 +206,7 @@ func _custom(preset: String) -> void:
 				var h4: float = main._h(t, nn) - base
 				if h4 < 10.0 or h4 > 800.0:
 					return -INF
-				return -absf(nn.y) - maxf(t.clouds.weather_at(nn).x, 0.0) * 3.0, 180)
+				return -absf(nn.y) - maxf(t.clouds.weather_at(nn).x, 0.0) * 3.0 - _bio_penalty(t, nn), 180)
 			main._clear_weather(t, n4, [n4], [1.0])
 			# look toward the galactic band (sky shader galaxy_center direction)
 			var gc := Vector3(-0.55, 0.15, -0.82).normalized()
