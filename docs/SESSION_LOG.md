@@ -15,3 +15,4 @@
 - Навигатор: autoload `Universe` (реестр тел, гравитация, плотность атмосферы, floating origin), `Controls` (раскладка + текст F1). Planet реализует интерфейс тела.
 - Влита волна 2D (ветка worktree-agent-a39a69a1827d2ebad): Player, GameMode, HUD, F1. Отчёт `docs/reports/wave2_player_ui.md` (там же инструкция по подключению в main).
 - Влита волна 2C (ветка worktree-agent-a375ead7b7a66ef87): флора и камни. Отчёт `docs/reports/wave2_flora.md`.
+- Влита волна 2B (ветка worktree-agent-a78af03e5256bca68): летающий корабль. Отчёт `docs/reports/wave2_ship_flight.md`. TODO интеграции: terra_nova atmosphere_height 8000 → ~24000 (видимая атмосфера 24 км); ship — прямой ребёнок world_root.
