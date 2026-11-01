@@ -17,6 +17,8 @@ extends Node3D
 ##   density           extinction 1/m at full density (0.01 thin .. 0.06 thick)
 ##   seed              weather seed (float)
 ##   cyclones          number of cyclone swirls; cyclone_strength
+##   stratus           0..1 share of flat stratus/stratocumulus decks (overcast regions, storm
+##                     belts); weather_contrast (>1 = crisper clear vs overcast regions)
 ##   shape_size        m per shape noise tile; detail_size m per detail tile
 ##   rot_speed         weather drift around the axis (rad/s); wind_vel Vector3 (m/s) shape drift
 ##   brightness, ambient, albedo (Color)
@@ -59,6 +61,8 @@ func setup(cfg: Variant = null) -> void:
 		"cloud_wind_vel": params.get("wind_vel", Vector3(6.0, 0.0, 3.0)),
 		"cloud_cyclones": int(params.get("cyclones", 7)),
 		"cloud_cyclone_strength": float(params.get("cyclone_strength", 1.0)),
+		"cloud_stratus": float(params.get("stratus", 0.6)),
+		"cloud_weather_contrast": float(params.get("weather_contrast", 1.0)),
 	}
 	var cirrus_alt: float = float(params.get("cirrus_altitude", 3500.0))
 	_ensure_nodes(top + (cirrus_alt if float(params.get("cirrus_opacity", 0.4)) > 0.0 else 0.0))

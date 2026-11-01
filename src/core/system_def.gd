@@ -37,15 +37,17 @@ static func bodies() -> Array[Dictionary]:
 	out.append({
 		"name": "Ignis", "kind": Kind.PLANET, "group": 1, "preset": "ignis",
 		"pos": _orbit(8000.0 * KM, -24.0, -150.0 * KM), "gravity": 6.5,
-		"atmosphere": {"preset": "ignis", "ground_offset": -1600.0},
+		"atmosphere": {"preset": "ignis", "ground_offset": -1600.0, "mie_density": 32.0,
+			"mie_color": Color(1.0, 0.55, 0.3)},
 	})
 	out.append({
 		"name": "Terra Nova", "kind": Kind.PLANET, "group": 2, "preset": "terra_nova",
 		"pos": terra, "gravity": 9.81,
 		"atmosphere": {"preset": "terra_nova"},
 		"ocean": {},
-		"clouds": {"bottom": 1800.0, "top": 4600.0, "coverage": 0.42, "brightness": 2.2,
-			"cyclones": 5, "seed": 3.0},
+		"clouds": {"bottom": 1800.0, "top": 4600.0, "coverage": 0.33, "brightness": 2.2,
+			"cyclones": 5, "seed": 3.0, "shape_size": 7000.0, "detail_size": 1300.0,
+			"stratus": 0.85, "weather_contrast": 2.2},
 	})
 	out.append({
 		"name": "Selene", "kind": Kind.PLANET, "group": 2, "preset": "selene", "parent": "Terra Nova",

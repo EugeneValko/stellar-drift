@@ -28,6 +28,8 @@ uniform vec3 cloud_wind_vel = vec3(6.0, 0.0, 3.0); // local evolution of shapes,
 uniform int cloud_cyclones = 7;
 uniform float cloud_cyclone_strength = 1.0;
 uniform float cloud_shadow_strength = 0.0;   // receivers: 0 disables cloud_shadow()
+uniform float cloud_stratus = 0.6;           // share of flat stratus / stratocumulus decks (0..1)
+uniform float cloud_weather_contrast = 1.0;  // >1 = crisper clear / overcast regions
 group_uniforms;
 
 float cl_tex(vec3 q) {
@@ -70,9 +72,10 @@ vec2 cloud_weather_procedural(vec3 dir) {
 	// fine octave is NOT swirled (avoids grooved rings in cyclones)
 	vec3 b0 = dir + warp * 0.3;
 	// large systems + east-west elongated fronts + medium detail; contrast-expanded
-	float n = cl_tex(b * 1.13 + vec3(0.21)) * 0.52
+	// (weights favour the large systems: coherent fronts and clear regions instead of speckle)
+	float n = cl_tex(b * 1.13 + vec3(0.21)) * 0.6
 		+ cl_tex(vec3(b.x * 2.3, b.y * 4.5, b.z * 2.3) + vec3(0.53, 0.1, 0.4)) * 0.3
-		+ cl_tex(b0 * 6.93 + vec3(0.7)) * 0.18;
+		+ cl_tex(b0 * 6.93 + vec3(0.7)) * 0.1;
 	n = (n - 0.5) * 2.0 + 0.5;
 	b = b0;
 	// planetary circulation: wet ITCZ, dry subtropics, stormy mid-latitudes
@@ -82,8 +85,14 @@ vec2 cloud_weather_procedural(vec3 dir) {
 		- 0.28 * exp(-pow((al - 0.40) / 0.14, 2.0))
 		+ 0.15 * exp(-pow((al - 0.74) / 0.16, 2.0));
 	float thr = mix(0.9, 0.1, cloud_coverage);
-	float cov = smoothstep(thr - 0.45, thr + 0.5, n + bias + boost * 1.5);
-	float type = clamp((cl_tex(b * 1.7 + vec3(0.33)) - 0.5) * 3.0 + 0.4 + boost + 0.2 * exp(-pow(lat / 0.12, 2.0)), 0.0, 1.0);
+	float wc = 1.0 / max(cloud_weather_contrast, 0.1);
+	float cov = smoothstep(thr - 0.38 * wc, thr + 0.4 * wc, n + bias + boost * 1.5);
+	float type = clamp((cl_tex(b * 1.2 + vec3(0.33)) - 0.5) * 2.4 + 0.4 + boost + 0.2 * exp(-pow(lat / 0.12, 2.0)), 0.0, 1.0);
+	// large overcast regions and the mid-latitude storm belts are flat decks (stratus /
+	// stratocumulus); towering cumulus stays in the tropics, cyclones and scattered fields
+	float deck = smoothstep(0.55, 0.9, cov) * 0.7 + 0.35 * exp(-pow((al - 0.6) / 0.18, 2.0));
+	deck *= cloud_stratus * (1.0 - clamp(boost * 3.0, 0.0, 1.0));
+	type = mix(type, type * 0.25, clamp(deck, 0.0, 1.0));
 	return vec2(cov, type);
 }
 
@@ -130,26 +139,41 @@ float cloud_density_at(vec3 pl, float r, vec2 w, int lod) {
 	float cov = w.x;
 	if (h <= 0.0 || h >= 1.0 || cov <= 0.01) return 0.0;
 	// cloud top height from weather type (flat stratocumulus .. towering cumulus)
-	float top = mix(0.3, 1.0, w.y);
+	float top = mix(0.22, 1.0, w.y);
 	float hn = h / top;
 	if (hn >= 1.0) return 0.0;
+	// 0 = cumulus, 1 = flat stratus deck
+	float stratus = 1.0 - smoothstep(0.18, 0.5, w.y);
 	vec3 drift = cloud_wind_vel * TIME;
 	vec3 sp = (pl + drift) / cloud_shape_size;
-	// billowy low-frequency shape: perlin fbm + inverted worley
-	float s = cl_tex(sp) * 0.45 + cl_tex(sp * 0.29 + vec3(0.5)) * 0.25
-		+ texture(cloud_detail_tex, sp * 0.5 + vec3(0.13)).r * 0.30;
-	s = clamp((s - 0.25) * 1.9, 0.0, 1.0);
-	s = mix(s, 1.0, smoothstep(0.6, 1.0, cov) * 0.4);         // dense weather -> continuous decks
-	// coverage remap, then height gradient (flat base, soft rounded top), then dome rounding
-	float base = clamp((s - (1.0 - cov)) / max(cov, 0.05), 0.0, 1.0);
 	float grad = smoothstep(0.0, 0.07, h) * smoothstep(1.0, 0.7, hn);
-	base *= grad;
-	base = clamp((base - hn * 0.15) / (1.0 - hn * 0.15), 0.0, 1.0);
-	base = clamp(base * 1.25, 0.0, 1.0);
+	float base = 0.0;
+	if (stratus < 0.99) {
+		// cumulus: billowy low-frequency shape (perlin fbm + inverted worley), coverage remap,
+		// flat base, rounded top
+		float s = cl_tex(sp) * 0.45 + cl_tex(sp * 0.29 + vec3(0.5)) * 0.25
+			+ texture(cloud_detail_tex, sp * 0.5 + vec3(0.13)).r * 0.30;
+		s = clamp((s - 0.25) * 1.9, 0.0, 1.0);
+		s = mix(s, 1.0, smoothstep(0.6, 1.0, cov) * 0.4);         // dense weather -> continuous
+		float cu = clamp((s - (1.0 - cov)) / max(cov, 0.05), 0.0, 1.0) * grad;
+		cu = clamp((cu - hn * 0.15) / (1.0 - hn * 0.15), 0.0, 1.0);
+		base = clamp(cu * 1.25, 0.0, 1.0);
+	}
+	if (stratus > 0.01) {
+		// stratus / stratocumulus deck: continuous sheet whose thickness follows the weather
+		// coverage (soft edges over tens of km), low-contrast rolls stretched along parallels
+		vec3 sq = vec3(sp.x * 0.8, sp.y * 2.4, sp.z * 0.8) * 0.5;
+		float st = cl_tex(sq + vec3(0.17, 0.0, 0.41)) * 0.55 + cl_tex(sq * 2.7 + vec3(0.5)) * 0.3
+			+ texture(cloud_detail_tex, sp * 0.9 + vec3(0.3)).r * 0.15;
+		float edge = smoothstep(0.1, 0.65, cov);
+		float deck = edge * edge * clamp(0.55 + (st - 0.45) * 0.9, 0.0, 1.0);
+		float prof = smoothstep(0.0, 0.25, hn) * smoothstep(1.0, 0.55, hn);
+		base = mix(base, deck * prof * 0.75, stratus);
+	}
 	if (base <= 0.0) return 0.0;
 	if (lod == 0) {
 		float dn = texture(cloud_detail_tex, (pl + drift * 1.5) / cloud_detail_size).r;
-		float er = mix(0.55, 0.3, smoothstep(0.0, 0.5, h));
+		float er = mix(0.55, 0.3, smoothstep(0.0, 0.5, h)) * (1.0 - 0.6 * stratus);
 		base = (base - (1.0 - dn) * er) / (1.0 - er);
 	}
 	return clamp(base, 0.0, 1.0);

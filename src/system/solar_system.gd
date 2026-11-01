@@ -49,8 +49,10 @@ const PRESET_DIR := "res://src/planets/presets/"
 @export var manage_camera_far := true
 ## Fraction of the far plane usable for geometry.
 @export var far_usable := 0.85
-## Unscaled range = F_max / lin_fraction_inv.
-@export var lin_fraction_inv := 4.0
+## Identity (unscaled) range = F_max / lin_fraction_inv.
+@export var lin_fraction_inv := 2.0
+## Below this altitude the focus body is never scaled (it widens the identity range).
+@export var focus_unscaled_altitude := 20000.0
 ## Distance mapped onto F_max (beyond: scaled straight to F_max).
 @export var compress_max_distance := 3.0e8
 ## A body is the "focus" (unscaled, LOD around camera, shadows) while the camera altitude
@@ -93,6 +95,7 @@ var sun_dir := Vector3.FORWARD
 var _built := false
 var _exposure := 1.0
 var _sky_energy := 1.0
+var _sky_applied := -1.0
 var _snap := true
 
 
@@ -450,7 +453,8 @@ func _update_scaled_space(cam: Camera3D) -> void:
 		groups[r.group].append(r)
 	for g in groups:
 		units.append(groups[g])
-	var order: Array = []   # [scaled distance, unit]
+	# unit centre / far edge
+	var info: Array = []   # [unit, centre, far edge b]
 	for u: Array in units:
 		var primary: BodyRec = u[0]
 		for m: BodyRec in u:
@@ -460,15 +464,19 @@ func _update_scaled_space(cam: Camera3D) -> void:
 		var bnd := 0.0
 		for m: BodyRec in u:
 			bnd = maxf(bnd, (m.rel - c).length() + m.bound)
-		var b := c.length() + bnd
-		var k := 1.0
-		if u.size() == 1 and u[0] == focus:
-			k = 1.0 if b <= f_max else f_max / b
-		else:
-			k = _compress(b, f_lin, f_max) / b
-		for m: BodyRec in u:
+		info.append([u, c, c.length() + bnd])
+	# One monotonic mapping for every unit (keeps occlusion order). Near a surface the focus
+	# body must stay unscaled (ship/player/props stand on it): the identity range then grows
+	# to include it.
+	if focus and _altitude(focus, cam.global_position) < focus_unscaled_altitude:
+		f_lin = clampf(float(info[0][2]), f_lin, f_max * 0.97)
+	var order: Array = []   # [scaled distance, unit]
+	for it: Array in info:
+		var b: float = it[2]
+		var k := _compress(b, f_lin, f_max) / b
+		for m: BodyRec in it[0]:
 			_apply_scale(m, k, cam)
-		order.append([c.length() * k, u])
+		order.append([(it[1] as Vector3).length() * k, it[0]])
 	# star (its own visual scaling: Star.max_render_distance)
 	var sr: BodyRec = by_name[SystemDef.STAR["name"]]
 	var ds := sr.rel.length()
@@ -600,7 +608,14 @@ func _update_exposure(cam: Camera3D, dt: float) -> void:
 	_exposure = lerpf(_exposure, target, a)
 	_sky_energy = lerpf(_sky_energy, sky, a)
 	environment.tonemap_exposure = _exposure
-	environment.background_energy_multiplier = _sky_energy
+	# The space sky ignores background_energy_multiplier: scale its own `sky_energy`, in
+	# coarse log steps (each change re-renders the radiance cubemap).
+	var sky_mat := environment.sky.sky_material as ShaderMaterial if environment.sky else null
+	if sky_mat:
+		var q := pow(2.0, roundf(log(maxf(_sky_energy, 1e-4)) / log(2.0) * 3.0) / 3.0)
+		if absf(q - _sky_applied) > 1e-5:
+			_sky_applied = q
+			sky_mat.set_shader_parameter("sky_energy", q)
 
 
 ## Uses `env` for exposure / glow settings (the SpaceSky WorldEnvironment's Environment).

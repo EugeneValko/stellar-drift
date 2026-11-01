@@ -23,6 +23,20 @@ func _ready() -> void:
 	system.set_environment(backdrop.environment)
 	if Capture.args.has("no_shadows"):
 		system.shadows_enabled = false
+	# debug overrides on Terra Nova's layers: --cu_<uniform>=v (clouds), --au_ (atmosphere),
+	# --ou_ (ocean), --tu_ (terrain)
+	var terra := system.get_body("Terra Nova")
+	for k: String in Capture.args:
+		var v: Variant = str_to_var(Capture.args[k])
+		if k.begins_with("cu_") and terra.clouds:
+			terra.clouds.material.set_shader_parameter(k.substr(3), v)
+		elif k.begins_with("au_") and terra.atmo:
+			terra.atmo.mat_scatter.set_shader_parameter(k.substr(3), v)
+			terra.atmo.mat_transmit.set_shader_parameter(k.substr(3), v)
+		elif k.begins_with("ou_") and terra.ocean:
+			terra.ocean.material.set_shader_parameter(k.substr(3), v)
+		elif k.begins_with("tu_"):
+			terra.planet.terrain_material.set_shader_parameter(k.substr(3), v)
 	cam.make_current()
 	var capture_drives := Capture.active and (Capture.args.has("cam") or Capture.args.has("shots"))
 	if not capture_drives:
@@ -47,6 +61,10 @@ func apply_capture_preset(preset: String) -> void:
 		"aurelion_rings": _aurelion_rings()
 		"vex_aurelion": _vex_aurelion()
 		"star_from_ignis": _star_from_ignis()
+		"ignis_orbit": _orbit_view("Ignis", 3.4)
+		"glacia_orbit": _orbit_view("Glacia", 3.6)
+		"selene_orbit": _orbit_view("Selene", 4.0)
+		"vex_orbit": _orbit_view("Vex", 4.0)
 		_:
 			push_warning("main: unknown preset " + preset)
 			_terra_orbit()
@@ -155,6 +173,21 @@ func _search_sun_circle(r: SolarSystem.BodyRec, s: Vector3, elev_deg: float, sco
 	return best
 
 
+## How much (deg) the terrain toward the sun rises above the sun elevation (0 = sunlit).
+func _sun_blocked(r: SolarSystem.BodyRec, n: Vector3, s: Vector3, sun_elev: float) -> float:
+	var f := _horizon_dir(n, s)
+	var h0 := _h(r, n)
+	var worst := 0.0
+	for k in 8:
+		var dist := 150.0 * pow(1.8, k)
+		var d := (n * r.radius + f * dist).normalized()
+		# curvature drop of the far point below the local horizontal
+		var drop := dist * dist / (2.0 * r.radius)
+		var ang := rad_to_deg(atan2(_h(r, d) - h0 - drop, dist))
+		worst = maxf(worst, ang - sun_elev + 1.5)
+	return worst
+
+
 ## Max terrain height (above sea level / base) along `dir` from n, out to `dist` m.
 func _max_ahead(r: SolarSystem.BodyRec, n: Vector3, dir: Vector3, dist: float, steps := 10) -> float:
 	var m := -INF
@@ -172,10 +205,10 @@ func _terra_orbit() -> void:
 	var t := _rec("Terra Nova")
 	var ds := _dir_to("Terra Nova", "Selene")
 	var da := _dir_to("Terra Nova", "Aurelion")
-	var u := -(ds + da).normalized()
-	u = (u + Vector3.UP * 0.25).normalized()
-	var off := u * 205000.0
-	var look := (ds + da).normalized() * 60000.0
+	var mid := (ds * 0.72 + da * 0.28).normalized()
+	var u := (-mid + Vector3.UP * 0.22).normalized()
+	var off := u * 200000.0
+	var look := mid * 70000.0
 	_place_space(t, off, look, Vector3.UP)
 	cam.fov = 62.0
 
@@ -209,7 +242,10 @@ func _terra_entry() -> void:
 		var land := _max_ahead(t, nn, f, 60000.0, 8)
 		return -absf(h - 50.0) * 0.001 + clampf(land, 0.0, 3000.0) * 0.002 + nn.dot(da) * 2.0)
 	var look := _horizon_dir(n, s.cross(n))
-	look = (look - n * 0.22).normalized()
+	# the horizon of a 60 km planet seen from 30 km is ~48 deg below the horizontal
+	var gr := _ground_r(t, n)
+	var dip := acos(gr / (gr + 30000.0))
+	look = look.rotated(look.cross(n).normalized(), -(dip - deg_to_rad(14.0)))
 	_place_ground(t, n, 30000.0, look)
 	cam.fov = 65.0
 
@@ -252,8 +288,8 @@ func _terra_ground() -> void:
 	var base := t.planet.config.get_base_level()
 	var best_n := Vector3.ZERO
 	var best := -INF
-	for e1: float in [11.0, 14.0, 17.0]:
-		for e2: float in [9.0, 12.0, 15.0]:
+	for e1: float in [10.0, 13.0]:
+		for e2: float in [15.0, 18.0]:
 			for n: Vector3 in _two_elev(s, da, e1, e2):
 				for jitter in 24:
 					var nn := n
@@ -270,15 +306,19 @@ func _terra_ground() -> void:
 					var tt := nn.cross(f)
 					var slope := absf(_h(t, (nn + f * e).normalized()) - _h(t, (nn - f * e).normalized())) \
 						+ absf(_h(t, (nn + tt * e).normalized()) - _h(t, (nn - tt * e).normalized()))
-					# some relief ahead (but not hiding the giant), gentle ground under the feet
-					var score := clampf(m, -200.0, 500.0) * 0.004 - slope * 0.3 - absf(e2 - 12.0) * 0.05
+					# relief to the sides (framing), open view toward the giant, gentle ground
+					var side_m := maxf(_max_ahead(t, nn, (f + tt).normalized(), 7000.0, 5),
+						_max_ahead(t, nn, (f - tt).normalized(), 7000.0, 5)) - h
+					var shade := _sun_blocked(t, nn, s, e1)
+					var score := clampf(side_m, 0.0, 900.0) * 0.002 - maxf(m - 250.0, 0.0) * 0.01 \
+						- slope * 1.0 - shade * 3.0
 					if score > best:
 						best = score
 						best_n = nn
 	if best_n == Vector3.ZERO:
 		best_n = _two_elev(s, da, 14.0, 12.0)[0]
 	var look := _horizon_dir(best_n, da)
-	look = (look + best_n * 0.12).normalized()
+	look = (look + best_n * 0.2).normalized()
 	_place_ground(t, best_n, 2.0, look)
 	cam.fov = 70.0
 
@@ -434,3 +474,14 @@ func _system_overview() -> void:
 	var target := off + (s + w * -0.08 - Vector3.UP * 0.12).normalized() * 1.0e6
 	_place_space(a, off, target, Vector3.UP)
 	cam.fov = 60.0
+
+
+## Generic orbit view: gibbous phase (sun 55 deg to the side), body centred.
+func _orbit_view(body: String, dist_r: float) -> void:
+	var r := _rec(body)
+	var s := system.sun_dir_from(body)
+	var w := s.cross(Vector3.UP).normalized()
+	var off := (s.rotated(Vector3.UP, deg_to_rad(-60.0)) + Vector3.UP * 0.25).normalized() * r.radius * dist_r
+	_place_space(r, off, Vector3.ZERO, Vector3.UP)
+	cam.fov = 45.0
+	var _w := w
