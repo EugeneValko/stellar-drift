@@ -661,6 +661,12 @@ func _update_environment() -> void:
 			altitude = p.distance_to(bp) - body.get_body_radius()
 		var ah: float = body.get_atmosphere_height()
 		in_atmosphere = ah > 0.0 and p.distance_to(bp) - body.get_body_radius() < ah
+		if capture_hold or freeze:
+			# frozen (stills / clamps): _integrate_forces does not run, keep the pad height current
+			pad_alt = altitude
+			if altitude < 40.0 and _is_solid(body):
+				for f in FEET:
+					pad_alt = minf(pad_alt, _ground_alt(body, global_transform * f))
 	else:
 		up_dir = Vector3.UP
 		altitude = INF

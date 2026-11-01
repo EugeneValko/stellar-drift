@@ -755,7 +755,7 @@ func _draw_heat(d: Dictionary, c: Vector2) -> void:
 func _draw_landing(d: Dictionary, cam: Camera3D, vs: Vector2) -> void:
 	var solid := bool(d.get("solid_ground", false))
 	var alt := float(d.get("pad_alt", -1.0))
-	if alt < 0.0:
+	if alt < 0.0 or alt > 1.0e6:
 		alt = float(d.get("altitude", -1.0))
 	var want := solid and alt >= -0.5 and alt < 300.0 and not bool(d.get("landed", false))
 	_land_k = move_toward(_land_k, 1.0 if want else 0.0, get_process_delta_time() / 0.35)

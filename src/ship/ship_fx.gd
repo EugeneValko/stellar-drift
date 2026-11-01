@@ -432,7 +432,7 @@ func _build_ground_dust() -> void:
 	_billow_pm.scale_min = 0.6
 	_billow_pm.scale_max = 1.4
 	_billow_mat.set_shader_parameter("soft_dist", 3.0)
-	_billow_mat.set_shader_parameter("density", 0.42)
+	_billow_mat.set_shader_parameter("density", 0.75)
 	_billow_mat.set_shader_parameter("edge_breakup", 1.1)
 	# fast low skirt of fine dust racing outward along the ground
 	r = _cloud_particles("DustSkirt", 240, 1.8, 6.0)
@@ -451,7 +451,7 @@ func _build_ground_dust() -> void:
 	_skirt_pm.scale_min = 0.6
 	_skirt_pm.scale_max = 1.2
 	_skirt_mat.set_shader_parameter("soft_dist", 1.0)
-	_skirt_mat.set_shader_parameter("density", 0.35)
+	_skirt_mat.set_shader_parameter("density", 0.5)
 	_skirt_mat.set_shader_parameter("noise_scale", 2.2)
 	# sea: white mist + droplet spray
 	r = _cloud_particles("SeaMist", 120, 3.0, 8.0)
@@ -809,7 +809,7 @@ func _update_ground_dust(dt: float) -> void:
 	fwd = fwd.normalized() if fwd.length_squared() > 1e-6 else up.cross(Vector3.RIGHT).normalized()
 	var xf := Transform3D(Basis(up.cross(fwd).normalized(), up, fwd), gp_pos + up * 0.4)
 	# how much loose material: lots on sand/regolith, some on rock/soil, little on grass
-	var loose: float = {"sand": 1.0, "rock": 0.65, "grass": 0.45, "snow": 0.8}.get(kind, 0.8)
+	var loose: float = {"sand": 1.0, "rock": 0.7, "grass": 0.65, "snow": 0.8}.get(kind, 0.8)
 	var dust_k := 0.0 if water else k * loose
 	var sea_k := k if water else 0.0
 	var air := clampf(ship.density * 3.0, 0.0, 1.0)
