@@ -107,7 +107,7 @@ func _sun_elev() -> float:
 ## Open ground for the camera: no forest / rocks / snow around (ScatterBiome, as main's start site).
 func _bio_penalty(t: SolarSystem.BodyRec, n: Vector3) -> float:
 	var biome: ScatterBiome = t.scatter.biome if t.scatter else null
-	if biome == null:
+	if biome == null or Capture.args.has("no_bio"):   # --no_bio: same sites as before the check
 		return 0.0
 	var bio := biome.evaluate(n)
 	return float(bio["forest"]) * 3.0 + float(bio["rock"]) * 1.0 + float(bio["snow"]) * 2.0

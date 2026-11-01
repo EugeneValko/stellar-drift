@@ -50,7 +50,7 @@ const PRESETS := {
 		"rayleigh_density": 0.12, "rayleigh_tint": Vector3(1, 1, 1),
 		"mie_density": 45.0, "mie_color": Color(1.0, 0.6, 0.36), "mie_absorb": Vector3(0.15, 0.45, 0.9),
 		"mie_g": 0.6, "ozone_density": 0.0, "intensity": PI, "multi_scatter": 0.3,
-		"ms_strength": 0.9, "ms_lift_deg": 6.0,
+		"ms_strength": 0.9, "ms_lift_deg": 6.0, "steps_mul": 1.7,
 		"twilight_tint": Vector3(1.15, 0.9, 0.8), "twilight_tint_mie": Vector3(0.55, 0.9, 2.2),
 		"emission": Vector3(1.3e-5, 3.6e-6, 0.7e-6),
 	},
@@ -120,7 +120,8 @@ static func make_uniforms(p: Dictionary) -> Dictionary:
 	var hz: float = float(p.get("ozone_height", 0.0))
 	var oz := EARTH_OZONE * 1.9 * float(p.get("ozone_density", 1.0)) * (8000.0 / (hz if hz > 0.0 else hr))
 	var q: int = int(p.get("quality", 1))
-	var steps: int = int(p.get("steps", [8, 12, 16][clampi(q, 0, 2)]))
+	# steps_mul: dense, hazy atmospheres need more view samples (jitter grain otherwise)
+	var steps: int = int(p.get("steps", roundi([8, 12, 16][clampi(q, 0, 2)] * float(p.get("steps_mul", 1.0)))))
 	return {
 		"atmo_planet_radius": radius,
 		"atmo_top_radius": radius + float(p.get("height", 12000.0)),
