@@ -1,6 +1,8 @@
 # Этап 1 — космос: небо, звезда Helios, пост-обработка
 
-Ветка: `worktree-agent-a228ea92ec0c026a4`. Скриншоты: `docs/screenshots/s1/` (1920x1080), видео `docs/screenshots/s1/star.mp4`.
+Ветка: `worktree-agent-a228ea92ec0c026a4`. Скриншоты: `docs/screenshots/s1/` (1920x1080), видео `docs/screenshots/s1/star.mp4` (5 с, 24 fps, пресет `orbit`,
+`--time_scale=4`). Примечание: `tools/movie.sh` с `RES=1280x720` всё равно выдал 1920x1080 — `--resolution`
+не перебивает размер вьюпорта из `project.godot` (стоит поправить в инструменте).
 
 ## Что сделано
 
