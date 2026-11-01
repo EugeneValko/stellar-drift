@@ -92,6 +92,9 @@ var focus_group := -1
 ## World direction toward the star from the camera (what SunGlobals holds).
 var sun_dir := Vector3.FORWARD
 
+## Main-thread cost of the per-frame update (profiling).
+var frame_ms_avg := 0.0
+var frame_ms_max := 0.0
 var _built := false
 var _exposure := 1.0
 var _sky_energy := 1.0
@@ -353,6 +356,16 @@ func place_camera(cam: Camera3D, base: Vector3, offset: Vector3, look_offset: Ve
 	_snap = true
 
 
+## Runtime quality switch (0 low / 1 medium / 2 high) for atmospheres, clouds, oceans.
+func set_quality(q: int) -> void:
+	quality = clampi(q, 0, 2)
+	for r in bodies:
+		for layer: Node in [r.atmo, r.clouds, r.ocean]:
+			if layer and layer.has_method("set_quality"):
+				layer.call("set_quality", quality)
+		r.prio_base = 1 << 20   # setup() reset the render priorities: re-apply next frame
+
+
 ## Synchronous terrain build of every planet for the current camera (capture/loading).
 func build_terrain_now(cam: Camera3D = null) -> void:
 	process_frame(cam)
@@ -394,6 +407,7 @@ func process_frame(cam: Camera3D = null) -> void:
 
 
 func _frame(cam: Camera3D, dt: float) -> void:
+	var t0 := Time.get_ticks_usec()
 	if position != Vector3.ZERO:
 		position = Vector3.ZERO
 	_update_positions()
@@ -408,6 +422,9 @@ func _frame(cam: Camera3D, dt: float) -> void:
 	_update_terrain(cam)
 	_update_exposure(cam, dt)
 	_snap = false
+	var ms := float(Time.get_ticks_usec() - t0) / 1000.0
+	frame_ms_avg = lerpf(frame_ms_avg, ms, 0.05)
+	frame_ms_max = maxf(frame_ms_max, ms)
 
 
 func _pick_focus() -> void:
@@ -600,7 +617,7 @@ func _update_exposure(cam: Camera3D, dt: float) -> void:
 		var day_surface := exposure_day_surface if focus.atmo else exposure_space
 		target = lerpf(exposure_space, lerpf(day_surface, exposure_night_surface, night), inside)
 		if focus.atmo:
-			var day := smoothstep(-0.12, 0.12, sun_up)
+			var day := smoothstep(-0.2, 0.03, sun_up)   # stars appear only after dusk
 			var dense := 1.0 - smoothstep(0.05 * h, 0.6 * h, alt)
 			sky = lerpf(1.0, sky_day_energy, day * dense)
 	if not auto_exposure:

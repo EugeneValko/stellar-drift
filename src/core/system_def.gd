@@ -43,7 +43,7 @@ static func bodies() -> Array[Dictionary]:
 	out.append({
 		"name": "Terra Nova", "kind": Kind.PLANET, "group": 2, "preset": "terra_nova",
 		"pos": terra, "gravity": 9.81,
-		"atmosphere": {"preset": "terra_nova"},
+		"atmosphere": {"preset": "terra_nova", "sun_path_scale": 2.8, "mie_density": 0.8},
 		"ocean": {},
 		"clouds": {"bottom": 1800.0, "top": 4600.0, "coverage": 0.33, "brightness": 2.2,
 			"cyclones": 5, "seed": 3.0, "shape_size": 7000.0, "detail_size": 1300.0,
@@ -70,8 +70,9 @@ static func bodies() -> Array[Dictionary]:
 		"name": "Glacia", "kind": Kind.PLANET, "group": 4, "preset": "glacia",
 		"pos": _orbit(27000.0 * KM, -52.0, 900.0 * KM), "gravity": 8.4,
 		"atmosphere": {"preset": "glacia", "ground_offset": 60.0},
-		"clouds": {"bottom": 2200.0, "top": 4000.0, "coverage": 0.3, "brightness": 2.0,
-			"cyclones": 3, "seed": 11.0, "cirrus_opacity": 0.5},
+		"clouds": {"bottom": 3400.0, "top": 5400.0, "coverage": 0.3, "brightness": 2.0,
+			"cyclones": 3, "seed": 11.0, "cirrus_opacity": 0.5, "shape_size": 6000.0,
+			"detail_size": 1200.0, "stratus": 0.9, "weather_contrast": 0.9},
 	})
 	return out
 

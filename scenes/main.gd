@@ -23,6 +23,8 @@ func _ready() -> void:
 	system.set_environment(backdrop.environment)
 	if Capture.args.has("no_shadows"):
 		system.shadows_enabled = false
+	if Capture.args.has("quality"):
+		system.set_quality(int(Capture.args["quality"]))
 	# debug overrides on Terra Nova's layers: --cu_<uniform>=v (clouds), --au_ (atmosphere),
 	# --ou_ (ocean), --tu_ (terrain)
 	var terra := system.get_body("Terra Nova")
@@ -47,8 +49,38 @@ func _ready() -> void:
 					rec.planet.get_component(parts[1]).visible = false
 	cam.make_current()
 	var capture_drives := Capture.active and (Capture.args.has("cam") or Capture.args.has("shots"))
-	if not capture_drives:
+	if Capture.args.has("bench"):
+		_bench.call_deferred()
+	elif not capture_drives:
 		apply_capture_preset(Capture.get_preset() if Capture.get_preset() != "" else START_PRESET)
+
+
+## CPU benchmark (headless ok): descent from 150 km to 50 m over Terra Nova in N frames,
+## reports main-thread process time. `godot --headless --path . scenes/main.tscn -- --bench=600`
+func _bench() -> void:
+	var frames := int(Capture.args["bench"])
+	if frames <= 1:
+		frames = 600
+	var t := system.get_body("Terra Nova")
+	var n := Vector3(0.3, 0.5, -0.8).normalized()
+	var ground := _ground_r(t, n)
+	var samples: Array[float] = []
+	for i in frames:
+		var f := float(i) / float(frames - 1)
+		var alt := 150000.0 * pow(50.0 / 150000.0, f)
+		var off := n * (ground + alt)
+		system.place_camera(cam, t.pos, off, off - n * 1000.0 + n.cross(Vector3.UP) * 3000.0, n.cross(Vector3.RIGHT))
+		await get_tree().process_frame
+		samples.append(Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0)
+	samples.sort()
+	var sum := 0.0
+	for v in samples:
+		sum += v
+	print("[bench] %d frames: process avg %.2f ms, p50 %.2f, p95 %.2f, max %.2f ms" % [frames,
+		sum / frames, samples[frames / 2], samples[int(frames * 0.95)], samples[frames - 1]])
+	print("[bench] SolarSystem._frame avg %.3f ms, max %.3f ms" % [system.frame_ms_avg, system.frame_ms_max])
+	print("[bench] terrain stats: ", t.planet.terrain.get_stats())
+	get_tree().quit()
 
 
 func apply_capture_preset(preset: String) -> void:
@@ -61,6 +93,11 @@ func apply_capture_preset(preset: String) -> void:
 	cam.fov = 60.0
 	cam.near = 0.1
 	cam.velocity = Vector3.ZERO
+	if terra.clouds:   # presets may rotate the weather for framing; start from the default
+		var recv: Array = [terra.planet.terrain_material]
+		if terra.ocean:
+			recv.append(terra.ocean.material)
+		terra.clouds.set_rotation_offset(0.0, recv)
 	match preset:
 		"system_overview": _system_overview()
 		"terra_orbit": _terra_orbit()
@@ -226,6 +263,34 @@ func _clear_weather(r: SolarSystem.BodyRec, n: Vector3, dirs: Array, weights: Ar
 	r.clouds.set_rotation_offset(best_a, recv)
 
 
+## Rotates the weather so the view from altitude shows broken clouds (mean coverage ~0.4).
+func _partial_weather(r: SolarSystem.BodyRec, n: Vector3, look: Vector3) -> void:
+	if r.clouds == null or r.clouds.weather_at(Vector3.UP).x < 0.0:
+		return
+	var recv: Array = [r.planet.terrain_material]
+	if r.ocean:
+		recv.append(r.ocean.material)
+	var f := _horizon_dir(n, look)
+	var side := n.cross(f)
+	var best_a := 0.0
+	var best := INF
+	for i in 72:
+		var a := TAU * float(i) / 72.0
+		r.clouds.set_rotation_offset(a)
+		var c := 0.0
+		var cnt := 0.0
+		for k in 6:
+			for sgn: float in [-1.0, 0.0, 1.0]:
+				var d := (n * r.radius + (f * (8000.0 + 9000.0 * k) + side * sgn * 9000.0)).normalized()
+				c += maxf(r.clouds.weather_at(d).x, 0.0)
+				cnt += 1.0
+		var v := absf(c / cnt - 0.4)
+		if v < best:
+			best = v
+			best_a = a
+	r.clouds.set_rotation_offset(best_a, recv)
+
+
 ## How much (deg) the terrain toward the sun rises above the sun elevation (0 = sunlit).
 func _sun_blocked(r: SolarSystem.BodyRec, n: Vector3, s: Vector3, sun_elev: float) -> float:
 	var f := _horizon_dir(n, s)
@@ -258,7 +323,7 @@ func _terra_orbit() -> void:
 	var t := _rec("Terra Nova")
 	var ds := _dir_to("Terra Nova", "Selene")
 	var da := _dir_to("Terra Nova", "Aurelion")
-	var mid := (ds * 0.72 + da * 0.28).normalized()
+	var mid := (ds * 0.6 + da * 0.4).normalized()
 	var u := (-mid + Vector3.UP * 0.22).normalized()
 	var off := u * 200000.0
 	var look := mid * 70000.0
@@ -299,6 +364,7 @@ func _terra_entry() -> void:
 	var gr := _ground_r(t, n)
 	var dip := acos(gr / (gr + 30000.0))
 	look = look.rotated(look.cross(n).normalized(), -(dip - deg_to_rad(14.0)))
+	_partial_weather(t, n, look)
 	_place_ground(t, n, 30000.0, look)
 	cam.fov = 65.0
 

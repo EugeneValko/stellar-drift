@@ -167,14 +167,15 @@ float cloud_density_at(vec3 pl, float r, vec2 w, int lod) {
 		float st = cl_tex(sq + vec3(0.17, 0.0, 0.41)) * 0.55 + cl_tex(sq * 2.7 + vec3(0.5)) * 0.3
 			+ texture(cloud_detail_tex, sp * 0.9 + vec3(0.3)).r * 0.15;
 		float edge = smoothstep(0.1, 0.65, cov);
-		float deck = edge * edge * clamp(0.55 + (st - 0.45) * 0.9, 0.0, 1.0);
-		float prof = smoothstep(0.0, 0.25, hn) * smoothstep(1.0, 0.55, hn);
+		float deck = edge * edge * clamp(0.62 + (st - 0.45) * 0.6, 0.0, 1.0);
+		// flat top (decks seen from above are smooth), soft base
+		float prof = smoothstep(0.0, 0.3, hn) * smoothstep(1.0, 0.82, hn + (st - 0.5) * 0.25);
 		base = mix(base, deck * prof * 0.75, stratus);
 	}
 	if (base <= 0.0) return 0.0;
 	if (lod == 0) {
 		float dn = texture(cloud_detail_tex, (pl + drift * 1.5) / cloud_detail_size).r;
-		float er = mix(0.55, 0.3, smoothstep(0.0, 0.5, h)) * (1.0 - 0.6 * stratus);
+		float er = mix(0.55, 0.3, smoothstep(0.0, 0.5, h)) * (1.0 - 0.8 * stratus);
 		base = (base - (1.0 - dn) * er) / (1.0 - er);
 	}
 	return clamp(base, 0.0, 1.0);
