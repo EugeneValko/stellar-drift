@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ui/help_overlay.gd" id="1"]
+
+[node name="HelpOverlay" type="CanvasLayer"]
+layer = 20
+script = ExtResource("1")
