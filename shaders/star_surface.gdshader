@@ -72,13 +72,13 @@ void fragment() {
 		vec3 gw = gp * 0.42 + vec3(0.0, t * 0.03, 0.0);
 		gp += vec3(sn_gnoise(gw), sn_gnoise(gw + 17.3), sn_gnoise(gw + 41.7)) * 0.55;
 		vec3 v = cells(gp, t * 0.35);
-		float lw = 0.18 + 0.22 * fract(v.z * 13.7);           // narrow lanes, width varies per granule
+		float lw = 0.3 + 0.3 * fract(v.z * 13.7);             // soft lanes, width varies per granule
 		float lane = smoothstep(0.0, lw, v.y - v.x);
 		float cellb = 1.0 - smoothstep(0.0, 0.9, v.x);
 		cellb *= cellb;                                        // soft, domed granule tops
 		// some large "exploding" granules with a darker centre
 		float expl = smoothstep(0.82, 0.95, v.z) * (1.0 - smoothstep(0.0, 0.35, v.x)) * 0.4;
-		gran = (lane * 0.45 + cellb * 0.55 - expl) * (0.7 + 0.6 * v.z) - 0.55;
+		gran = (lane * 0.35 + cellb * 0.65 - expl) * (0.6 + 0.8 * v.z) - 0.55;
 		// organic modulation (no visible mosaic)
 		gran *= 0.75 + 0.5 * (sn_gnoise(gp * 0.27 + 9.1) * 0.5 + 0.5);
 		// fine sub-granular texture
