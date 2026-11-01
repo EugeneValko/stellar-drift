@@ -1,0 +1,8 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/space/space_sky.gd" id="1_sky"]
+[ext_resource type="Environment" path="res://src/space/space_environment.tres" id="2_env"]
+
+[node name="SpaceBackdrop" type="WorldEnvironment"]
+environment = ExtResource("2_env")
+script = ExtResource("1_sky")
