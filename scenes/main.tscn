@@ -1,9 +1,13 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scenes/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/space/space_backdrop.tscn" id="2_bd"]
 [ext_resource type="PackedScene" path="res://scenes/system/solar_system.tscn" id="3_sys"]
 [ext_resource type="Script" path="res://src/core/free_camera.gd" id="4_cam"]
+[ext_resource type="PackedScene" path="res://scenes/ship/ship.tscn" id="5_ship"]
+[ext_resource type="Script" path="res://src/core/game_mode.gd" id="6_gm"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="7_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/help_overlay.tscn" id="8_help"]
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_main")
@@ -19,3 +23,17 @@ near = 0.1
 far = 400000.0
 fov = 60.0
 script = ExtResource("4_cam")
+
+[node name="Ship" parent="World" instance=ExtResource("5_ship")]
+
+[node name="GameMode" type="Node" parent="."]
+script = ExtResource("6_gm")
+ship_path = NodePath("../World/Ship")
+hud_path = NodePath("../Hud")
+free_camera_path = NodePath("../World/FreeCamera")
+start_state = 0
+auto_start = false
+
+[node name="Hud" parent="." instance=ExtResource("7_hud")]
+
+[node name="HelpOverlay" parent="." instance=ExtResource("8_help")]

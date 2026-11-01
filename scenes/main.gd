@@ -1,30 +1,83 @@
 extends Node3D
-## Main scene: the whole star system + a free camera (no ship yet).
-## World (Universe.world_root) holds the SolarSystem and the camera; the camera is the
-## floating-origin focus. Capture presets (tools/shot.sh scenes/main.tscn --cam=<name>):
-##   system_overview, terra_orbit, terra_limb_sunrise, terra_entry, terra_low, terra_ground,
-##   terra_sunset_ground, selene_surface_terra_rise, ignis_low, glacia_low, aurelion_rings,
-##   vex_aurelion, star_from_ignis
-## Extra args: --fov=<deg>, --exposure=<x> (manual), --no_shadows, --quality=0..2.
+## Main scene: the whole star system + the playable game (GameMode, Ship, Player, HUD, F1).
+##
+## World (Universe.world_root) holds the SolarSystem, the free camera and the Ship (a direct
+## child, as Ship requires); GameMode spawns the Player under World. Start state: piloting the
+## ship, landed on Terra Nova (meadow/coast near mountains, sun ~30 deg, Selene in the sky).
+## Capture presets (tools/shot.sh scenes/main.tscn --cam=<name> / --shots=a,b):
+##   gameplay (real Ship/Player, add --hud): start, takeoff, orbit_chase, selene_landed_onfoot,
+##     warp_to_aurelion, aurelion_arrival
+##   bare system (free camera, ship hidden): system_overview, terra_orbit, terra_limb_sunrise,
+##     terra_entry, terra_low, terra_ground, terra_sunset_ground, selene_surface_terra_rise,
+##     ignis_low, glacia_low, aurelion_rings, vex_aurelion, star_from_ignis (+ terra_night_ground,
+##     ignis_orbit, glacia_orbit, selene_orbit, vex_orbit)
+## Extra args: --fov=<deg>, --exposure=<x> (manual), --no_shadows, --quality=0..2,
+##   --start=<preset> (gameplay start in another state, e.g. --start=orbit_chase),
+##   --no_game (system only, free camera), --bench=<frames>.
 
-const START_PRESET := "terra_orbit"
+const GAME_PRESETS: Array[String] = ["start", "takeoff", "orbit_chase", "selene_landed_onfoot",
+	"warp_to_aurelion", "aurelion_arrival"]
 
 @onready var world: Node3D = $World
 @onready var system: SolarSystem = $World/SolarSystem
 @onready var cam: FreeCamera = $World/FreeCamera
+@onready var ship: Ship = $World/Ship
+@onready var game: GameMode = $GameMode
+@onready var hud: Hud = $Hud
+@onready var help: HelpOverlay = $HelpOverlay
 @onready var backdrop: WorldEnvironment = $SpaceBackdrop
+
+## Session start (gameplay) finished: ship placed, terrain + vegetation built.
+signal session_started
+var started := false
+var load_ms := 0
+## Start site on Terra Nova (planet-local unit normal) and ship heading, chosen once.
+var start_site := Vector3.ZERO
+var start_heading := Vector3.ZERO
 
 
 func _ready() -> void:
+	var t0 := Time.get_ticks_msec()
 	add_to_group("capture_target")
 	Universe.set_world_root(world)
-	Universe.set_focus(cam)
-	system.camera = cam
 	system.set_environment(backdrop.environment)
 	if Capture.args.has("no_shadows"):
 		system.shadows_enabled = false
 	if Capture.args.has("quality"):
 		system.set_quality(int(Capture.args["quality"]))
+	_debug_overrides()
+	ship.hud_message.connect(func(t: String) -> void: hud.flash_message(t, 2.2))
+	Controls.mouse_scale_changed.connect(func(v: float) -> void: hud.flash_message("Чувствительность мыши ×%.2f" % v, 1.5))
+	game.state_changed.connect(_on_state_changed)
+	var preset := Capture.get_preset()
+	var shots: PackedStringArray = String(Capture.args.get("shots", "")).split(",", false)
+	var first := preset if preset != "" else (shots[0] if not shots.is_empty() else "")
+	var capture_drives := Capture.active and first != ""
+	if Capture.args.has("bench") or Capture.args.has("no_game") or (capture_drives and not first in GAME_PRESETS):
+		_system_only()
+		if Capture.args.has("bench"):
+			_bench.call_deferred()
+		elif not capture_drives:
+			apply_capture_preset(Capture.get_preset() if Capture.get_preset() != "" else "terra_orbit")
+		return
+	# gameplay session
+	_start_session(String(Capture.args.get("start", "start")) if not capture_drives else "")
+	load_ms = Time.get_ticks_msec() - t0
+	print("[main] session ready in %d ms" % load_ms)
+
+
+## Bare-system mode (benchmarks, system capture presets): free camera, no ship/player.
+func _system_only() -> void:
+	ship.visible = false
+	ship.process_mode = Node.PROCESS_MODE_DISABLED
+	ship.freeze = true
+	hud.set_mode(Hud.Mode.NONE)
+	Universe.set_focus(cam)
+	system.camera = cam
+	cam.make_current()
+
+
+func _debug_overrides() -> void:
 	# debug overrides on Terra Nova's layers: --cu_<uniform>=v (clouds), --au_ (atmosphere),
 	# --ou_ (ocean), --tu_ (terrain)
 	var terra := system.get_body("Terra Nova")
@@ -47,12 +100,6 @@ func _ready() -> void:
 					rec.node.visible = false
 				elif rec.planet:
 					rec.planet.get_component(parts[1]).visible = false
-	cam.make_current()
-	var capture_drives := Capture.active and (Capture.args.has("cam") or Capture.args.has("shots"))
-	if Capture.args.has("bench"):
-		_bench.call_deferred()
-	elif not capture_drives:
-		apply_capture_preset(Capture.get_preset() if Capture.get_preset() != "" else START_PRESET)
 
 
 ## CPU benchmark (headless ok): descent from 150 km to 50 m over Terra Nova in N frames,
@@ -84,6 +131,11 @@ func _bench() -> void:
 
 
 func apply_capture_preset(preset: String) -> void:
+	if preset in GAME_PRESETS:
+		await _game_preset(preset)
+		return
+	if not ship.process_mode == Node.PROCESS_MODE_DISABLED:
+		_system_only()
 	# site selection reads the baked cloud weather back: wait until it has been rendered
 	var terra := system.get_body("Terra Nova")
 	for i in 10:
@@ -651,3 +703,324 @@ func _terra_night_ground() -> void:
 	var look := (_horizon_dir(best_n, da) + best_n * 0.3).normalized()
 	_place_ground(t, best_n, 2.0, look)
 	cam.fov = 70.0
+
+
+# ---------------------------------------------------------------------------------------
+# Gameplay session
+# ---------------------------------------------------------------------------------------
+
+## Places the ship landed at the Terra Nova start site, starts GameMode (piloting), builds the
+## terrain + vegetation around the chase camera synchronously (loading), then fades in.
+## `then_preset`: optional gameplay preset to switch to right away (--start=<preset>).
+func _start_session(then_preset: String) -> void:
+	hud.fade_to(1.0, 0.0)
+	_place_start()
+	system.gameplay_body = ship
+	game.ensure_started()   # SHIP state: enter_pilot(), chase camera current, Universe focus
+	_sync_ship_camera()
+	system.build_terrain_now(system.camera)
+	started = true
+	if not Capture.active:
+		# cosmetic: rotate the weather for a clear sky toward Selene and the sun once the
+		# weather map can be read back (a few frames after the bake)
+		_clear_start_weather.call_deferred()
+	if then_preset != "" and then_preset != "start":
+		await _game_preset(then_preset)
+	session_started.emit()
+	if Capture.active:
+		hud.fade_to(0.0, 0.0)
+	else:
+		await get_tree().process_frame
+		hud.fade_to(0.0, 0.8)
+
+
+func _on_state_changed(_st: int) -> void:
+	system.gameplay_body = game.get_gameplay_body()
+	system.camera = get_viewport().get_camera_3d()
+
+
+## Chase/cockpit camera transform for this frame (before SolarSystem uses it).
+func _sync_ship_camera() -> void:
+	var rig := ship.camera_rig as ShipCameraRig
+	if rig:
+		rig.activate()
+		rig._process(0.0)
+	system.camera = ship.get_camera()
+
+
+func _place_start() -> void:
+	var t := _rec("Terra Nova")
+	if start_site == Vector3.ZERO:
+		var t0 := Time.get_ticks_msec()
+		_choose_start_site(t)
+		print("[main] start site %s heading %s (%d ms)" % [str(start_site), str(start_heading),
+			Time.get_ticks_msec() - t0])
+	_land_ship(t, start_site, start_heading)
+
+
+## Lands the ship on body r at unit normal n facing `heading` (floating origin moved there first).
+func _land_ship(r: SolarSystem.BodyRec, n: Vector3, heading: Vector3) -> void:
+	var off := n * (_ground_r(r, n) + 5.0)
+	Universe.teleport_origin(float(r.pos.x) + off.x, float(r.pos.y) + off.y, float(r.pos.z) + off.z)
+	ship.land_at(r.node, n, heading)
+	Universe.shift_origin(ship.global_position)
+	ship._update_environment()
+
+
+## Ship in free flight at body r + `off` (true system frame, 64-bit origin), oriented by `b`.
+func _ship_at(r: SolarSystem.BodyRec, off: Vector3, b: Basis, v := Vector3.ZERO, mode := Ship.Mode.SPACE) -> void:
+	Universe.teleport_origin(float(r.pos.x) + off.x, float(r.pos.y) + off.y, float(r.pos.z) + off.z)
+	ship.landed = false
+	ship.autopilot = false
+	ship.throttle = 0.0
+	ship.gear_contacts = 0
+	ship.teleport(Transform3D(b.orthonormalized(), Vector3.ZERO), v, ship.capture_hold)
+	if mode == Ship.Mode.WARP:
+		ship.mode = Ship.Mode.WARP
+		ship.warp_state = Ship.WarpState.ACTIVE
+		ship.warp_spool = 1.0
+	else:
+		ship.set_mode(mode, true)
+	ship.set_gear(mode == Ship.Mode.HOVER, true)
+	ship._update_environment()
+
+
+## Basis with nose (-Z) along `fwd` and up close to `up`.
+static func _nose_basis(fwd: Vector3, up: Vector3) -> Basis:
+	var f := fwd.normalized()
+	var r := f.cross(up).normalized()
+	return Basis(r, r.cross(f), -f)
+
+
+## Max relative height difference (rise/run) of the ground around n at scale `e` metres.
+func _slope(r: SolarSystem.BodyRec, n: Vector3, e: float) -> float:
+	var t1 := n.cross(Vector3.UP if absf(n.y) < 0.9 else Vector3.RIGHT).normalized()
+	var t2 := n.cross(t1)
+	var k := e / r.radius
+	var s := 0.0
+	for t: Vector3 in [t1, t2, (t1 + t2).normalized(), (t1 - t2).normalized()]:
+		s = maxf(s, absf(_h(r, (n + t * k).normalized()) - _h(r, (n - t * k).normalized())) / (2.0 * e))
+	return s
+
+
+## Start site: daylight (sun ~30 deg, behind-side so the ship and the view are lit), a gentle open
+## meadow 8-260 m above the sea, mountains and the coast in the view, Selene in the sky if possible.
+func _choose_start_site(t: SolarSystem.BodyRec) -> void:
+	var s := system.sun_dir_from("Terra Nova")
+	var ds := _dir_to("Terra Nova", "Selene")
+	var base := t.planet.config.get_base_level()
+	var biome: ScatterBiome = t.scatter.biome if t.scatter else null
+	var best := -INF
+	var best_n := Vector3.ZERO
+	var best_f := Vector3.ZERO
+	var best_info := ""
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20261101
+	var a := (Vector3.UP if absf(s.y) < 0.9 else Vector3.RIGHT).cross(s).normalized()
+	var b := s.cross(a)
+	for i in 1400:
+		var e := sin(deg_to_rad(rng.randf_range(28.5, 31.5)))
+		var az := rng.randf() * TAU
+		var nn := (s * e + (a * cos(az) + b * sin(az)) * sqrt(1.0 - e * e)).normalized()
+		if absf(nn.y) > 0.6:
+			continue   # polar ice caps
+		var h := _h(t, nn) - base
+		if h < 8.0 or h > 260.0:
+			continue
+		var sl := _slope(t, nn, 12.0)
+		if sl > 0.1:
+			continue
+		var bio_pen := 0.0
+		if biome:
+			var bio := biome.evaluate(nn)
+			bio_pen = float(bio["forest"]) * 2.5 + float(bio["rock"]) * 1.5 + float(bio["snow"]) * 3.0 \
+				+ float(bio["beach"]) * 1.0 + float(bio["desert"]) * 0.8
+			if bio_pen > 1.2:
+				continue
+		var shade := _sun_blocked(t, nn, s, 30.0)
+		if shade > 0.0:
+			continue
+		var sun_h := _horizon_dir(nn, s)
+		var sel_h := _horizon_dir(nn, ds)
+		var sel_el := rad_to_deg(asin(clampf(nn.dot(ds), -1.0, 1.0)))
+		for rel: float in [-145.0, -125.0, -105.0, 105.0, 125.0, 145.0]:
+			var f := sun_h.rotated(nn, deg_to_rad(rel))
+			var tt := nn.cross(f)
+			var m := -INF
+			for lat: float in [-0.4, 0.0, 0.4]:
+				m = maxf(m, _max_ahead(t, nn, (f + tt * lat).normalized(), 16000.0, 6))
+			m -= h
+			var near_wall := _max_ahead(t, nn, f, 2000.0, 4) - h
+			var sea := 0.0
+			for dist: float in [1500.0, 3500.0, 6500.0]:
+				for lat: float in [-0.55, 0.0, 0.55]:
+					var d := (nn * t.radius + (f + tt * lat).normalized() * dist).normalized()
+					if _h(t, d) < base:
+						sea += 1.0 / 9.0
+			var coast := 1.0 - absf(sea - 0.35) * 2.2
+			var sel := 0.0
+			if sel_el > 4.0 and sel_el < 26.0:
+				sel = clampf(1.0 - rad_to_deg(f.angle_to(sel_h)) / 30.0, 0.0, 1.0)
+			var score := clampf(m, 0.0, 2200.0) * 0.0012 + coast * 1.5 + sel * 2.0 \
+				- maxf(near_wall - 150.0, 0.0) * 0.01 - sl * 8.0 - bio_pen
+			if score > best:
+				best = score
+				best_n = nn
+				best_f = f
+				best_info = "mountains %.0f m, sea %.2f, Selene %.1f deg up / %.0f deg off-axis, sun %.0f deg to the side" % [
+					m, sea, sel_el, rad_to_deg(f.angle_to(sel_h)), rel]
+	if best_n == Vector3.ZERO:
+		best_n = _two_elev(s, ds, 30.0, 12.0)[0]
+		best_f = _horizon_dir(best_n, ds)
+	start_site = best_n
+	start_heading = best_f
+	print("[main]   start: sun %.1f deg, height %.0f m, slope %.3f, score %.2f: %s" % [
+		rad_to_deg(asin(best_n.dot(s))), _h(t, best_n) - base, _slope(t, best_n, 12.0), best, best_info])
+
+
+func _clear_start_weather() -> void:
+	var t := _rec("Terra Nova")
+	for i in 20:
+		if t.clouds == null or t.clouds.weather_at(Vector3.UP).x >= 0.0:
+			break
+		await get_tree().process_frame
+	var tt := start_site.cross(start_heading)
+	_clear_weather(t, start_site, [system.sun_dir_from("Terra Nova"), _dir_to("Terra Nova", "Selene"),
+		(start_heading + start_site * 0.25).normalized(), (start_heading + tt * 0.5 + start_site * 0.3).normalized(),
+		(start_heading - tt * 0.5 + start_site * 0.3).normalized(), start_site], [2.0, 1.5, 3.0, 1.5, 1.5, 1.0])
+
+
+## Gameplay capture presets (real Ship / Player through GameMode; ship frozen for stills).
+func _game_preset(preset: String) -> void:
+	if not started:
+		await session_started
+	var fx := ship.get_node("FX") as ShipFX
+	fx.force_heat = -1.0
+	fx.force_vapor = -1.0
+	fx.force_warp = -1.0
+	fx.force_thrust = -1.0
+	fx.force_dust = -1.0
+	ship.thrust_norm = Vector3.ZERO   # frozen stills keep the last preset's engine glow otherwise
+	help._hint.visible = false        # the F1 hint belongs to the start frame only
+	ship.target = null
+	var rig := ship.camera_rig as ShipCameraRig
+	rig.view_override = Callable()
+	rig.set_view(ShipCameraRig.View.CHASE)
+	ship.capture_hold = Capture.active
+	if game.state != GameMode.State.SHIP:
+		game.force_ship()
+	var t := _rec("Terra Nova")
+	match preset:
+		"start":
+			_place_start()
+			await _clear_start_weather()
+			if Capture.args.has("hud"):
+				help.show_hint(30.0)
+				help._hint.modulate.a = 1.0   # skip the fade-in for the still
+			if Capture.args.has("cockpit"):
+				rig.set_view(ShipCameraRig.View.COCKPIT)
+		"takeoff":
+			_place_start()
+			var b := ship.global_basis
+			ship.landed = false
+			ship.teleport(Transform3D(b, ship.global_position + ship.up_dir * 16.0), ship.up_dir * 7.0, true)
+			ship.set_mode(Ship.Mode.HOVER, true)
+			ship.thrust_norm = Vector3(0.0, 0.7, -0.15)
+			fx.force_thrust = 0.55
+			fx.force_dust = 1.0
+			rig.view_override = _rig_cam.bind(Vector3(-14.0, -6.5, 26.0), Vector3(0.0, -1.0, -4.0))
+		"orbit_chase":
+			var s := system.sun_dir_from("Terra Nova")
+			var n := _search_sun_circle(t, s, 38.0, func(nn: Vector3) -> float:
+				return -absf(nn.y) - _cloud_cov(t, nn, nn) * 0.5)
+			var fwd := _horizon_dir(n, s.cross(n))
+			var off := n * (t.radius + 70000.0)
+			# the limb is ~62 deg below the horizontal at 70 km: nose (and the chase view) pitched down
+			var b := _nose_basis(fwd.rotated(fwd.cross(n).normalized(), deg_to_rad(-44.0)), n)
+			_ship_at(t, off, b, -b.z * 2400.0, Ship.Mode.SPACE)
+			fx.force_thrust = 0.5
+			rig.view_override = _rig_cam.bind(Vector3(9.0, 7.0, 25.0), Vector3(0.0, -6.0, -20.0))
+		"selene_landed_onfoot":
+			_selene_onfoot()
+		"warp_to_aurelion":
+			var a := _rec("Aurelion")
+			var to_a := (a.pos - t.pos).normalized()
+			var off := to_a * 2.6e6
+			var b := _nose_basis(to_a, Vector3.UP)
+			_ship_at(t, off, b, -b.z * 2.0e7, Ship.Mode.WARP)
+			ship.target = a.node
+			fx.force_warp = 1.0
+			fx.force_thrust = 1.0
+		"aurelion_arrival":
+			var a := _rec("Aurelion")
+			var nrm := SystemDef.aurelion_ring_normal()
+			var s := system.sun_dir_from("Aurelion")
+			var sp := (s - nrm * s.dot(nrm)).normalized()
+			# sunlit side, a little above the ring plane, ~95 km above the cloud tops
+			var d := (sp.rotated(nrm, deg_to_rad(-55.0)) + nrm * 0.16).normalized()
+			var alt := ship.safe_orbit_altitude(a.node) + 5000.0
+			var off := d * (a.radius + alt)
+			var look := (-d).rotated(nrm, deg_to_rad(-38.0))
+			var b := _nose_basis(look, nrm)
+			_ship_at(a, off, b, -b.z * 300.0, Ship.Mode.SPACE)
+			ship.target = a.node
+			rig.view_override = _rig_cam.bind(Vector3(-10.0, 5.0, 26.0), Vector3(0.0, -2.0, -30.0))
+	if game.state == GameMode.State.ON_FOOT:
+		game.player.get_camera().make_current()
+		system.camera = game.player.get_camera()
+	else:
+		_sync_ship_camera()
+	system.gameplay_body = game.get_gameplay_body()
+	system.build_terrain_now(system.camera)
+	system.process_frame(system.camera)
+	print("[main] game preset %s: state %s, body %s, alt %.0f m, speed %.0f m/s, light tint %s, ambient %s" % [preset,
+		game.get_state_name(), ship.body.get_body_name() if ship.body else "-", ship.altitude, ship.vel.length(),
+		str(system.light_tint), str(system.ambient_color)])
+
+
+## Chase camera at a fixed ship-local offset looking at a ship-local point (still framing).
+func _rig_cam(_rig: ShipCameraRig, offset: Vector3, look: Vector3) -> Transform3D:
+	var B := ship.global_basis.orthonormalized()
+	var p := ship.global_position + B * offset
+	var tgt := ship.global_position + B * look
+	if ship.body and ship.body is Planet:
+		var ga: float = ship.body.get_altitude_global(p)
+		if ga < 1.7:
+			p += ship.up_dir * (1.7 - ga)
+	return Transform3D(Basis.looking_at(tgt - p, B.y), p)
+
+
+## Selene: ship landed on a flat spot (sun 16 deg, Terra 13 deg up), pilot on foot 15 m away
+## looking back at the ship with Terra above it.
+func _selene_onfoot() -> void:
+	var r := _rec("Selene")
+	var s := system.sun_dir_from("Selene")
+	var dt := _dir_to("Selene", "Terra Nova")
+	var cands := _two_elev(s, dt, 16.0, 13.0)
+	var n0: Vector3 = cands[0] if not cands.is_empty() else -dt
+	var best := n0
+	var best_s := INF
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	for i in 160:
+		var nn := (n0 + Vector3(rng.randf_range(-1, 1), rng.randf_range(-1, 1), rng.randf_range(-1, 1)) * 0.03).normalized()
+		var f := _horizon_dir(nn, dt)
+		var sl := _slope(r, nn, 12.0) + _slope(r, (nn * r.radius - f * 15.0).normalized(), 4.0)
+		# open horizon toward Terra
+		var block := maxf(_max_ahead(r, nn, f, 2500.0, 6) - _h(r, nn), 0.0) * 0.004
+		if sl + block < best_s:
+			best_s = sl + block
+			best = nn
+	var fwd := _horizon_dir(best, dt)
+	_land_ship(r, best, fwd.rotated(best, deg_to_rad(70.0)))
+	ship.visual.set_hatch(true, true)
+	game.force_on_foot()
+	var pl := game.player
+	# stand 15 m from the ship, on the side away from Terra, looking at the ship / Terra
+	var p_dir := (best * r.radius - fwd * 15.0 - best.cross(fwd) * 4.0).normalized()
+	var feet := r.node.global_position + p_dir * (r.radius + _h(r, p_dir) + 0.05)
+	pl.place_at(Transform3D(Basis.looking_at(ship.global_position - feet, best), feet))
+	pl.look_at_point(ship.global_position + best * 2.5)
+	pl.set_pitch_deg(9.0)
+	Universe.set_focus(pl)
+	ship.capture_hold = Capture.active

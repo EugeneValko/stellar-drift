@@ -184,6 +184,22 @@ func get_horizontal_speed() -> float:
 	return (velocity - current_up * velocity.dot(current_up)).length()
 
 
+## Render-side extrapolation within the physics tick (smooth camera / model on high-refresh
+## displays, physics stays at 60 Hz; see ShipCameraRig.render_extrapolation).
+@export var render_extrapolation := true
+var _model_base := Vector3.ZERO
+
+
+func _process(_dt: float) -> void:
+	var off := Vector3.ZERO
+	if render_extrapolation and input_enabled and is_physics_processing():
+		var h := Engine.get_physics_interpolation_fraction() / float(Engine.physics_ticks_per_second)
+		off = global_basis.inverse() * (velocity * h)
+	head.position = Vector3(0, eye_height, 0) + off
+	if _model:
+		_model.position = _model_base + off
+
+
 # ------------------------------------------------------------------ input
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -191,8 +207,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var mm := event as InputEventMouseMotion
-		rotate_yaw(-mm.relative.x * mouse_sensitivity)
-		_pitch = clampf(_pitch - mm.relative.y * mouse_sensitivity,
+		var ms := mouse_sensitivity * Controls.mouse_scale
+		rotate_yaw(-mm.relative.x * ms)
+		_pitch = clampf(_pitch - mm.relative.y * ms,
 			-deg_to_rad(pitch_limit_deg), deg_to_rad(pitch_limit_deg))
 		head.rotation = Vector3(_pitch, 0, 0)
 	elif event.is_action_pressed("camera_toggle") and not event.is_echo():

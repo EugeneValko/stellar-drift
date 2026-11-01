@@ -54,5 +54,5 @@ color_snow = Color(0.93, 0.95, 1, 1)
 strata_strength = 0.2
 macro_variation = 0.3
 atmosphere_color = Color(0.35, 0.55, 1, 1)
-atmosphere_height = 8000.0
+atmosphere_height = 25500.0
 ocean_color = Color(0.02, 0.09, 0.16, 1)

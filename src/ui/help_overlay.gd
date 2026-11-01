@@ -277,9 +277,9 @@ func _build_hint() -> void:
 	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	hb.add_child(l)
 	_scaler.add_child(_hint)
-	_hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 36)
+	_hint.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 36)
 	_hint.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	_hint.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_hint.grow_vertical = Control.GROW_DIRECTION_END
 
 
 func _show_hint(seconds := 7.0) -> void:

@@ -55,8 +55,9 @@ func _process(dt: float) -> void:
 	# rotation in the camera's own frame (6DOF, no world up)
 	var b := global_basis
 	if _look != Vector2.ZERO:
-		b = b.rotated(b.y, -_look.x * mouse_sensitivity)
-		b = b.rotated(b.x, -_look.y * mouse_sensitivity)
+		var ms := mouse_sensitivity * Controls.mouse_scale
+		b = b.rotated(b.y, -_look.x * ms)
+		b = b.rotated(b.x, -_look.y * ms)
 		_look = Vector2.ZERO
 	var roll := Input.get_axis("roll_right", "roll_left")
 	if roll != 0.0:

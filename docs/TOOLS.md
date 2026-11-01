@@ -28,6 +28,13 @@ Godot Movie Maker с фиксированным FPS — видео плавно�
 ## Проверка — `tools/check.sh`
 Импорт + запуск на 5 кадров headless; падает при ошибках парсинга/скриптов.
 
+## Плейтест игры — `tools/dev/playtest.gd`
+`godot --headless --fixed-fps 60 -s tools/dev/playtest.gd -- all` — настоящий `main.tscn`, сценарий
+взлёт → орбита → Selene (посадка, выход, 50 м пешком, вход) → варп к Aurelion → назад на Terra + extras (вода,
+газовый гигант, звезда) + 3 мин случайного полёта; PASS/FAIL по шагам (`session|extras|soak`, `from=selene`,
+`seed=N`, `soak_sec=N`). Подробно — `docs/reports/wave3_integration.md`.
+`godot --headless -s tools/dev/terrain_continuity.gd -- preset=selene,nyx` — ступеньки поля высот.
+
 ## Сборка Windows
 - Локально: `tools/build_windows.sh` → `build/windows/StellarDrift.exe` (PCK встроен в exe).
 - CI: `.github/workflows/build-windows.yml`. Пуш в `main` → пре-релиз **nightly** (всегда свежая сборка).

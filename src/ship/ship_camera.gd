@@ -18,6 +18,14 @@ enum View { CHASE, COCKPIT }
 @export var cockpit_fov := 76.0
 @export var shake_scale := 1.0
 @export var cockpit_eye_offset := Vector3(0.0, 0.18, 0.0)
+## Cockpit near plane (scaled space needs near >= 0.1 for a good depth range, see wave2_system).
+@export var cockpit_near := 0.1
+## Render-side extrapolation: physics runs at 60 Hz, so on a 144 Hz display the ship and the
+## camera following it would move in 60 Hz steps against the world. The visual, the cockpit
+## camera and the chase camera use the ship transform advanced by the elapsed part of the
+## physics tick (Engine.get_physics_interpolation_fraction(); the engine-wide physics
+## interpolation stays off, it fights the floating-origin shifts — see wave3_integration.md).
+@export var render_extrapolation := true
 
 var ship: Ship
 var view: int = View.CHASE
@@ -76,11 +84,32 @@ func _apply_view() -> void:
 		pass
 
 
+## Ship transform for this rendered frame (extrapolated within the physics tick).
+func render_transform() -> Transform3D:
+	var xf := ship.global_transform
+	if not render_extrapolation or ship.freeze or ship.capture_hold or ship.vel.length() > Ship.TELEPORT_SPEED:
+		return xf
+	var h := Engine.get_physics_interpolation_fraction() / float(Engine.physics_ticks_per_second)
+	if h <= 0.0:
+		return xf
+	var b := xf.basis
+	var w := ship.angular_velocity
+	if w.length_squared() > 1e-10:
+		b = Basis(w.normalized(), w.length() * h) * b
+	return Transform3D(b, xf.origin + ship.vel * h)
+
+
 func _process(dt: float) -> void:
 	if ship == null or not (ship.is_piloted or ship.capture_hold or ship.scripted):
+		if ship and ship.visual and ship.visual.transform != Transform3D.IDENTITY:
+			ship.visual.transform = Transform3D.IDENTITY
 		return
 	_t += dt
-	var sb := ship.global_basis.orthonormalized()
+	var rx := render_transform()
+	var local_off := ship.global_transform.affine_inverse() * rx
+	if ship.visual:
+		ship.visual.transform = local_off
+	var sb := rx.basis.orthonormalized()
 	if not _initialized:
 		_basis = sb
 		_lag = Vector3.ZERO
@@ -123,7 +152,7 @@ func _process(dt: float) -> void:
 		near = 1.0
 		far = 1.0e7
 
-	var ship_pos := ship.global_position
+	var ship_pos := rx.origin
 	if view_override.is_valid():
 		chase.global_transform = view_override.call(self)
 	else:
@@ -138,12 +167,12 @@ func _process(dt: float) -> void:
 	chase.far = far
 	if cockpit:
 		cockpit.fov = cockpit_fov + (_fov - base_fov) * 0.6
-		cockpit.near = 0.05 if far < 1.0e7 else 0.3
+		cockpit.near = cockpit_near if far < 1.0e7 else 0.3
 		cockpit.far = 5.0e5 if far < 1.0e7 else 3.0e6
 		var eye: Node3D = ship.visual.get_marker("PilotEye") if ship.visual else null
 		var ep := eye.position if eye else Vector3(0, 1.12, -3.8)
 		# eye slightly above the marker and pitched down a touch: over the glowing dash display
-		cockpit.transform = Transform3D(Basis.from_euler(Vector3(deg_to_rad(-6.0), 0, 0) + shr * 0.6),
+		cockpit.transform = local_off * Transform3D(Basis.from_euler(Vector3(deg_to_rad(-6.0), 0, 0) + shr * 0.6),
 			ep + cockpit_eye_offset + sh * 0.08)
 
 

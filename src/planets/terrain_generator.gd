@@ -46,6 +46,14 @@ var n_volc_d: FastNoiseLite
 var n_volc_v: FastNoiseLite
 var n_crater_d: Array[FastNoiseLite] = []
 var n_crater_v: Array[FastNoiseLite] = []
+## Same cells as n_crater_d/_v, RETURN_DISTANCE2_SUB (gap between the nearest and second-nearest
+## feature point, 0 on a Voronoi border): fades each crater to zero before its cell border, so
+## the height field is continuous where the nearest cell (and its random radius / threshold)
+## switches. Same for volcanoes.
+var n_crater_g: Array[FastNoiseLite] = []
+## Gap (cell units, d2 - d1) over which a crater / volcano fades out toward its cell border.
+const BORDER_FADE := 0.35
+var n_volc_g: FastNoiseLite
 var crater_cell: PackedFloat64Array = []
 
 # cached config values (hot path)
@@ -105,11 +113,13 @@ func _init(config: PlanetConfig) -> void:
 	if cfg.volcano_scale > 0.0:
 		n_volc_d = _mk_cell(s + 10, cfg.volcano_scale, FastNoiseLite.RETURN_DISTANCE)
 		n_volc_v = _mk_cell(s + 10, cfg.volcano_scale, FastNoiseLite.RETURN_CELL_VALUE)
+		n_volc_g = _mk_cell(s + 10, cfg.volcano_scale, FastNoiseLite.RETURN_DISTANCE2_SUB)
 	for i in cfg.crater_layers:
 		var cell := cfg.crater_scale / pow(2.6, i)
 		crater_cell.append(cell)
 		n_crater_d.append(_mk_cell(s + 20 + i, cell, FastNoiseLite.RETURN_DISTANCE))
 		n_crater_v.append(_mk_cell(s + 20 + i, cell, FastNoiseLite.RETURN_CELL_VALUE))
+		n_crater_g.append(_mk_cell(s + 20 + i, cell, FastNoiseLite.RETURN_DISTANCE2_SUB))
 
 	_ocean = cfg.has_ocean_surface()
 	_cont_bias = cfg.continent_bias
@@ -243,15 +253,18 @@ func sample(d: Vector3, quad: float) -> Vector4:
 		if vv > _volc_thr:
 			var vd := n_volc_d.get_noise_3d(px, py, pz) + 1.0
 			var vr := vd / 0.75
+			var vfade := 0.0
 			if vr < 1.0:
+				vfade = smoothstep(0.0, BORDER_FADE, n_volc_g.get_noise_3d(px, py, pz) + 1.0)
+			if vfade > 0.0:
 				var size := 0.55 + 0.45 * fposmod(vv * 13.7, 1.0)
 				var cone := pow(1.0 - vr, 1.8) * _volc_h * size
 				var cal := smoothstep(0.16, 0.08, vr)
 				var rimh := pow(1.0 - 0.16, 1.8) * _volc_h * size
 				cone = lerpf(cone, rimh - _volc_h * 0.12 * size, cal)
-				h += cone
-				lava = maxf(lava, cal * 0.9)
-				rock = maxf(rock, smoothstep(0.9, 0.2, vr) * 0.6)
+				h += cone * vfade
+				lava = maxf(lava, cal * 0.9 * vfade)
+				rock = maxf(rock, smoothstep(0.9, 0.2, vr) * 0.6 * vfade)
 
 	# --- canyons (warped |noise| channels) + strata terraces ---
 	if _canyon:
@@ -274,6 +287,9 @@ func sample(d: Vector3, quad: float) -> Vector4:
 		var r := (n_crater_d[i].get_noise_3d(px, py, pz) + 1.0) / rad
 		if r > 2.6:
 			continue
+		var fade := smoothstep(0.0, BORDER_FADE, n_crater_g[i].get_noise_3d(px, py, pz) + 1.0)
+		if fade <= 0.0:
+			continue
 		var depth := rad * crater_cell[i] * _crater_depth
 		var fresh := fposmod(cv * 3.17, 1.0)
 		var ch := 0.0
@@ -282,12 +298,15 @@ func sample(d: Vector3, quad: float) -> Vector4:
 			ch = maxf(r * r - 1.0, -0.75) * depth + 0.18 * depth
 			if i == 0:
 				ch += 0.35 * depth * smoothstep(0.25, 0.0, r)
-			rock = maxf(rock, smoothstep(0.6, 0.95, r) * 0.8)
+			rock = maxf(rock, smoothstep(0.6, 0.95, r) * 0.8 * fade)
 		else:
 			var t := r - 1.0
 			ch = 0.18 * depth * exp(-t * t * 9.0)
-			ejecta = maxf(ejecta, fresh * smoothstep(2.6, 1.0, r))
-		h += ch
+			# rim rock fades outward (continuous with the bowl's 0.8 at r = 1: the rock mask
+			# scales the roughness octaves, a jump here was a ~1 m step)
+			rock = maxf(rock, smoothstep(1.35, 1.0, r) * 0.8 * fade)
+			ejecta = maxf(ejecta, fresh * smoothstep(2.6, 1.0, r) * fade)
+		h += ch * fade
 
 	# --- flat floors (frozen seas / lava plains) ---
 	if h < _floor:

@@ -63,13 +63,17 @@ const HULL_PROBES: Array[Vector3] = [Vector3(0, -0.2, -10.2), Vector3(0, 0.2, 9.
 
 @export_group("Control")
 @export var start_piloted := false
-@export var mouse_sensitivity := 0.0035
+## Virtual-joystick deflection per mouse pixel (x Controls.mouse_scale): full deflection after
+## ~330 px (1080p), recentres at `mouse_return`. Frame-rate independent (per event / exp decay).
+@export var mouse_sensitivity := 0.003
 ## Virtual-joystick return to centre (1/s). 0 = pure virtual joystick (stick holds).
 @export var mouse_return := 2.2
 @export var stick_deadzone := 0.03
 @export var stick_expo := 1.45
 @export var boost_mult := 1.6
 @export var auto_gear := true
+## Pilot steps out this far to the ship's right of the ramp tip (clear of the belly).
+@export var exit_side_offset := 2.6
 @export_group("Physics")
 @export var drag_k := 1.6e-5
 @export var lift_k := 1.4
@@ -79,6 +83,8 @@ const HULL_PROBES: Array[Vector3] = [Vector3(0, -0.2, -10.2), Vector3(0, 0.2, 9.
 @export_group("")
 
 var is_piloted := false
+## Player devices drive the ship (GameMode clears it while the free camera flies).
+var input_enabled := true
 var mode: int = Mode.SPACE
 var throttle := 0.0
 var flight_assist := true
@@ -141,6 +147,13 @@ var _ocean_r: Dictionary = {}
 var _mode_suggest := -1
 var _pending_xf := Transform3D()
 var _has_pending_xf := false
+var _pressure_warn_t := 0.0
+## Bodies without a solid surface (gas giant, star): [warning altitude, hard floor altitude]
+## above get_body_radius(). Below the warning altitude the hull is pushed back out.
+const GAS_GIANT_FLOOR := Vector2(22000.0, 4000.0)
+const STAR_FLOOR := Vector2(350000.0, 120000.0)
+## Autopilot arrival above a star's surface (its corona fills the view from here).
+const STAR_SAFE_ALT_R := 2.0
 
 
 func _ready() -> void:
@@ -154,6 +167,10 @@ func _ready() -> void:
 	continuous_cd = true
 	can_sleep = false
 	freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
+	add_to_group("player_ship")
+	if camera_rig:
+		# the chase camera must move before SolarSystem (-100) computes scaled space
+		camera_rig.process_priority = -1000
 	if visual:
 		gear_down = visual.gear_deployed
 	Universe.origin_shifted.connect(_on_origin_shifted)
@@ -225,25 +242,85 @@ func _on_origin_shifted(delta: Vector3) -> void:
 		_pending_xf.origin -= delta
 
 
+## Exit only with the ship standing on its gear (clamped, or settled with all feet down).
 func can_exit() -> bool:
-	return landed or vel.length() < 3.0
+	return landed or (gear_contacts >= 3 and vel.length() < 1.0)
+
+
+## True when the exit point (or the ship) is over the sea: the pilot would step into water.
+func is_over_water() -> bool:
+	if body == null or not _is_solid(body):
+		return false
+	var orad := _ocean_radius(body)
+	if orad <= 0.0:
+		return false
+	var m: Node3D = visual.get_marker("ExitPoint") if visual else null
+	for p: Vector3 in [m.global_position if m else global_position, global_position]:
+		var terrain_alt: float = body.get_altitude_global(p)
+		var sea_alt := p.distance_to(body.global_position) - orad
+		if terrain_alt > sea_alt + 0.3:   # the terrain lies below the sea surface here
+			return true
+	return false
+
+
+## Lands the ship (clamped, gear down, HOVER) on `planet` along planet-local / world direction
+## `dir` (from the planet centre), nose toward `fwd` (projected on the horizon). The hull is fitted
+## to the ground under the three feet; on the sea the ship floats on the surface.
+func land_at(planet: Node3D, dir: Vector3, fwd: Vector3) -> void:
+	var c0 := planet.global_position
+	var d := dir.normalized()
+	var f := (fwd - d * fwd.dot(d)).normalized()
+	var right := f.cross(d).normalized()
+	var B := Basis(right, d, -f)
+	var ground := func(dd: Vector3) -> float:
+		var g: float = planet.get_body_radius() + float(planet.call("get_height", dd))
+		return maxf(g, _ocean_radius(planet))
+	var c := c0 + d * (float(ground.call(d)) + GROUND_OFFSET)
+	var pts: Array[Vector3] = []
+	for foot in FEET:
+		var dd := (c + B * foot - c0).normalized()
+		pts.append(c0 + dd * float(ground.call(dd)))
+	var n := (pts[1] - pts[0]).cross(pts[2] - pts[0]).normalized()
+	if n.dot(d) < 0.0:
+		n = -n
+	var f2 := (f - n * f.dot(n)).normalized()
+	var B2 := Basis(f2.cross(n).normalized(), n, -f2)
+	var foot_c := (pts[0] + pts[1] + pts[2]) / 3.0
+	var foot_avg := (FEET[0] + FEET[1] + FEET[2]) / 3.0
+	var pos := foot_c - B2 * foot_avg - n * 0.12
+	autopilot = false
+	throttle = 0.0
+	teleport(Transform3D(B2, pos), Vector3.ZERO, true)
+	set_mode(Mode.HOVER, true)
+	set_gear(true, true)
+	landed = true
+	gear_contacts = 3
+	landed_changed.emit(true)
 
 
 ## World transform where the pilot appears on foot (ExitPoint snapped to the ground).
 func get_exit_transform() -> Transform3D:
 	var m: Node3D = visual.get_marker("ExitPoint") if visual else null
 	var p: Vector3 = m.global_position if m else global_transform * Vector3(0, -GROUND_OFFSET, -3.8)
+	# the ramp tip is under the fuselage (belly ~1.7 m above the ground, less than the pilot's
+	# 1.8 m capsule): step out beside it, facing away from the hull
+	p += global_basis.x * exit_side_offset
 	var up := up_dir
 	if body:
 		var a := _ground_alt(body, p)
 		if a < 50.0:
 			p -= up * a
 	p += up * 0.05
-	var fwd := -global_basis.z
+	var fwd := (-global_basis.z).lerp(global_basis.x, 0.75)
 	fwd = (fwd - up * fwd.dot(up))
 	if fwd.length_squared() < 1e-4:
-		fwd = up.cross(global_basis.x)
+		fwd = up.cross(global_basis.z)
 	return Transform3D(Basis.looking_at(fwd.normalized(), up), p)
+
+
+## Boarding point used by GameMode (where the pilot steps out, beside the ramp).
+func get_entry_point() -> Vector3:
+	return get_exit_transform().origin
 
 
 func get_pilot_seat_transform() -> Transform3D:
@@ -401,8 +478,55 @@ func toggle_autopilot() -> void:
 
 ## Safe arrival distance above a body's mean surface used by the autopilot.
 func safe_orbit_altitude(b: Node3D) -> float:
+	if b is Star:
+		return STAR_SAFE_ALT_R * b.get_body_radius()
 	var ah: float = b.get_atmosphere_height()
 	return maxf(maxf(2.0 * ah, 0.3 * b.get_body_radius()), 5000.0)
+
+
+## Autopilot heading: straight at the target unless another body (e.g. the planet we just took off
+## from, with the target below its horizon) is in the way — then along the tangent of that body's
+## clearance sphere (radius + 0.8 x its safe orbit altitude); inside the sphere: climb out first.
+func _autopilot_aim(dir: Vector3, dist: float) -> Vector3:
+	var p := global_position
+	var aim := dir
+	var worst := INF
+	for b in Universe.get_bodies():
+		if b == target:
+			continue
+		var c: Vector3 = b.global_position - p
+		var along := c.dot(dir)
+		if along <= 0.0 or along >= dist:
+			continue
+		var ro: float = b.get_body_radius() + 0.8 * safe_orbit_altitude(b)
+		var miss := (c - dir * along).length()
+		if miss >= ro or along >= worst:
+			continue
+		worst = along
+		var L := c.length()
+		var cn := c / L
+		var axis := cn.cross(dir)
+		if axis.length_squared() < 1e-8:
+			axis = cn.cross(Vector3.UP if absf(cn.y) < 0.9 else Vector3.RIGHT)
+		axis = axis.normalized()
+		if L <= ro * 1.02:
+			# inside the clearance sphere: climb away from the body, leaning toward the target side
+			var out := -cn
+			var side := axis.cross(cn).normalized()
+			aim = (out * 1.0 + side * 0.6).normalized()
+		else:
+			var ang := asin(clampf(ro / L, 0.0, 1.0)) + deg_to_rad(3.0)
+			aim = cn.rotated(axis, ang)
+	return aim
+
+
+## Planets have ground; the gas giant and the star do not (pressure / heat floor instead).
+func _is_solid(b: Node3D) -> bool:
+	return b is Planet
+
+
+func _soft_floor(b: Node3D) -> Vector2:
+	return STAR_FLOOR if b is Star else GAS_GIANT_FLOOR
 
 
 # =====================================================================================
@@ -410,7 +534,7 @@ func safe_orbit_altitude(b: Node3D) -> float:
 # =====================================================================================
 
 func _player_input_active() -> bool:
-	return is_piloted and not scripted and not Capture.active
+	return is_piloted and input_enabled and not scripted and not Capture.active
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -418,7 +542,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var r: Vector2 = (event as InputEventMouseMotion).relative
-		_stick_raw = (_stick_raw + Vector2(r.x, -r.y) * mouse_sensitivity).limit_length(1.0)
+		_stick_raw = (_stick_raw + Vector2(r.x, -r.y) * mouse_sensitivity * Controls.mouse_scale).limit_length(1.0)
 	elif event is InputEventMouseButton and event.is_pressed() and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	elif event.is_action_pressed("speed_mode_next"):
@@ -498,6 +622,8 @@ func _update_environment() -> void:
 		var bp := body.global_position
 		up_dir = (p - bp).normalized()
 		altitude = _ground_alt(body, p) - GROUND_OFFSET
+		if not _is_solid(body):
+			altitude = p.distance_to(bp) - body.get_body_radius()
 		var ah: float = body.get_atmosphere_height()
 		in_atmosphere = ah > 0.0 and p.distance_to(bp) - body.get_body_radius() < ah
 	else:
@@ -662,7 +788,7 @@ func _update_autopilot(_dt: float) -> void:
 	var d := to.length()
 	var dsurf: float = d - target.get_body_radius()
 	var orbit := safe_orbit_altitude(target)
-	var aim := to / maxf(d, 1.0)
+	var aim := _autopilot_aim(to / maxf(d, 1.0), d)
 	steer_dir = aim
 	steer_up = Vector3.ZERO
 	if dsurf <= orbit * 1.03:
@@ -754,7 +880,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	v += (B * a_loc + g + a_aero) * dt
 
 	# --- ground proximity limiter (assist): never descend faster than we can stop
-	if assist and body and altitude < 3000.0 and not _teleport:
+	if assist and body and altitude < 3000.0 and not _teleport and _is_solid(body):
 		var vdown := -v.dot(up_dir)
 		var allowed := sqrt(2.0 * 6.0 * maxf(altitude - 0.3, 0.0)) + 1.2
 		if vdown > allowed:
@@ -773,7 +899,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	var wt := Vector3(st.y * rate.x, -st.x * rate.y, in_roll * rate.z)
 	if steer_dir != Vector3.ZERO:
 		wt = _steer_rates(B, steer_dir, steer_up, rate)
-	elif assist and body and not landed and (mode == Mode.HOVER or (altitude < 400.0 and speed < 90.0)):
+	elif assist and body and not landed and not wow and (mode == Mode.HOVER or (altitude < 400.0 and speed < 90.0)):
 		# auto-level toward local up when hovering / landing (player input overrides)
 		var err := Bt * B.y.cross(up_dir)
 		wt.x += err.x * 2.2 * (1.0 - absf(st.y))
@@ -804,10 +930,12 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 
 	# --- landing gear suspension (analytic ground)
 	gear_contacts = 0
-	if gear_down and body and altitude < 4.0 and visual and not visual.is_gear_moving():
+	if body and not _is_solid(body):
+		_pressure_floor(state, dt)
+	elif gear_down and body and altitude < 4.0 and visual and not visual.is_gear_moving():
 		_suspension(state, B, pos, dt)
 	# --- last-resort hull clamp (terrain collision chunk missing / water)
-	if body and altitude < 25.0:
+	if body and altitude < 25.0 and _is_solid(body):
 		_hull_clamp(state, B)
 	_finish_velocity(state.linear_velocity, dt)
 
@@ -844,6 +972,35 @@ func _suspension(state: PhysicsDirectBodyState3D, B: Basis, pos: Vector3, dt: fl
 		if jt.length() > jmax:
 			jt = jt.normalized() * jmax
 		state.apply_impulse(jn + jt, r)
+
+
+## Gas giant / star: no surface. Below the warning altitude the hull is pushed back out
+## (accel up to 4 g toward the floor), inward speed is bled off, and the floor is a hard stop.
+func _pressure_floor(state: PhysicsDirectBodyState3D, dt: float) -> void:
+	var fl := _soft_floor(body)
+	if altitude > fl.x:
+		return
+	var up := up_dir
+	var v := state.linear_velocity
+	var k := clampf((fl.x - altitude) / maxf(fl.x - fl.y, 1.0), 0.0, 1.0)
+	var g := maxf(Universe.get_gravity(state.transform.origin).length(), 9.81)
+	v += up * g * (1.0 + 3.0 * k) * dt
+	var vn := v.dot(up)
+	if vn < 0.0:
+		v -= up * vn * minf(1.0, dt * (0.5 + 6.0 * k))
+	impact = maxf(impact, 0.25 * k)
+	if altitude < fl.y:
+		var t := state.transform
+		t.origin += up * (fl.y - altitude)
+		state.transform = t
+		vn = v.dot(up)
+		if vn < 0.0:
+			v -= up * vn
+	state.linear_velocity = v
+	_pressure_warn_t -= dt
+	if _pressure_warn_t <= 0.0:
+		_pressure_warn_t = 2.5
+		_msg.call_deferred("HEAT CRITICAL · PULL UP" if body is Star else "HULL PRESSURE CRITICAL · PULL UP")
 
 
 func _hull_clamp(state: PhysicsDirectBodyState3D, B: Basis) -> void:

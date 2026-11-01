@@ -10,10 +10,13 @@
 // Lighting: custom light() so the sun is attenuated by the planet's atmosphere per vertex
 // (atmo_sun_transmittance -> red sunsets, planet shadow) and by cloud shadows per pixel; sky
 // ambient from the atmosphere model is added as emission. Works on scaled-space proxies
-// (distances divided by the node scale). The DirectionalLight3D must carry the UNATTENUATED
-// star colour (SolarSystem does that).
+// (distances divided by the node scale). The DirectionalLight3D carries the star colour; when
+// SolarSystem tints the shared main light for the ship/player (sunset, planet shadow at the
+// camera) it sets `light_unattenuate` = 1 / that tint on the focus group's terrain, so the
+// terrain still starts from the unattenuated star light. Environment ambient is not used
+// (ambient_light_disabled): the sky ambient comes from the atmosphere model below.
 shader_type spatial;
-render_mode blend_mix, depth_draw_opaque, cull_back;
+render_mode blend_mix, depth_draw_opaque, cull_back, ambient_light_disabled;
 
 #include "res://shaders/include/atmosphere_common.gdshaderinc"
 #include "res://shaders/include/clouds_common.gdshaderinc"
@@ -35,6 +38,7 @@ group_uniforms lighting;
 uniform bool use_atmosphere = false;      // atmo_* uniforms are set (AtmosphereLayer.uniforms)
 uniform float sky_ambient_scale = 0.9;   // sky light (atmosphere) on the terrain
 uniform vec3 night_ambient = vec3(0.025, 0.032, 0.055);  // starlight / airglow / planetshine floor (artistic)
+uniform vec3 light_unattenuate = vec3(1.0);   // undoes SolarSystem's main-light tint (see header)
 group_uniforms;
 
 uniform vec3 color_seabed : source_color = vec3(0.16, 0.18, 0.15);
@@ -286,7 +290,7 @@ void fragment() {
 
 void light() {
 	// Burley-ish lambert + GGX specular; sun attenuated by atmosphere and cloud shadows
-	vec3 lc = LIGHT_COLOR * ATTENUATION / PI * v_sun_tint * v_shadow;
+	vec3 lc = LIGHT_COLOR * light_unattenuate * ATTENUATION / PI * v_sun_tint * v_shadow;
 	float ndl = clamp(dot(NORMAL, LIGHT), 0.0, 1.0);
 	float ndv = clamp(dot(NORMAL, VIEW), 1e-3, 1.0);
 	vec3 h = normalize(LIGHT + VIEW);
