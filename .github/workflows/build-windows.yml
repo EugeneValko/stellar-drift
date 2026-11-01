@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Read versions
-        run: cat tools/versions.env >> "$GITHUB_ENV"
+        run: grep -E "^[A-Z_]+=" tools/versions.env >> "$GITHUB_ENV"
 
       - name: Cache Godot + templates
         id: cache
