@@ -225,10 +225,10 @@ func _build_vapor() -> void:
 	_vapor_mat.render_priority = 1
 	_vapor = MeshInstance3D.new()
 	_vapor.name = "VaporCone"
-	_vapor.mesh = shell_mesh(7.0, func(v: float) -> float: return 1.9 + 5.2 * pow(v, 0.75), 12, 64)
+	_vapor.mesh = shell_mesh(6.5, func(v: float) -> float: return 1.5 + 5.0 * pow(v, 0.8), 12, 64)
 	_vapor.material_override = _vapor_mat
 	_vapor.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_vapor.position = Vector3(0, 0.2, -2.6)
+	_vapor.position = Vector3(0, 0.3, -3.2)
 	_vapor.visible = false
 	add_child(_vapor)
 	for nm in ["NavLight_L", "NavLight_R"]:
@@ -237,8 +237,8 @@ func _build_vapor() -> void:
 			continue
 		var p := GPUParticles3D.new()
 		p.name = "WingVapor"
-		p.amount = 90
-		p.lifetime = 0.55
+		p.amount = 140
+		p.lifetime = 0.35
 		p.local_coords = true
 		p.emitting = false
 		p.visibility_aabb = AABB(Vector3(-20, -20, -10), Vector3(40, 40, 120))
@@ -257,14 +257,14 @@ func _build_vapor() -> void:
 		sc.curve = cv
 		pm.scale_curve = sc
 		var g := Gradient.new()
-		g.set_color(0, Color(1, 1, 1, 0.55))
+		g.set_color(0, Color(1, 1, 1, 0.32))
 		g.set_color(1, Color(1, 1, 1, 0.0))
 		var gt := GradientTexture1D.new()
 		gt.gradient = g
 		pm.color_ramp = gt
 		p.process_material = pm
 		var q := QuadMesh.new()
-		q.size = Vector2(0.35, 7.0)
+		q.size = Vector2(0.16, 4.5)
 		var mat := StandardMaterial3D.new()
 		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED

@@ -92,7 +92,7 @@ func _build_hud() -> void:
 	_hud.add_theme_color_override("font_color", Color(0.75, 0.95, 1.0))
 	_hud.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	layer.add_child(_hud)
-	_hud.visible = not Capture.active or Capture.args.get("hud", "0") == "1"
+	_hud.visible = (not Capture.active and not Capture.args.has("demo")) or Capture.args.get("hud", "0") == "1"
 
 
 func _process(_dt: float) -> void:
@@ -104,7 +104,10 @@ func _process(_dt: float) -> void:
 		# daylight inside the atmosphere outshines the stars (test-scene stand-in for exposure)
 		var sky := _env.sky.sky_material as ShaderMaterial if _env.sky else null
 		if sky:
-			sky.set_shader_parameter("sky_energy", lerpf(1.0, 0.04, smoothstep(0.0, 0.12, ship.density)))
+			var k := smoothstep(0.0, 0.12, ship.density)
+			sky.set_shader_parameter("sky_energy", lerpf(1.0, 0.04, k))
+			sky.set_shader_parameter("star_brightness", lerpf(1.35, 0.0, k))
+		_env.tonemap_exposure = lerpf(1.0, 1.45, a)
 	if cam and star:
 		var d := (star.global_position - cam.global_position).normalized()
 		SunGlobals.set_sun(d, star.light_color, star.light_energy)
@@ -153,6 +156,8 @@ func place_ship(d: Vector3, alt: float, fwd: Vector3, pitch_deg := 0.0, v := Vec
 	var p := planet.global_position + d * (cfg.radius + ground_h(d) + alt + Ship.GROUND_OFFSET)
 	_teleport_ship(Transform3D(Basis(right, up, -f), p), v)
 	ship.set_mode(mode, true)
+	if alt > 60.0:
+		ship.set_gear(false, true)
 
 
 func _teleport_ship(xf: Transform3D, v: Vector3, frozen := false) -> void:
@@ -408,10 +413,10 @@ func _start_demo(name_: String) -> void:
 			var d := offset_dir(peak, Vector3.UP, -125000.0)
 			var fwd := tangent_toward(d, peak)
 			set_sun_at(d, fwd, 20.0, 115.0)
-			place_ship(d, 21000.0, fwd, -9.0, Vector3.ZERO, Ship.Mode.SPACE)
+			place_ship(d, 15500.0, fwd, -16.0, Vector3.ZERO, Ship.Mode.SPACE)
 			var v := -ship.global_basis.z * 4600.0
 			set_ship_velocity(v)
-			ship.heat = 0.25
+			ship.heat = 0.6
 			ship.throttle = 0.95
 			_demo_state["fwd"] = fwd
 			rig.view_override = _demo_reentry_cam
@@ -441,6 +446,18 @@ func _start_demo(name_: String) -> void:
 			var right := fwd.cross(Vector3.UP).normalized()
 			_teleport_ship(Transform3D(Basis(right, right.cross(fwd), -fwd), p), Vector3.ZERO)
 			ship.set_mode(Ship.Mode.SPACE, true)
+		"autopilot":
+			# 3000 km out, pointing away from the planet: R must turn, warp/cruise and stop in orbit
+			var d := offset_dir(peak, Vector3.UP, -30000.0)
+			var p := planet.global_position + d * 3.0e6
+			var right := d.cross(Vector3.UP).normalized()
+			_teleport_ship(Transform3D(Basis(right, right.cross(d), -d), p), Vector3.ZERO)
+			ship.set_mode(Ship.Mode.SPACE, true)
+			ship.target = planet
+			ship.toggle_autopilot()
+		"takeoff":
+			var site := find_flat_near(peak)
+			land_ship(site, pad_heading(site, peak))
 		"orbit":
 			apply_capture_preset("chase_space")
 			ship.capture_hold = false
@@ -449,7 +466,7 @@ func _start_demo(name_: String) -> void:
 			ship.throttle = 0.5
 		_:
 			push_warning("flight_test: unknown demo " + name_)
-	if name_ != "warp":
+	if name_ != "warp" and name_ != "autopilot":
 		build_terrain()
 	print("[flight_test] demo %s" % name_)
 
@@ -465,7 +482,7 @@ func _drive_demo(_dt: float) -> void:
 			var up := ship.up_dir
 			var fwd: Vector3 = _demo_state["fwd"]
 			fwd = (fwd - up * fwd.dot(up)).normalized()
-			var pitch := lerpf(-9.0, -6.0, clampf(t / 7.0, 0.0, 1.0))
+			var pitch := lerpf(-16.0, -10.0, clampf(t / 8.0, 0.0, 1.0))
 			var right := fwd.cross(up).normalized()
 			ship.steer_dir = fwd.rotated(right, deg_to_rad(pitch))
 			ship.steer_up = up.rotated(fwd, deg_to_rad(12.0 * sin(t * 0.6)))
@@ -489,6 +506,22 @@ func _drive_demo(_dt: float) -> void:
 				_demo_state["warped"] = true
 			ship.throttle = 1.0
 			ship.steer_dir = (planet.global_position - ship.global_position).normalized()
+		"takeoff":
+			# lift off, climb, gear up, accelerate, switch modes up to cruise (should be refused low)
+			if t < 3.0:
+				ship.in_move.y = 1.0
+			elif t < 3.1:
+				ship.set_gear(false)
+				ship.set_mode(Ship.Mode.ATMOSPHERE)
+				ship.throttle = 1.0
+			elif t < 8.0:
+				ship.steer_dir = (-ship.global_basis.z + ship.up_dir * 0.8).normalized()
+			elif t < 8.1:
+				ship.set_mode(Ship.Mode.CRUISE)   # refused: atmosphere
+				ship.set_mode(Ship.Mode.SPACE)
+			else:
+				ship.steer_dir = ship.up_dir
+				ship.throttle = 1.0
 		"orbit":
 			ship.in_stick = Vector2(0.12 * sin(t * 0.5), 0.05)
 			ship.in_roll = 0.2 * sin(t * 0.4)

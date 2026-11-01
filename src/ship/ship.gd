@@ -622,6 +622,11 @@ func _update_landing(dt: float) -> void:
 			set_mode(Mode.HOVER, true)
 		landed_changed.emit(true)
 		_msg("LANDED · CLAMPS ENGAGED")
+	# auto gear retract once flying fast
+	if auto_gear and gear_down and gear_contacts == 0 and s > 140.0 \
+			and (is_piloted or scripted) and visual and not visual.is_gear_moving():
+		set_gear(false)
+		_msg("GEAR UP")
 	# auto gear deploy for a slow, low descent
 	if auto_gear and not gear_down and mode == Mode.HOVER and altitude < 25.0 and s < 20.0 \
 			and (is_piloted or scripted):

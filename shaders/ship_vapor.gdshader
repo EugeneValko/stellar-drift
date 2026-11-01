@@ -30,12 +30,13 @@ void fragment() {
 		discard;
 	}
 	float v = clamp(UV.y, 0.0, 1.0);
-	float n = pnoise(vec2(UV.x, v - time_s * 3.0), 40.0, 8.0) * 0.6 + pnoise(vec2(UV.x + 0.5, v * 2.0 - time_s * 5.0), 90.0, 14.0) * 0.4;
-	float band = smoothstep(0.0, 0.2, v) * (1.0 - smoothstep(0.35, 1.0, v));
+	float n = pnoise(vec2(UV.x, v * 0.5 - time_s * 1.5), 14.0, 3.0) * 0.65 + pnoise(vec2(UV.x + 0.5, v - time_s * 4.0), 48.0, 6.0) * 0.35;
+	// condensation builds up toward the shock at the back edge, which is crisp
+	float band = smoothstep(0.05, 0.75, v) * (1.0 - smoothstep(0.86, 0.97, v));
 	float rim = 1.0 - clamp(abs(dot(normalize(NORMAL), VIEW)), 0.0, 1.0);
 	float depth = textureLod(depth_tex, SCREEN_UV, 0.0).r;
 	vec4 vp = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, depth, 1.0);
 	float soft = clamp((-vp.z / vp.w - (-VERTEX.z)) / 0.8, 0.0, 1.0);
 	ALBEDO = color;
-	ALPHA = clamp(band * (0.25 + 0.75 * rim) * smoothstep(0.25, 0.75, n) * amount * 0.85, 0.0, 1.0) * soft;
+	ALPHA = clamp(band * (0.15 + 0.85 * pow(rim, 1.5)) * mix(0.45, 1.0, n) * amount * 0.75, 0.0, 1.0) * soft;
 }
