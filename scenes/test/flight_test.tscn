@@ -1,0 +1,23 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scenes/test/flight_test.gd" id="1_test"]
+[ext_resource type="PackedScene" path="res://scenes/space/space_backdrop.tscn" id="2_bd"]
+[ext_resource type="PackedScene" path="res://scenes/space/star.tscn" id="3_star"]
+
+[node name="FlightTest" type="Node3D"]
+script = ExtResource("1_test")
+
+[node name="SpaceBackdrop" parent="." instance=ExtResource("2_bd")]
+
+[node name="SunLight" type="DirectionalLight3D" parent="."]
+shadow_enabled = true
+directional_shadow_mode = 2
+directional_shadow_max_distance = 600.0
+shadow_bias = 0.04
+shadow_normal_bias = 1.2
+
+[node name="World" type="Node3D" parent="."]
+
+[node name="Star" parent="World" node_paths=PackedStringArray("sun_light") instance=ExtResource("3_star")]
+sun_light = NodePath("../../SunLight")
+max_render_distance = 300000.0
