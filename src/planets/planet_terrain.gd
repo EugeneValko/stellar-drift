@@ -12,6 +12,10 @@ extends Node3D
 
 signal chunk_built(level: int)
 
+## Edge order matches TerrainGenerator._edge_lists(): bottom (-v), right (+u), top (+v), left (-u).
+const EDGE_DX: Array[int] = [0, 1, 0, -1]
+const EDGE_DY: Array[int] = [-1, 0, 1, 0]
+
 ## Split when distance-to-chunk < chunk_edge * lod_factor.
 @export var lod_factor := 1.0
 ## Chunks are always split at least down to this level (orbit-view quality).
@@ -23,8 +27,10 @@ signal chunk_built(level: int)
 @export var finest_quad := 0.4
 ## Max mesh uploads per frame and per-frame time budget for uploads (ms).
 @export var max_uploads_per_frame := 6
+## Max quadtree splits per frame (each split samples 20 heights on the main thread).
+@export var max_splits_per_frame := 8
 @export var upload_budget_ms := 3.0
-## Worker tasks in flight (0 = cores - 1).
+## Worker tasks in flight (0 = cores - 2, leaving room for the main and render threads).
 @export var max_jobs := 0
 ## Collision for chunks whose level >= max_level - collision_levels + 1 and close to focus.
 @export var collision_levels := 2
@@ -49,6 +55,16 @@ var _build_ms_total := 0.0
 var _build_ms_max := 0.0
 var _ready_to_run := false
 var _focus_r := 0.0
+var _tree_dirty := true
+var _splits_left := 0
+var _body_queue: Array[ChunkNode] = []
+var _last_focus := Vector3(INF, INF, INF)
+var _last_ground_h := 0.0
+var _prof_collect := 0.0
+var _prof_update := 0.0
+var _prof_dispatch := 0.0
+var _prof_body := 0.0
+var _prof_mesh := 0.0
 var _display_dirty := false
 var _shown_list: Array[ChunkNode] = []
 var _occluder_r := 0.0
@@ -69,11 +85,16 @@ class ChunkNode:
 	var children: Array[ChunkNode] = []
 	var mesh: MeshInstance3D
 	var body: StaticBody3D
+	var shape: ConcavePolygonShape3D
 	var built := false
 	var pending := false
 	var want_split := false
+	var cover := false        # this node or its subtree can be displayed (set by _refine)
+	var kids_cover := false   # all children can be displayed
 	var shown := false
 	var edge_flags := 0
+	var ix := 0
+	var iy := 0
 	var job: ChunkJob
 
 
@@ -154,6 +175,8 @@ func get_stats() -> Dictionary:
 		"jobs": _jobs.size(), "built": _built_total, "max_level": max_level,
 		"avg_build_ms": _build_ms_total / maxf(_built_total, 1),
 		"max_build_ms": _build_ms_max,
+		"max_ms_collect": _prof_collect, "max_ms_update": _prof_update,
+		"max_ms_dispatch": _prof_dispatch, "max_ms_body": _prof_body, "max_ms_mesh": _prof_mesh,
 	}
 
 
@@ -166,16 +189,17 @@ func is_idle() -> bool:
 func build_until_stable(max_seconds := 120.0) -> void:
 	var t0 := Time.get_ticks_msec()
 	while true:
-		_update_tree()
+		_update_tree(true)
 		_dispatch(true)
 		_collect(1 << 30, 1e9, true)
-		_update_tree()
+		_update_tree(true)
 		if is_idle():
 			break
 		if Time.get_ticks_msec() - t0 > max_seconds * 1000.0:
 			push_warning("PlanetTerrain: build_until_stable timed out")
 			break
-	_update_tree()
+	_update_tree(true)
+	_create_bodies(1 << 30)
 
 
 # ---------------------------------------------------------------------------
@@ -189,16 +213,33 @@ func _process(_dt: float) -> void:
 		var cam := get_viewport().get_camera_3d()
 		if cam:
 			focus = to_local(cam.global_position)
+	var t0 := Time.get_ticks_usec()
 	_collect(max_uploads_per_frame, upload_budget_ms)
-	_update_tree()
+	_create_bodies(1)
+	var t1 := Time.get_ticks_usec()
+	# Re-evaluate the tree only when something changed (focus moved by >2% of altitude,
+	# or new chunks arrived): keeps the idle cost near zero.
+	var alt := maxf(focus.length() - config.radius - _last_ground_h, 0.0)
+	var thr := maxf(0.5, alt * 0.02)
+	if _tree_dirty or focus.distance_squared_to(_last_focus) > thr * thr:
+		_tree_dirty = false
+		_last_focus = focus
+		_update_tree()
+	var t2 := Time.get_ticks_usec()
 	_dispatch(false)
+	var t3 := Time.get_ticks_usec()
+	_prof_collect = maxf(_prof_collect, (t1 - t0) / 1000.0)
+	_prof_update = maxf(_prof_update, (t2 - t1) / 1000.0)
+	_prof_dispatch = maxf(_prof_dispatch, (t3 - t2) / 1000.0)
 
 
-func _update_tree() -> void:
+func _update_tree(unlimited := false) -> void:
+	_splits_left = 1 << 30 if unlimited else max_splits_per_frame
 	_visible_count = 0
 	_focus_r = focus.length()
 	if _focus_r > 1.0:
-		var ground := config.radius + generator.sample(focus / _focus_r, 1e9).x
+		_last_ground_h = generator.sample(focus / _focus_r, 1e9).x
+		var ground := config.radius + _last_ground_h
 		if config.has_ocean_surface():
 			ground = maxf(ground, config.get_ocean_radius())
 		_occluder_r = minf(ground, _focus_r) - horizon_margin
@@ -229,6 +270,8 @@ func _init_node(n: ChunkNode) -> void:
 	n.horiz = horiz
 	n.center = c * (config.radius + (lo + hi) * 0.5)
 	n.edge_m = n.size * 0.5 * config.radius * PI * 0.5
+	n.ix = int((n.u0 + 1.0) / n.size + 0.5)
+	n.iy = int((n.v0 + 1.0) / n.size + 0.5)
 	n.half_range = (hi - lo) * 0.5 + n.edge_m * 0.05
 	n.bound = horiz + n.half_range
 	_node_count += 1
@@ -239,9 +282,12 @@ func _should_split(n: ChunkNode) -> bool:
 		return false
 	if n.level < min_level:
 		return true
-	var d := _distance_to(n)
 	var k := lod_factor * (1.1 if n.want_split else 1.0)  # hysteresis
-	if d >= n.edge_m * k:
+	var lim := n.edge_m * k
+	var far := lim + n.bound
+	if focus.distance_squared_to(n.center) >= far * far:
+		return false   # cheap reject: box distance >= |rel| - bound
+	if _distance_to(n) >= lim:
 		return false
 	return n.level < 3 or not _below_horizon(n)
 
@@ -274,6 +320,12 @@ func _below_horizon(n: ChunkNode) -> bool:
 
 func _refine(n: ChunkNode) -> void:
 	n.want_split = _should_split(n)
+	if n.want_split and n.children.is_empty():
+		if _splits_left <= 0:
+			n.want_split = false
+			_tree_dirty = true   # continue next frame
+		else:
+			_splits_left -= 1
 	if n.want_split:
 		if n.children.is_empty():
 			var h := n.size * 0.5
@@ -287,9 +339,12 @@ func _refine(n: ChunkNode) -> void:
 				c.parent = n
 				_init_node(c)
 				n.children.append(c)
+		var all := true
 		for c in n.children:
 			_refine(c)
-		if not _covered_by_children(n):
+			all = all and c.cover
+		n.kids_cover = all
+		if not all:
 			_request(n)   # fallback while children build
 	else:
 		_request(n)
@@ -297,6 +352,8 @@ func _refine(n: ChunkNode) -> void:
 			for c in n.children:
 				_free_subtree(c, true)
 			n.children.clear()
+		n.kids_cover = _covered_by_children(n)
+	n.cover = n.built or n.kids_cover
 
 
 func _covered_by_children(n: ChunkNode) -> bool:
@@ -314,7 +371,7 @@ func _can_cover(n: ChunkNode) -> bool:
 
 ## Shows the leaves of the desired tree (falling back to parents while children build).
 func _display(n: ChunkNode) -> void:
-	var use_children := (n.want_split or not n.built) and _covered_by_children(n)
+	var use_children := (n.want_split or not n.built) and n.kids_cover
 	if use_children:
 		_set_shown(n, false)
 		for c in n.children:
@@ -327,37 +384,55 @@ func _display(n: ChunkNode) -> void:
 
 func _set_shown(n: ChunkNode, on: bool) -> void:
 	on = on and n.mesh != null
-	if on != n.shown:
-		n.shown = on
-		_display_dirty = true
+	if on:
+		_visible_count += 1
+		_shown_list.append(n)
+	if on == n.shown:
+		return
+	n.shown = on
+	_display_dirty = true
 	if n.mesh:
 		n.mesh.visible = on
-		if on:
-			_visible_count += 1
-			_shown_list.append(n)
 	if n.body:
-		var shape := n.body.get_child(0) as CollisionShape3D
-		shape.disabled = not on
+		(n.body.get_child(0) as CollisionShape3D).disabled = not on
 
 
 ## For every shown chunk, flags the edges whose neighbour is shown at a coarser level so
 ## the shader snaps the odd edge vertices onto the neighbour's edge (no T-junction cracks).
 func _update_edge_flags() -> void:
+	var shown := {}
 	for n in _shown_list:
-		var e := n.size * 0.001
-		var hs := n.size * 0.5
+		shown[_key(n.face, n.level, n.ix, n.iy)] = true
+	for n in _shown_list:
 		var flags := 0
-		if _shown_level_at(n.face, n.u0 + hs, n.v0 - e) < n.level:
-			flags |= 1
-		if _shown_level_at(n.face, n.u0 + n.size + e, n.v0 + hs) < n.level:
-			flags |= 2
-		if _shown_level_at(n.face, n.u0 + hs, n.v0 + n.size + e) < n.level:
-			flags |= 4
-		if _shown_level_at(n.face, n.u0 - e, n.v0 + hs) < n.level:
-			flags |= 8
+		var span := 1 << n.level
+		for e in 4:
+			var nx := n.ix + EDGE_DX[e]
+			var ny := n.iy + EDGE_DY[e]
+			var coarser := false
+			if nx < 0 or ny < 0 or nx >= span or ny >= span:
+				# neighbour on another cube face: slower geometric lookup
+				var hs := n.size * 0.5
+				var eps := n.size * 0.001
+				var u := n.u0 + hs + float(EDGE_DX[e]) * (hs + eps)
+				var v := n.v0 + hs + float(EDGE_DY[e]) * (hs + eps)
+				coarser = _shown_level_at(n.face, u, v) < n.level
+			elif not shown.has(_key(n.face, n.level, nx, ny)):
+				for up in range(1, 3):
+					if n.level - up < 0:
+						break
+					if shown.has(_key(n.face, n.level - up, nx >> up, ny >> up)):
+						coarser = true
+						break
+			if coarser:
+				flags |= 1 << e
 		if flags != n.edge_flags:
 			n.edge_flags = flags
 			n.mesh.set_instance_shader_parameter("coarse_edges", flags)
+
+
+static func _key(face: int, level: int, x: int, y: int) -> int:
+	return face | (level << 3) | (x << 8) | (y << 32)
 
 
 ## Level of the chunk shown at face coords (u, v); coordinates outside [-1, 1] are
@@ -385,7 +460,8 @@ func _shown_level_at(face: int, u: float, v: float) -> int:
 
 
 func _hide_subtree(n: ChunkNode) -> void:
-	_set_shown(n, false)
+	if n.shown:
+		_set_shown(n, false)
 	for c in n.children:
 		_hide_subtree(c)
 
@@ -405,6 +481,7 @@ func _free_subtree(n: ChunkNode, recursive: bool) -> void:
 	if n.shown:
 		n.shown = false
 		_display_dirty = true
+	n.shape = null
 	if n.body:
 		n.body.queue_free()
 		n.body = null
@@ -428,14 +505,23 @@ func _priority(n: ChunkNode) -> float:
 func _dispatch(all: bool) -> void:
 	if _queue.is_empty():
 		return
-	var limit := max_jobs if max_jobs > 0 else maxi(OS.get_processor_count() - 1, 1)
+	var limit := max_jobs if max_jobs > 0 else maxi(OS.get_processor_count() - 2, 1)
 	if all:
 		limit = maxi(limit * 4, 16)
 	if _jobs.size() >= limit:
 		return
-	_queue.sort_custom(func(a: ChunkNode, b: ChunkNode) -> bool: return _priority(a) < _priority(b))
 	while not _queue.is_empty() and _jobs.size() < limit:
-		var n: ChunkNode = _queue.pop_front()
+		# pick the most urgent request (linear scan: cheaper than sorting every frame)
+		var bi := 0
+		var bp := INF
+		for qi in _queue.size():
+			var pr := _priority(_queue[qi])
+			if pr < bp:
+				bp = pr
+				bi = qi
+		var n: ChunkNode = _queue[bi]
+		_queue[bi] = _queue[_queue.size() - 1]
+		_queue.pop_back()
 		n.pending = false
 		var want_faces := n.level >= max_level - collision_levels + 1
 		var skirt := maxf(n.edge_m / float(TerrainGenerator.GRID - 1) * 2.0, 1.0)
@@ -476,10 +562,39 @@ func _collect(max_count: int, budget_ms: float, block := false) -> void:
 			continue   # node was freed / re-requested meanwhile
 		n.job = null
 		_upload(n, job.result)
+		_tree_dirty = true
 		done += 1
 
 
+## Creates at most `count` collision bodies for queued fine chunks near the focus
+## (body creation is the most expensive main-thread step, so it is rate-limited).
+func _create_bodies(count: int) -> void:
+	var i := 0
+	while i < _body_queue.size() and count > 0:
+		var n: ChunkNode = _body_queue[i]
+		if n.mesh == null or n.shape == null:
+			_body_queue.remove_at(i)
+			continue
+		if focus.distance_to(n.center) > collision_radius + n.bound:
+			i += 1
+			continue
+		_body_queue.remove_at(i)
+		var tb := Time.get_ticks_usec()
+		var body := StaticBody3D.new()
+		var cs := CollisionShape3D.new()
+		cs.shape = n.shape
+		cs.disabled = not n.shown
+		body.add_child(cs)
+		body.position = n.mesh.position
+		add_child(body)
+		n.body = body
+		n.shape = null
+		_prof_body = maxf(_prof_body, (Time.get_ticks_usec() - tb) / 1000.0)
+		count -= 1
+
+
 func _upload(n: ChunkNode, res: Dictionary) -> void:
+	var tm := Time.get_ticks_usec()
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, res["arrays"], [], {},
 		TerrainGenerator.mesh_format_flags())
@@ -492,21 +607,14 @@ func _upload(n: ChunkNode, res: Dictionary) -> void:
 	mi.visible = false
 	add_child(mi)
 	n.mesh = mi
+	_prof_mesh = maxf(_prof_mesh, (Time.get_ticks_usec() - tm) / 1000.0)
 	var mid := (float(res["min_h"]) + float(res["max_h"])) * 0.5
 	var dir := n.center.normalized()
 	n.center = dir * (config.radius + mid)
 	n.half_range = (float(res["max_h"]) - float(res["min_h"])) * 0.5
 	n.bound = n.horiz + n.half_range
-	if res.has("faces") and focus.distance_to(n.center) < collision_radius + n.bound:
-		var shape := ConcavePolygonShape3D.new()
-		shape.set_faces(res["faces"])
-		shape.backface_collision = true
-		var body := StaticBody3D.new()
-		var cs := CollisionShape3D.new()
-		cs.shape = shape
-		body.add_child(cs)
-		body.position = res["origin"]
-		add_child(body)
-		n.body = body
+	if res.has("shape"):
+		n.shape = res["shape"]
+		_body_queue.append(n)
 	n.built = true
 	chunk_built.emit(n.level)

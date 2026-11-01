@@ -23,6 +23,11 @@ func _init() -> void:
 				d = dd
 	t.set_focus(d * (cfg.radius + t.get_height(d) + alt))
 	t._update_tree()
+	t.build_until_stable()
+	var tt := Time.get_ticks_usec()
+	for i in 50:
+		t._update_tree()
+	print("update_tree (stable tree): %.2f ms" % ((Time.get_ticks_usec() - tt) / 50000.0))
 	var per := {}
 	for r in t._roots:
 		_count(r, per)

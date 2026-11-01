@@ -528,11 +528,28 @@ func build_chunk(face: int, u0: float, v0: float, size: float, want_faces: bool,
 		"max_h": max_h,
 	}
 	if want_faces:
+		# Collision at half resolution (2x vertex spacing): 4x cheaper BVH, still sub-metre.
 		var faces := PackedVector3Array()
-		faces.resize(_grid_index_count)
-		for t in _grid_index_count:
-			faces[t] = verts[_indices[t]]
-		out["faces"] = faces
+		var m := (n - 1) / 2
+		faces.resize(m * m * 6)
+		var f := 0
+		for j in range(0, n - 1, 2):
+			for i in range(0, n - 1, 2):
+				var a := verts[j * n + i]
+				var b := verts[j * n + i + 2]
+				var c := verts[(j + 2) * n + i]
+				var e := verts[(j + 2) * n + i + 2]
+				faces[f] = a
+				faces[f + 1] = e
+				faces[f + 2] = b
+				faces[f + 3] = a
+				faces[f + 4] = c
+				faces[f + 5] = e
+				f += 6
+		var shape := ConcavePolygonShape3D.new()
+		shape.set_faces(faces)   # BVH build happens here, on the worker thread
+		shape.backface_collision = true
+		out["shape"] = shape
 	return out
 
 
