@@ -361,8 +361,8 @@ func _build_dust() -> void:
 func _build_ground_dust() -> void:
 	_ground_dust = GPUParticles3D.new()
 	_ground_dust.name = "GroundDust"
-	_ground_dust.amount = 140
-	_ground_dust.lifetime = 2.2
+	_ground_dust.amount = 260
+	_ground_dust.lifetime = 2.0
 	_ground_dust.local_coords = false
 	_ground_dust.emitting = false
 	_ground_dust.top_level = true
@@ -370,8 +370,8 @@ func _build_ground_dust() -> void:
 	_ground_pm = ParticleProcessMaterial.new()
 	_ground_pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
 	_ground_pm.emission_ring_axis = Vector3(0, 1, 0)
-	_ground_pm.emission_ring_radius = 7.0
-	_ground_pm.emission_ring_inner_radius = 2.0
+	_ground_pm.emission_ring_radius = 6.0
+	_ground_pm.emission_ring_inner_radius = 1.5
 	_ground_pm.emission_ring_height = 0.4
 	_ground_pm.direction = Vector3(0, 1, 0)
 	_ground_pm.spread = 25.0
@@ -393,13 +393,14 @@ func _build_ground_dust() -> void:
 	var g := Gradient.new()
 	g.set_color(0, Color(1, 1, 1, 0.0))
 	g.set_color(1, Color(1, 1, 1, 0.0))
-	g.add_point(0.15, Color(1, 1, 1, 0.55))
+	g.add_point(0.1, Color(1, 1, 1, 0.75))
+	g.add_point(0.6, Color(1, 1, 1, 0.35))
 	var gt := GradientTexture1D.new()
 	gt.gradient = g
 	_ground_pm.color_ramp = gt
 	_ground_dust.process_material = _ground_pm
 	var q := QuadMesh.new()
-	q.size = Vector2(5.0, 5.0)
+	q.size = Vector2(6.5, 6.5)
 	_ground_mat = StandardMaterial3D.new()
 	_ground_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_ground_mat.vertex_color_use_as_albedo = true
@@ -407,7 +408,7 @@ func _build_ground_dust() -> void:
 	_ground_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	_ground_mat.albedo_texture = _soft_tex
 	_ground_mat.proximity_fade_enabled = true
-	_ground_mat.proximity_fade_distance = 1.5
+	_ground_mat.proximity_fade_distance = 4.0
 	_ground_mat.roughness = 1.0
 	q.material = _ground_mat
 	_ground_dust.draw_pass_1 = q
@@ -613,7 +614,7 @@ func _update_ground_dust(dt: float) -> void:
 		var orad := float((cfg as Object).call("get_ocean_radius"))
 		if orad > 0.0 and b.has_method("get_altitude_global"):
 			water = ship.global_position.distance_to(b.global_position) - orad < b.get_altitude_global(ship.global_position) + 0.1
-	_ground_mat.albedo_color = Color(0.85, 0.9, 0.95) if water else Color(0.6, 0.52, 0.4)
+	_ground_mat.albedo_color = Color(0.85, 0.9, 0.95) if water else Color(0.78, 0.7, 0.55)
 	_ground_pm.radial_velocity_min = lerpf(6.0, 12.0, k)
 	_ground_pm.radial_velocity_max = lerpf(12.0, 22.0, k)
 

@@ -544,12 +544,12 @@ func _demo_landing_cam(rig: ShipCameraRig) -> Transform3D:
 	var fwd := -B.z
 	fwd = (fwd - up * fwd.dot(up)).normalized()
 	var right := fwd.cross(up).normalized()
-	var off := -fwd * 26.0 + right * -14.0 + up * 5.0
+	var off := -fwd * 17.0 + right * -13.0 + up * 3.0
 	var p := ship.global_position + off
 	if not _demo_state.has("cam_p"):
 		_demo_state["cam_p"] = p
 	var cp: Vector3 = _demo_state["cam_p"]
-	cp = cp.lerp(p, 0.06)
+	cp = cp.lerp(p, 1.0 - exp(-get_process_delta_time() * 2.5))
 	# never below the terrain
 	var ga := ship._ground_alt(planet, cp)
 	if ga < 2.0:
