@@ -47,6 +47,11 @@ var generator: TerrainGenerator
 var material: Material
 var max_level := 10
 var focus := Vector3(0, 0, 1e9)
+## Optional second LOD/collision focus (planet-local): the gameplay body (ship / player) when the
+## camera is elsewhere (free camera, far chase views). Fine chunks + collision are built around
+## both points. `has_focus2` = false disables it.
+var focus2 := Vector3(0, 0, 1e9)
+var has_focus2 := false
 
 var _roots: Array[ChunkNode] = []
 var _queue: Array[ChunkNode] = []
@@ -154,6 +159,18 @@ func _exit_tree() -> void:
 ## Focus point (camera / ship) in planet-local space.
 func set_focus(local_pos: Vector3) -> void:
 	focus = local_pos
+
+
+## Second focus point (planet-local) for LOD + collision, e.g. the ship far from the camera.
+## Only the fine levels near it are refined (cheap); pass `on = false` to drop it.
+func set_focus2(local_pos: Vector3, on := true) -> void:
+	if on != has_focus2:
+		_tree_dirty = true
+	has_focus2 = on
+	if on:
+		if local_pos.distance_squared_to(focus2) > 4.0:
+			_tree_dirty = true
+		focus2 = local_pos
 
 
 ## Terrain height (m above config.radius) along a planet-local direction.
@@ -322,6 +339,9 @@ func _should_split(n: ChunkNode) -> bool:
 	var k := lod_factor * (1.1 if n.want_split else 1.0)  # hysteresis
 	var lim := n.edge_m * k
 	var far := lim + n.bound
+	if has_focus2 and focus2.distance_squared_to(n.center) < far * far \
+			and _distance_from(focus2, n) < lim:
+		return true
 	if focus.distance_squared_to(n.center) >= far * far:
 		return false   # cheap reject: box distance >= |rel| - bound
 	if _distance_to(n) >= lim:
@@ -332,9 +352,13 @@ func _should_split(n: ChunkNode) -> bool:
 ## Distance from the focus to the chunk's (curved) box: horizontal and vertical parts
 ## are measured separately so tall mountain chunks are not over-refined.
 func _distance_to(n: ChunkNode) -> float:
+	return _distance_from(focus, n)
+
+
+func _distance_from(p: Vector3, n: ChunkNode) -> float:
 	var r := n.center.length()
 	var up := n.center / r
-	var rel := focus - n.center
+	var rel := p - n.center
 	var dv := rel.dot(up)
 	var dh := (rel - up * dv).length()
 	var a := maxf(dh - n.horiz, 0.0)
@@ -536,7 +560,10 @@ func _request(n: ChunkNode) -> void:
 
 func _priority(n: ChunkNode) -> float:
 	# coarse first, then nearest
-	return focus.distance_to(n.center) / maxf(n.edge_m, 1.0) + float(n.level) * 0.5
+	var d := focus.distance_to(n.center)
+	if has_focus2:
+		d = minf(d, focus2.distance_to(n.center))
+	return d / maxf(n.edge_m, 1.0) + float(n.level) * 0.5
 
 
 func _dispatch(all: bool) -> void:
@@ -612,7 +639,10 @@ func _create_bodies(count: int) -> void:
 		if n.mesh == null or n.shape == null:
 			_body_queue.remove_at(i)
 			continue
-		if focus.distance_to(n.center) > collision_radius + n.bound:
+		var cd := focus.distance_to(n.center)
+		if has_focus2:
+			cd = minf(cd, focus2.distance_to(n.center))
+		if cd > collision_radius + n.bound:
 			i += 1
 			continue
 		_body_queue.remove_at(i)
