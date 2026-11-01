@@ -1,0 +1,85 @@
+name: Build Windows
+
+# main push      -> rolling pre-release "nightly" (always the latest playable build)
+# tag v*         -> versioned release
+# manual run     -> artifact only
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths-ignore: ['docs/**', '**.md']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read versions
+        run: cat tools/versions.env >> "$GITHUB_ENV"
+
+      - name: Cache Godot + templates
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}
+
+      - name: Download Godot + templates
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          GV="${GODOT_VERSION}-${GODOT_RELEASE}"
+          GH="https://github.com/godotengine/godot/releases/download/${GV}"
+          mkdir -p ~/godot && cd ~/godot
+          curl -sSL -o g.zip "$GH/Godot_v${GV}_linux.x86_64.zip" && unzip -q g.zip && rm g.zip
+          mv Godot_v${GV}_linux.x86_64 godot
+          TPL=~/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}
+          mkdir -p "$TPL"
+          curl -sSL -o t.tpz "$GH/Godot_v${GV}_export_templates.tpz" && unzip -q t.tpz -d t
+          mv t/templates/windows_release_x86_64.exe t/templates/windows_debug_x86_64.exe t/templates/version.txt "$TPL/"
+          rm -rf t t.tpz
+
+      - name: Export
+        run: |
+          export PATH=~/godot:$PATH
+          mkdir -p build/windows
+          godot --headless --import || true
+          godot --headless --export-release "Windows Desktop" build/windows/StellarDrift.exe
+          test -f build/windows/StellarDrift.exe
+          SHORT=${GITHUB_SHA::7}
+          echo "SHORT=$SHORT" >> "$GITHUB_ENV"
+          cd build/windows && zip -qr ../StellarDrift-windows-$SHORT.zip .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StellarDrift-windows-${{ env.SHORT }}
+          path: build/windows/
+
+      - name: Publish nightly
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete nightly --yes --cleanup-tag || true
+          gh release create nightly build/StellarDrift-windows-$SHORT.zip \
+            --prerelease --target "$GITHUB_SHA" \
+            --title "Nightly build (${SHORT}, $(date -u +%Y-%m-%d))" \
+            --notes "Latest automatic Windows build from main @ ${SHORT}. Unzip and run StellarDrift.exe. Press F1 in game for controls."
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" build/StellarDrift-windows-$SHORT.zip \
+            --title "Stellar Drift $GITHUB_REF_NAME" --generate-notes
