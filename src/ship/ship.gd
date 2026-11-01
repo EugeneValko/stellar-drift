@@ -53,13 +53,15 @@ const WARP_K := 1.0                 # warp cap = k * distance to nearest surface
 const WARP_LOCK_DIST := 600000.0    # mass lock: no warp engage closer than this to a surface
 const WARP_SPOOL_TIME := 2.0
 ## Gear feet (pad bottom at full extension, minus the static sag so pads rest on the ground).
-const FEET: Array[Vector3] = [Vector3(0.0, -3.1, -6.45), Vector3(-2.8, -3.1, 4.5), Vector3(2.8, -3.1, 4.5)]
+## Ship model v2 (tools/blender/ship.py prints these): nose gear + two pod gears, track 7.8 m.
+const FEET: Array[Vector3] = [Vector3(0.0, -3.1, -6.35), Vector3(-3.9, -3.1, 5.0), Vector3(3.9, -3.1, 5.0)]
 const GEAR_TRAVEL := 0.55
 const GROUND_OFFSET := 2.95         # ship origin height above the pads (GroundPoint)
-## Hull probe points for the analytic last-resort terrain clamp.
-const HULL_PROBES: Array[Vector3] = [Vector3(0, -0.2, -10.2), Vector3(0, 0.2, 9.8), Vector3(-7.4, -0.5, 5.3),
-	Vector3(7.4, -0.5, 5.3), Vector3(0, -1.4, 0), Vector3(0, 2.3, 6.0), Vector3(-2.8, -1.1, 8.0),
-	Vector3(2.8, -1.1, 8.0), Vector3(0, -1.2, -6.0)]
+## Hull probe points for the analytic last-resort terrain clamp (nose, nozzles, keel, pod bellies,
+## radiator wing tips, spine).
+const HULL_PROBES: Array[Vector3] = [Vector3(0, -0.3, -10.25), Vector3(0, 0.2, 9.0), Vector3(-6.7, 2.6, 6.0),
+	Vector3(6.7, 2.6, 6.0), Vector3(0, -1.3, 0), Vector3(0, 2.1, 3.0), Vector3(-4.6, -0.85, 8.6),
+	Vector3(4.6, -0.85, 8.6), Vector3(0, -1.0, -6.5), Vector3(-4.5, -0.8, 0.6), Vector3(4.5, -0.8, 0.6)]
 
 @export_group("Control")
 @export var start_piloted := false

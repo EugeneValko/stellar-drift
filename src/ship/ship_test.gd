@@ -1,7 +1,10 @@
 extends Node3D
 ## Ship look-dev scene controller (scenes/test/ship_test.tscn). Capture presets:
-## ship_hero, ship_side, ship_rear, ship_top, ship_landed  (tools/shot.sh ... --cam=<preset>)
-## Extra Capture args: --thrust=0..1 overrides engine thrust.
+## ship_hero, ship_side, ship_rear, ship_top, ship_landed, ship_chase (game chase-camera framing),
+## ship_night (landed, unlit side: only the ship's own lights), ship_cockpit (pilot eye), ship_gear (close-up),
+## ship_front, ship_sunset  (tools/shot.sh ... --cam=<preset>)
+## Extra Capture args: --thrust=0..1 overrides engine thrust, --gear=0..1 gear deploy parameter,
+## --hatch=0|1, --canopy=0|1.
 
 @onready var ship: ShipVisual = $ShipVisual
 @onready var cam: Camera3D = $Camera3D
@@ -43,6 +46,20 @@ func _space(on: bool) -> void:
 	var e := env.environment
 	e.ambient_light_energy = 0.55 if on else 0.9
 	e.background_energy_multiplier = 1.0
+	key.visible = true
+	rim.visible = true
+
+
+## Night on an airless moon: starry sky, ground, no sun; only faint starlight/earthshine ambient.
+func _night() -> void:
+	_sky_mat.set_shader_parameter("mode", 0)
+	ground.visible = true
+	figure.visible = true
+	var e := env.environment
+	e.ambient_light_energy = 0.06
+	e.background_energy_multiplier = 0.6
+	key.visible = false
+	rim.visible = true
 
 
 func apply_capture_preset(preset: String) -> void:
@@ -78,6 +95,82 @@ func apply_capture_preset(preset: String) -> void:
 			_look(Vector3(0.01, 33.0, 4.0), Vector3(0, 0, 0.3), 40.0)
 			_light(key, Vector3(0.35, -0.85, -0.4), 2.6, warm)
 			_light(rim, Vector3(-0.4, -0.3, 0.85), 1.6, cool)
+		"ship_chase":
+			# the in-game chase camera (ShipCameraRig chase_offset / look_ahead), sun behind-left, low
+			_space(false)
+			ship.set_gear(true, true)
+			ship.set_hatch(false, true)
+			ship.set_thrust(0.06)
+			figure.visible = false
+			_look(Vector3(0.0, 4.4, 20.0), Vector3(0.0, 1.0, -16.0), 68.0)
+			_light(key, Vector3(0.45, -0.42, -0.78), 3.0, Color(1.0, 0.9, 0.78))
+			_light(rim, Vector3(-0.5, -0.3, 0.8), 0.6, cool)
+		"ship_chase_space":
+			_space(true)
+			ship.set_gear(false, true)
+			ship.set_hatch(false, true)
+			ship.set_thrust(0.5)
+			_look(Vector3(0.0, 4.4, 20.0), Vector3(0.0, 1.0, -16.0), 70.0)
+			_light(key, Vector3(-0.7, -0.35, 0.6), 2.6, warm)
+			_light(rim, Vector3(0.5, -0.3, -0.8), 1.4, cool)
+		"ship_night":
+			_night()
+			ship.set_gear(true, true)
+			ship.set_hatch(true, true)
+			ship.set_thrust(0.0)
+			var ep := ship.get_marker("ExitPoint")
+			if ep:
+				figure.global_position = ep.global_position + Vector3(2.6, 0.9, 0.0)
+			_look(Vector3(-15.0, 1.2, -17.0), Vector3(0.0, -0.8, -0.5), 46.0)
+			_light(rim, Vector3(0.3, -0.5, 0.8), 0.06, Color(0.5, 0.6, 0.9))
+		"ship_night_chase":
+			_night()
+			ship.set_gear(true, true)
+			ship.set_hatch(false, true)
+			ship.set_thrust(0.06)
+			figure.visible = false
+			_look(Vector3(0.0, 4.4, 20.0), Vector3(0.0, 1.0, -16.0), 68.0)
+			_light(rim, Vector3(0.3, -0.5, 0.8), 0.06, Color(0.5, 0.6, 0.9))
+		"ship_cockpit":
+			_space(false)
+			ship.set_gear(true, true)
+			ship.set_hatch(false, true)
+			ship.set_thrust(0.06)
+			figure.visible = false
+			var eye := ship.get_marker("PilotEye")
+			var ep2: Vector3 = (eye.global_position if eye else Vector3(0, 1.4, -4.0)) + Vector3(0, 0.18, 0)
+			cam.position = ep2
+			cam.basis = Basis.from_euler(Vector3(deg_to_rad(-6.0), 0.0, 0.0))
+			cam.fov = 76.0
+			cam.near = 0.05
+			_light(key, Vector3(0.4, -0.5, 0.75), 2.8, Color(1.0, 0.9, 0.8))
+			_light(rim, Vector3(-0.5, -0.3, -0.8), 0.5, cool)
+		"ship_gear":
+			_space(false)
+			ship.set_gear(true, true)
+			ship.set_hatch(true, true)
+			ship.set_thrust(0.0)
+			figure.visible = false
+			_look(Vector3(-9.5, -1.6, 9.5), Vector3(-2.5, -1.6, 2.0), 40.0)
+			_light(key, Vector3(0.6, -0.4, -0.7), 3.0, Color(1.0, 0.85, 0.7))
+			_light(rim, Vector3(-0.5, -0.3, 0.8), 0.7, cool)
+		"ship_front":
+			_space(true)
+			ship.set_gear(false, true)
+			ship.set_hatch(false, true)
+			ship.set_thrust(0.4)
+			_look(Vector3(11.0, 3.4, -21.0), Vector3(0.0, 0.0, -0.5), 42.0)
+			_light(key, Vector3(-0.5, -0.55, 0.65), 2.8, warm)
+			_light(rim, Vector3(0.6, -0.2, 0.75), 2.2, cool)
+		"ship_sunset":
+			_space(false)
+			ship.set_gear(true, true)
+			ship.set_hatch(true, true)
+			ship.set_thrust(0.0)
+			figure.visible = false
+			_look(Vector3(16.0, 0.2, 12.0), Vector3(0.0, -0.4, 0.5), 46.0)
+			_light(key, Vector3(-0.85, -0.12, -0.5), 2.6, Color(1.0, 0.62, 0.35))
+			_light(rim, Vector3(0.4, -0.3, 0.8), 0.5, Color(0.5, 0.55, 0.85))
 		"ship_landed":
 			_space(false)
 			ship.set_gear(true, true)
@@ -102,6 +195,12 @@ func apply_capture_preset(preset: String) -> void:
 		ship.set_thrust(thrust_override)
 	if cap != null:
 		var a: Dictionary = cap.get("args")
+		if a.has("gear"):
+			ship._set_gear_t(float(a["gear"]))
+		if a.has("hatch"):
+			ship.set_hatch(String(a["hatch"]) == "1", true)
+		if a.has("canopy"):
+			ship.set_canopy(String(a["canopy"]) == "1", true)
 		if a.has("hide_ship"):
 			ship.visible = false
 		if a.has("nonav"):
