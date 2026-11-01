@@ -235,8 +235,10 @@ func sky_radiance(p: Vector3, dir: Vector3, l: Vector3, sun_col: Color, sun_int:
 		var ts := sun_transmittance(q, l)
 		var tv := Vector3(exp(-here.x), exp(-here.y), exp(-here.z))
 		var tr := tv * ts
-		sr += tr * dr * ds
-		sm += tr * dm * ds
+		# art-directed low-sun tints (same as atmo_low_sun() in the shader)
+		var lo := 1.0 - smoothstep(-0.02, 0.2, q.dot(l) / q.length())
+		sr += tr * Vector3.ONE.lerp(u.get("atmo_twilight_tint", Vector3.ONE), lo) * dr * ds
+		sm += tr * Vector3.ONE.lerp(u.get("atmo_twilight_tint_mie", Vector3.ONE), lo) * dm * ds
 		if ms_k > 0.0:
 			var mp: float = u.get("atmo_ms_path", 0.55)
 			var src := tv * col_sky * Vector3(pow(ts.x, mp), pow(ts.y, mp), pow(ts.z, mp))

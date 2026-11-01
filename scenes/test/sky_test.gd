@@ -129,6 +129,9 @@ func _custom(preset: String) -> void:
 					+ clampf(back, 0.0, 800.0) * 0.0015 - h * 0.002)
 			var f: Vector3 = main._horizon_dir(n, s)
 			var look: Vector3
+			if preset.ends_with("anti") and not Capture.args.has("keep_weather"):
+				# open the low anti-solar sky (Earth shadow / Belt of Venus), keep some clouds above
+				main._clear_weather(t, n, [(-f + n * 0.06).normalized(), (-f + n * 0.25).normalized()], [3.0, 1.0])
 			if preset.ends_with("anti"):
 				look = (-f).rotated(n, deg_to_rad(-12.0)) + n * 0.16
 			else:
