@@ -13,3 +13,6 @@ export_credentials.cfg
 Thumbs.db
 *.tmp
 /tmp/
+
+# Agent worktrees / local Claude state
+.claude/worktrees/
