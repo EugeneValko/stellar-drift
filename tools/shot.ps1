@@ -12,6 +12,6 @@ foreach ($a in $Rest) {
   elseif ($a.StartsWith("--outdir=")) { $args2 += "--outdir=" + [IO.Path]::GetFullPath((Join-Path (Get-Location) $a.Substring(9))) }
   else { $args2 += $a }
 }
-if (-not (Test-Path (Join-Path $root ".godot"))) { & $Godot --headless --path $root --import | Out-Null }
+& $Godot --headless --path $root --import | Out-Null  # always: cheap when nothing changed
 # --fullscreen: on a 1920x1080 monitor a windowed 1080p window gets shrunk by the taskbar
-& $Godot --path $root --resolution 1920x1080 --fullscreen $Scene -- @args2 2>&1 | Where-Object { $_ -match "capture|ERROR|SCRIPT" }
+& $Godot --path $root --fixed-fps 60 --resolution 1920x1080 --fullscreen $Scene -- @args2 2>&1 | Where-Object { $_ -match "capture|ERROR|SCRIPT" }

@@ -16,5 +16,5 @@ done
 export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json
 RES=1920x1080; for a in "${ARGS[@]}"; do [[ "$a" == --res=* ]] && RES="${a#--res=}"; done
 timeout "${SHOT_TIMEOUT:-600}" xvfb-run -a -s "-screen 0 ${RES}x24" \
-  godot --rendering-driver vulkan --path . "$SCENE" -- "${ARGS[@]}" 2>&1 \
+  godot --rendering-driver vulkan --fixed-fps 60 --path . "$SCENE" -- "${ARGS[@]}" 2>&1 \
   | grep -vE 'ALSA|audio|snd_|init_output_device|^\s*at: |^\s*$' || true
