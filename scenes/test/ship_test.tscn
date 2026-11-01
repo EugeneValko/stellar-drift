@@ -104,7 +104,7 @@ directional_shadow_max_distance = 80.0
 transform = Transform3D(1, 0, 0, 0, 0.7, -0.7, 0, 0.7, 0.7, 0, 10, 0)
 light_color = Color(0.55, 0.7, 1, 1)
 light_energy = 2.0
-light_specular = 0.45
+light_specular = 0.2
 sky_mode = 1
 
 [node name="ShipVisual" parent="." instance=ExtResource("2")]

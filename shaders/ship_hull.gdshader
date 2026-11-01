@@ -316,7 +316,7 @@ void fragment() {
 	ROUGHNESS = clamp(rough, 0.04, 1.0);
 	SPECULAR = specular;
 	CLEARCOAT = clearcoat;
-	CLEARCOAT_ROUGHNESS = 0.2;
+	CLEARCOAT_ROUGHNESS = 0.35;
 	AO = mix(1.0, ao, ao_strength);
 	AO_LIGHT_AFFECT = 0.35;
 

@@ -50,6 +50,7 @@ func apply_capture_preset(preset: String) -> void:
 	var thrust_override := -1.0
 	if cap != null and (cap.get("args") as Dictionary).has("thrust"):
 		thrust_override = float((cap.get("args") as Dictionary)["thrust"])
+	ship.rotation = Vector3.ZERO
 	var warm := Color(1.0, 0.94, 0.86)
 	var cool := Color(0.55, 0.7, 1.0)
 	match preset:
@@ -93,7 +94,8 @@ func apply_capture_preset(preset: String) -> void:
 			ship.set_gear(false, true)
 			ship.set_hatch(false, true)
 			ship.set_thrust(0.6)
-			_look(Vector3(-11.5, 2.4, -15.5), Vector3(0.6, -0.1, -0.2), 44.0)
+			ship.rotation = Vector3(0.0, 0.0, deg_to_rad(5.0))
+			_look(Vector3(-12.0, 5.2, -15.0), Vector3(0.8, -0.5, 0.2), 44.0)
 			_light(key, Vector3(0.6, -0.55, 0.6), 2.8, warm)
 			_light(rim, Vector3(-0.2, -0.35, -0.95), 2.6, cool)
 	if thrust_override >= 0.0:
