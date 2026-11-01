@@ -4,25 +4,22 @@
 
 ## Готово (в main)
 - Этап 0: инфраструктура, CI (nightly-релиз на каждый пуш), локальный GPU-рендер на ПК пользователя (RTX 3060, `docs/LOCAL_RENDER.md`).
-- Этап 1: небо, звезда Helios, блики, окружение — `scenes/test/space_test.tscn`, отчёт `docs/reports/stage1_space.md`.
-- Этап 2a: рельеф планет (quadtree LOD), 6 пресетов — `scenes/test/planet_test.tscn`, `docs/reports/stage2_terrain.md`.
-- Этап 2b: атмосфера, облака, океан, газ-гигант, кольца — `scenes/test/atmo_test.tscn`, `docs/reports/stage2_atmosphere.md`.
-- Этап 3a: модель корабля v1 — `scenes/test/ship_test.tscn`, `docs/reports/stage3_ship_model.md`.
-- Контракты: autoload `Universe` (тела, гравитация, floating origin), `Controls` (клавиши + F1).
+- Этап 1: небо, звезда Helios, блики (`docs/reports/stage1_space.md`).
+- Этап 2: рельеф (`stage2_terrain.md`), атмосфера/облака/океан/газ-гигант (`stage2_atmosphere.md`), флора (`wave2_flora.md`).
+- Вся система в `scenes/main.tscn`: scaled space, освещение, свободная камера (`wave2_system.md`).
+- Корабль: модель v1 (`stage3_ship_model.md`), полёт, режимы скорости, варп, автопилот, посадка, VFX (`wave2_ship_flight.md`).
+- Персонаж, GameMode, HUD, F1 (`wave2_player_ui.md`).
 
-## В работе (волна 2, агенты в worktree-ветках)
-- 2A: сборка всей системы в `scenes/main.tscn`, scaled space, свободная камера, освещение; доводка облаков/рельефа.
-- 2B: летающий корабль `scenes/ship/ship.tscn`: 6DOF, режимы скорости, автопилот, посадка, VFX.
-- 2C: растительность и камни (`src/planets/scatter`), модели Blender.
-- 2D: персонаж пешком, GameMode (корабль/пешком/свободная камера), HUD, F1.
-- Локальная сессия (ПК): GPU-рендер всех тестовых сцен + замер FPS → `docs/screenshots/local/wave1/`.
+## В работе (волна 3)
+- 3A (облачный агент, worktree-ветка): первая играбельная сборка — GameMode+Ship+Player+HUD+флора в main, старт на Terra Nova, playtest-скрипт, фиксы (кратеры, высота атмосферы, океан, газ-гигант).
+- 3B (локальная сессия на ПК, ветка `perf-gpu`): оптимизация облаков/атмосферы/океана/флоры по реальному GPU, цель ≥80 FPS на RTX 3060.
 
 ## Известные проблемы
 - **Производительность (RTX 3060, 1080p):** космос 220 FPS, рельеф 116–146, атмосфера+облака+океан 57–80 (худший — `ocean_glint` 57). Для RTX 2060 нужен проход оптимизации облаков/океана. Подробно: `docs/screenshots/local/wave1/perf.md`.
 - far/near камеры ≤ 1e7 (Godot) → нужен scaled space (делает 2A).
 - Микро-обрывы до 1.4 м на границах ячеек кратеров (TerrainGenerator) — мешают ходьбе по лунам → исправить в волне 3.
 - Облака с орбиты «попкорн», высоты рельефа преувеличены, корабль похож на самолёт (v2 позже).
-- В nightly-сборке пока тестовая сцена (main.tscn ещё не собран).
+- В nightly-сборке — система со свободной камерой (без корабля); корабль/персонаж появятся после 3A.
 
 ## Следующий шаг
 - Влить волну 2 → интеграция GameMode + Ship + Player в main → первый играбельный билд → GPU-проверка на ПК.
