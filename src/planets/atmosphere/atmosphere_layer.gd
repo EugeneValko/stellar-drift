@@ -33,7 +33,7 @@ const EARTH_OZONE := Vector3(0.650e-6, 1.881e-6, 0.085e-6)
 
 const PRESETS := {
 	"terra_nova": {
-		"radius": 60000.0, "height": 14000.0, "rayleigh_height": 1600.0, "mie_height": 500.0,
+		"radius": 60000.0, "height": 24000.0, "rayleigh_height": 2600.0, "mie_height": 750.0,
 		"rayleigh_density": 1.5, "rayleigh_tint": Vector3(1, 1, 1),
 		"mie_density": 1.0, "mie_color": Color(1, 1, 1), "mie_absorb": Vector3(0.1, 0.1, 0.1),
 		"mie_g": 0.78, "ozone_density": 1.0, "intensity": PI, "multi_scatter": 0.35,
@@ -120,6 +120,7 @@ static func make_uniforms(p: Dictionary) -> Dictionary:
 		"atmo_intensity": float(p.get("intensity", PI)),
 		"atmo_multi_scatter": float(p.get("multi_scatter", 0.35)),
 		"atmo_steps": steps,
+		"atmo_sun_path_scale": float(p.get("sun_path_scale", 2.2)),
 	}
 
 
@@ -155,7 +156,8 @@ func sun_transmittance(p: Vector3, l: Vector3) -> Vector3:
 	var mus := p.dot(l) / r
 	var cr := minf(_chapman(u, r, mus, u["atmo_rayleigh_height"]), 1e9)
 	var cm := minf(_chapman(u, r, mus, u["atmo_mie_height"]), 1e9)
-	var od: Vector3 = (u["atmo_rayleigh"] + u["atmo_ozone"]) * cr + (u["atmo_mie"] + u["atmo_mie_absorb"]) * cm
+	var kk := 1.0 + (float(u["atmo_sun_path_scale"]) - 1.0) * (1.0 - clampf(mus * 3.0, 0.0, 1.0))
+	var od: Vector3 = ((u["atmo_rayleigh"] + u["atmo_ozone"]) * cr + (u["atmo_mie"] + u["atmo_mie_absorb"]) * cm) * kk
 	var sh := 1.0
 	if mus < 0.0:
 		var d := r * sqrt(1.0 - mus * mus)

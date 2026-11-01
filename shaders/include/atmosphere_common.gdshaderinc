@@ -24,6 +24,7 @@ uniform float atmo_mie_g = 0.78;
 uniform float atmo_intensity = 3.14159;      // sun irradiance multiplier (PI = physical)
 uniform float atmo_multi_scatter = 0.35;     // cheap isotropic multiple-scattering term
 uniform float atmo_shadow_soft = 0.6;        // planet shadow softness, in rayleigh heights
+uniform float atmo_sun_path_scale = 2.2;     // >1 = redder sunsets (grazing sun paths only)
 uniform int atmo_steps = 14;                 // view-ray samples (quality knob)
 group_uniforms;
 
@@ -53,7 +54,10 @@ float atmo_planet_shadow(float r, float mus) {
 vec3 atmo_sun_optical_depth(float r, float mus) {
 	float cr = min(atmo_chapman(r, mus, atmo_rayleigh_height), 1e9);
 	float cm = min(atmo_chapman(r, mus, atmo_mie_height), 1e9);
-	return (atmo_rayleigh + atmo_ozone) * cr + (atmo_mie + atmo_mie_absorb) * cm;
+	// artistic: compressed planets have short grazing paths; lengthen them near the horizon so
+	// sunsets get Earth-like reddening without making the daytime sky denser
+	float k = 1.0 + (atmo_sun_path_scale - 1.0) * (1.0 - clamp(mus * 3.0, 0.0, 1.0));
+	return ((atmo_rayleigh + atmo_ozone) * cr + (atmo_mie + atmo_mie_absorb) * cm) * k;
 }
 
 // Transmittance of sunlight arriving at point p (planet-centred). Includes planet shadow.

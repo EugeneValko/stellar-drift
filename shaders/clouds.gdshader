@@ -24,6 +24,7 @@ uniform float cloud_ocean_radius = 0.0;       // >0: rays stop at the ocean sphe
 uniform float cloud_detail_distance = 25000.0; // beyond: no detail erosion
 uniform int cloud_ap_steps = 6;
 uniform int cloud_debug = 0;
+uniform bool cloud_temporal_jitter = false;   // enable with TAA/FSR to resolve noise over frames
 group_uniforms;
 
 void fragment() {
@@ -79,13 +80,15 @@ void fragment() {
 	float ph2 = SD_INV_4PI;
 
 	float len = t1 - t0;
-	float k = (r0 <= cloud_top && len > 8000.0) ? 1.7 : 1.0;
-	float jit = sd_ign(FRAGCOORD.xy);
+	float k = len > 6000.0 ? 1.8 : 1.0;
+	// white-noise jitter (grain instead of structured banding); temporal variant for TAA
+	float jit = fract(sin(dot(floor(FRAGCOORD.xy), vec2(12.9898, 78.233))) * 43758.5453);
+	if (cloud_temporal_jitter) jit = fract(jit + TIME * 7.3123);
 	vec3 col = vec3(0.0);
 	float T = 1.0;
 	float t_acc = 0.0;
 	float w_acc = 0.0;
-	int n = cloud_debug == 1 ? 0 : cloud_steps;
+	int n = cloud_debug == 1 ? 0 : clamp(int(len / 80.0), 12, cloud_steps);
 	for (int i = 0; i < n; i++) {
 		float u0 = float(i) / float(n);
 		float u1 = float(i + 1) / float(n);

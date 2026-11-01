@@ -20,9 +20,9 @@ uniform vec3 ocean_scatter_color : source_color = vec3(0.015, 0.06, 0.09);  // d
 uniform vec3 ocean_shallow_tint : source_color = vec3(0.10, 0.55, 0.50);   // in-scatter in shallows
 uniform vec3 ocean_absorption = vec3(0.35, 0.065, 0.045);                  // 1/m (red absorbed first)
 uniform float ocean_turbidity = 0.08;           // extra scattering in shallows (1/m)
-uniform float ocean_wave_length = 90.0;         // longest wave, m
+uniform float ocean_wave_length = 45.0;         // longest wave, m
 uniform float ocean_wave_min = 0.3;             // shortest wave, m
-uniform float ocean_steepness = 0.75;           // overall slope scale
+uniform float ocean_steepness = 0.5;           // overall slope scale
 uniform float ocean_base_roughness = 0.035;
 uniform float ocean_time_scale = 1.0;
 uniform int ocean_waves = 24;
@@ -115,7 +115,11 @@ void fragment() {
 	float var;
 	vec3 slope_l = ocean_slope(q, N_l, footprint, var);
 	vec3 n = normalize(N - mat3(MODEL_MATRIX) * slope_l);
-	float a2 = ocean_base_roughness * ocean_base_roughness + 2.0 * var;
+	// normal variation inside the pixel (resolved waves near Nyquist) -> extra roughness (Toksvig-like)
+	vec3 dnx = dFdx(n);
+	vec3 dny = dFdy(n);
+	float pvar = clamp(dot(dnx, dnx) + dot(dny, dny), 0.0, 0.5);
+	float a2 = ocean_base_roughness * ocean_base_roughness + 2.0 * var + pvar;
 	a2 = clamp(a2, 1e-4, 0.5);
 
 	vec3 V = -rd;

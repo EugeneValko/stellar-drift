@@ -21,9 +21,10 @@ vec2 sd_ray_sphere(vec3 ro, vec3 rd, float R) {
 	return vec2(-b - h, -b + h);
 }
 
-// Interleaved gradient noise, stable per pixel (0..1).
+// Per-pixel jitter (0..1), stable.
 float sd_ign(vec2 fc) {
-	return fract(52.9829189 * fract(dot(fc, vec2(0.06711056, 0.00583715))));
+	// R2 low-discrepancy pattern (more isotropic than IGN when not accumulated temporally)
+	return fract(dot(floor(fc), vec2(0.7548776662, 0.5698402910)) + 0.5);
 }
 
 // Distance along the view ray to the opaque scene (from a hint_depth_texture value).

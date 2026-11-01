@@ -94,7 +94,24 @@ vec2 cloud_weather(vec3 dir) {
 	float sa = sin(a);
 	vec3 q = vec3(ca * dir.x - sa * dir.z, dir.y, sa * dir.x + ca * dir.z);
 	vec2 uv = vec2(atan(q.z, q.x) * 0.15915494 + 0.5, acos(clamp(q.y, -1.0, 1.0)) * 0.31830989);
-	return texture(cloud_weather_tex, uv).rg;
+	// bicubic B-spline from 4 bilinear taps: C2-smooth coverage (bilinear creases would be
+	// extruded into vertical "curtains" by the density remap)
+	vec2 size = vec2(textureSize(cloud_weather_tex, 0));
+	vec2 st = uv * size - 0.5;
+	vec2 i = floor(st);
+	vec2 f = st - i;
+	vec2 w0 = (1.0 - f) * (1.0 - f) * (1.0 - f) / 6.0;
+	vec2 w1 = (4.0 - 6.0 * f * f + 3.0 * f * f * f) / 6.0;
+	vec2 w2 = (1.0 + 3.0 * f + 3.0 * f * f - 3.0 * f * f * f) / 6.0;
+	vec2 w3 = f * f * f / 6.0;
+	vec2 g0 = w0 + w1;
+	vec2 g1 = w2 + w3;
+	vec2 h0 = (i - 1.0 + w1 / g0 + 0.5) / size;
+	vec2 h1 = (i + 1.0 + w3 / g1 + 0.5) / size;
+	return (texture(cloud_weather_tex, vec2(h0.x, h0.y)).rg * g0.x
+		+ texture(cloud_weather_tex, vec2(h1.x, h0.y)).rg * g1.x) * g0.y
+		+ (texture(cloud_weather_tex, vec2(h0.x, h1.y)).rg * g0.x
+		+ texture(cloud_weather_tex, vec2(h1.x, h1.y)).rg * g1.x) * g1.y;
 }
 
 // Density (0..~1) at planet-local point pl, radius r, weather w.
@@ -119,7 +136,7 @@ float cloud_density_at(vec3 pl, float r, vec2 w, int lod) {
 	float grad = smoothstep(0.0, 0.07, h) * smoothstep(1.0, 0.7, hn);
 	base *= grad;
 	base = clamp((base - hn * 0.15) / (1.0 - hn * 0.15), 0.0, 1.0);
-	base = clamp(base * 1.8, 0.0, 1.0);
+	base = clamp(base * 1.25, 0.0, 1.0);
 	if (base <= 0.0) return 0.0;
 	if (lod == 0) {
 		float dn = texture(cloud_detail_tex, (pl + drift * 1.5) / cloud_detail_size).r;

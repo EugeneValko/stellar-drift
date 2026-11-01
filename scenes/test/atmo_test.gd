@@ -21,6 +21,7 @@ var sun_energy := 1.6
 var cam: Camera3D
 var light: DirectionalLight3D
 var env: Environment
+var sky_mat: ShaderMaterial
 var terra: Node3D
 var terra_ground: PlaceholderBody
 var terra_atmo: AtmosphereLayer
@@ -46,7 +47,8 @@ func _build_env() -> void:
 	env = Environment.new()
 	env.background_mode = Environment.BG_SKY
 	var sky := Sky.new()
-	var sm := ShaderMaterial.new()
+	sky_mat = ShaderMaterial.new()
+	var sm := sky_mat
 	sm.shader = preload("res://shaders/debug_space_bg.gdshader")
 	sky.sky_material = sm
 	env.sky = sky
@@ -54,7 +56,7 @@ func _build_env() -> void:
 	env.ambient_light_color = Color(0, 0, 0)
 	env.ambient_light_energy = 0.0
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
-	env.tonemap_mode = Environment.TONE_MAPPER_AGX
+	env.tonemap_mode = int(Capture.args.get("tonemap", "4")) as Environment.ToneMapper
 	env.tonemap_exposure = 1.0
 	env.glow_enabled = true
 	env.glow_intensity = 0.6
@@ -94,7 +96,7 @@ func _build_terra() -> void:
 	terra_ocean.setup({"radius": R_TERRA, "atmosphere": terra_atmo, "quality": 2})
 	terra_clouds = CLOUDS_SCENE.instantiate()
 	terra.add_child(terra_clouds)
-	terra_clouds.setup({"radius": R_TERRA, "bottom": 2200.0, "top": 4800.0, "coverage": 0.45, "brightness": 2.2, "cyclones": 5,
+	terra_clouds.setup({"radius": R_TERRA, "bottom": 1800.0, "top": 4300.0, "coverage": 0.45, "brightness": 2.2, "cyclones": 5,
 		"atmosphere": terra_atmo, "ocean_radius": R_TERRA, "quality": 2})
 	terra_ocean.set_clouds(terra_clouds)
 	terra_clouds.apply_shadow_uniforms(terra_ground.material)
@@ -233,7 +235,7 @@ func apply_capture_preset(preset: String) -> void:
 		"above_clouds":
 			var n := _find_site(12.0, -5000.0, 6000.0, 1.2)
 			var fr := _frame(n)
-			var pos: Vector3 = n * (R_TERRA + 7200.0)
+			var pos: Vector3 = n * (R_TERRA + 6200.0)
 			_look(pos, pos + fr[1] * 10000.0 + fr[2] * 6000.0 - n * 600.0, n)
 		"in_atmo_day":
 			var n := _find_site(38.0, 50.0, 400.0, 2.0)
@@ -296,5 +298,13 @@ func _gg_preset(preset: String) -> void:
 
 func _after_camera() -> void:
 	print("[atmo_test] cam ", cam.global_position, " fwd ", -cam.global_basis.z, " current ", cam.current)
+	# test-only: stars are washed out by a bright daytime sky (the real sky system handles this)
+	var stars := 0.6
+	if terra.visible:
+		var p := terra.to_local(cam.global_position)
+		var alt := p.length() - R_TERRA
+		var day := clampf(p.normalized().dot(sun_dir) * 5.0 + 0.5, 0.0, 1.0)
+		stars = lerpf(0.6, 0.02, (1.0 - smoothstep(8000.0, 30000.0, alt)) * day)
+	sky_mat.set_shader_parameter("star_brightness", stars)
 	if _focus_body != null:
 		_focus_body.focus(_focus_body.to_local(cam.global_position))

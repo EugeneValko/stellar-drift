@@ -23,7 +23,7 @@ extends Node3D
 ##   atmosphere        AtmosphereLayer or its uniforms Dictionary (sun colour + aerial perspective)
 ##   ocean_radius      rays stop at this sphere (sea level); 0 = off
 ##   shadow_strength   for receivers (0..1, default 0.75)
-##   quality           0/1/2 -> steps 24/40/64, light steps 3/4/5
+##   quality           0/1/2 -> max steps 32/56/96, light steps 3/4/5
 ##   weather_resolution  equirect bake width (default 2048)
 ##   render_priority_base
 
@@ -63,7 +63,7 @@ func setup(cfg: Variant = null) -> void:
 	_bake_weather(int(params.get("weather_resolution", 2048)))
 	uniforms["cloud_weather_tex"] = weather_viewport.get_texture()
 	var render := {
-		"cloud_steps": int(params.get("steps", [24, 40, 64][q])),
+		"cloud_steps": int(params.get("steps", [32, 56, 96][q])),
 		"cloud_light_steps": int(params.get("light_steps", [3, 4, 5][q])),
 		"cloud_brightness": float(params.get("brightness", 1.0)),
 		"cloud_ambient": float(params.get("ambient", 1.0)),
@@ -95,6 +95,7 @@ func _bake_weather(width: int) -> void:
 		weather_viewport.name = "WeatherBake"
 		weather_viewport.disable_3d = true
 		weather_viewport.transparent_bg = false
+		weather_viewport.use_hdr_2d = true   # 16-bit float: 8-bit coverage creates contour streaks
 		weather_viewport.render_target_clear_mode = SubViewport.CLEAR_MODE_ONCE
 		add_child(weather_viewport)
 		var rect := ColorRect.new()
