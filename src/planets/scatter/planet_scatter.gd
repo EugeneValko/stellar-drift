@@ -59,7 +59,8 @@ const FACE_V: Array[Vector3] = [Vector3(0, 1, 0), Vector3(0, 1, 0), Vector3(0, 0
 ## dense small layers (grass/flowers/pebbles: cell_size < 48 m).
 const QUALITY := [
 	{"shadow": 0.45, "far": 0.6, "lod": 0.7, "cover": 0.6},
-	{"shadow": 0.7, "far": 0.8, "lod": 0.85, "cover": 0.8},
+	# q1 keeps full shadow distance: from 300 m up, 0.7x already removes every tree shadow
+	{"shadow": 1.0, "far": 0.8, "lod": 0.85, "cover": 0.8},
 	{"shadow": 1.0, "far": 1.0, "lod": 1.0, "cover": 1.0},
 ]
 
