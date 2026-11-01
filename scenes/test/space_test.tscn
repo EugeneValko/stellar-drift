@@ -1,0 +1,34 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scenes/test/space_test.gd" id="1_test"]
+[ext_resource type="PackedScene" path="res://scenes/space/space_backdrop.tscn" id="2_bd"]
+[ext_resource type="PackedScene" path="res://scenes/space/star.tscn" id="3_star"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_planet"]
+radius = 60000.0
+height = 120000.0
+radial_segments = 128
+rings = 64
+
+[sub_resource type="StandardMaterial3D" id="Mat_planet"]
+albedo_color = Color(0.32, 0.36, 0.42, 1)
+roughness = 0.9
+
+[node name="SpaceTest" type="Node3D"]
+script = ExtResource("1_test")
+
+[node name="SpaceBackdrop" parent="." instance=ExtResource("2_bd")]
+
+[node name="SunLight" type="DirectionalLight3D" parent="."]
+shadow_enabled = true
+
+[node name="Star" parent="." node_paths=PackedStringArray("sun_light") instance=ExtResource("3_star")]
+sun_light = NodePath("../SunLight")
+
+[node name="Planet" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_planet")
+surface_material_override/0 = SubResource("Mat_planet")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+far = 1e+09
+current = true
