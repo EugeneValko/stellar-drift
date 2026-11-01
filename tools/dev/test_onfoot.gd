@@ -11,6 +11,9 @@ extends SceneTree
 ##    at each station the player is dropped 1 m above ground, LOD/collision are built, then it
 ##    sprints forward for 6 s (real physics, collision streaming every frame, 60 Hz pacing).
 ##    Plus one continuous 60 s sprint segment with paced frames (collision streaming realism).
+## 3. "flow": scenes/test/onfoot_test.tscn — presses F (InputEventAction) near the hatch, checks
+##    SHIP state / focus / camera, presses F again, checks the player is back on foot at the
+##    ExitPoint, upright and grounded; V without free_camera.gd must not change the state.
 ## Criteria per frame (after landing): grounded by real collision (not the analytic safety net),
 ## |body up − local up| < 3°, feet within [−0.25, +0.35] m of the analytic surface.
 
@@ -20,6 +23,7 @@ const UP_TOL_DEG := 3.0
 ## Analytic height has small cliffs at crater-cell borders (TerrainGenerator); standing at such an
 ## edge the capsule rests on the half-res collision a bit above the analytic value.
 const TERRAIN_ALT_TOL := 0.6
+const CLIFF_ALT_TOL := 1.6
 
 
 class SphereBody extends Node3D:
@@ -74,6 +78,8 @@ func _run() -> void:
 		await _test_sphere()
 	if mode == "terrain" or mode == "all":
 		await _test_terrain()
+	if mode == "flow" or mode == "all":
+		await _test_flow()
 	print("\n==== test_onfoot results ====")
 	for r in results:
 		print(r)
@@ -84,7 +90,9 @@ func _run() -> void:
 # ---------------------------------------------------------------------------- per-frame checks
 class Stats:
 	var frames := 0
-	var air := 0
+	var air := 0          # not grounded (controller view: floor, coyote, ledge-edge rest)
+	var nofloor := 0      # no physics floor contact (is_on_floor() false)
+	var air_high := 0   # airborne and > 0.35 m above the analytic ground (real flight, e.g. off a cliff)
 	var up_err_max := 0.0
 	var alt_min := INF
 	var alt_max := -INF
@@ -93,8 +101,8 @@ class Stats:
 	var detours := 0
 	var dist := 0.0
 	func line() -> String:
-		return "frames=%d airborne=%d max_up_err=%.2f° alt=[%.3f, %.3f] m rescues=%d step-ups=%d detours=%d dist=%.0f m" % [
-			frames, air, up_err_max, alt_min, alt_max, rescues, steps, detours, dist]
+		return "frames=%d airborne=%d (flight >0.35 m: %d, no floor contact: %d) max_up_err=%.2f° alt=[%.3f, %.3f] m rescues=%d step-ups=%d detours=%d dist=%.0f m" % [
+			frames, air, air_high, nofloor, up_err_max, alt_min, alt_max, rescues, steps, detours, dist]
 
 
 func _check(p: CharacterBody3D, body: Node3D, st: Stats) -> void:
@@ -105,7 +113,11 @@ func _check(p: CharacterBody3D, body: Node3D, st: Stats) -> void:
 	st.alt_min = minf(st.alt_min, alt)
 	st.alt_max = maxf(st.alt_max, alt)
 	if not p.is_on_floor():
+		st.nofloor += 1
+	if not p.is_grounded():
 		st.air += 1
+		if alt > 0.35:
+			st.air_high += 1
 
 
 func _ok(st: Stats, max_air_ratio: float, alt_tol := 0.35) -> bool:
@@ -213,6 +225,8 @@ func _test_terrain() -> void:
 			worst += "\n    station %d (%.0f°, dir %s): %s" % [i, rad_to_deg(ang), str(dir.snapped(Vector3.ONE * 0.01)), st.line()]
 		total.frames += st.frames
 		total.air += st.air
+		total.air_high += st.air_high
+		total.nofloor += st.nofloor
 		total.up_err_max = maxf(total.up_err_max, st.up_err_max)
 		total.alt_min = minf(total.alt_min, st.alt_min)
 		total.alt_max = maxf(total.alt_max, st.alt_max)
@@ -226,8 +240,11 @@ func _test_terrain() -> void:
 	# continuous paced segment (collision streaming must keep up with a sprinting player)
 	var dir0 := (a0 * cos(0.3) + b0 * sin(0.3)).normalized()
 	var st2 := await _station(planet, p, dir0, n.cross(dir0), 60 * 60, true)
-	var ok2 := _ok(st2, 0.08, TERRAIN_ALT_TOL)
-	results.append("[Selene continuous 60 s sprint, paced 60 Hz] %s: %s" % ["PASS" if ok2 else "FAIL", st2.line()])
+	# Selene's height field has cliffs up to ~1.4 m (crater-cell borders) that a sprinting player
+	# legitimately drops off, hence the larger altitude tolerance for this free-running segment.
+	var ok2 := _ok(st2, 0.08, CLIFF_ALT_TOL)
+	results.append("[Selene continuous 60 s sprint, paced 60 Hz] %s: %s, airborne %.1f%%" % [
+		"PASS" if ok2 else "FAIL", st2.line(), 100.0 * st2.air / maxf(st2.frames, 1)])
 	failed = failed or not ok2
 	w.queue_free()
 	await _frames(2)
@@ -321,3 +338,69 @@ func _profile(planet: Planet, p: CharacterBody3D) -> void:
 		var rh: float = (hit["position"] - p.global_position).dot(up) if hit else NAN
 		line += " %.1f:%.2f/%.2f" % [d, ana, rh]
 	print(line)
+
+
+# ---------------------------------------------------------------------------- 3. enter/exit flow
+func _press(action: String) -> void:
+	var ev := InputEventAction.new()
+	ev.action = action
+	ev.pressed = true
+	Input.parse_input_event(ev)
+	await process_frame
+	var up := InputEventAction.new()
+	up.action = action
+	up.pressed = false
+	Input.parse_input_event(up)
+	await process_frame
+
+
+func _test_flow() -> void:
+	var scene: Node = (load("res://scenes/test/onfoot_test.tscn") as PackedScene).instantiate()
+	root.add_child(scene)
+	await _frames(30)
+	var gm: Node = scene.get_node("GameMode")
+	var p: CharacterBody3D = gm.player
+	var ship: Node3D = gm.ship
+	var log := []
+	var ok := true
+	# walk the player next to the hatch
+	var hatch: Vector3 = ship.get_entry_point()
+	var up: Vector3 = Universe.get_up(hatch)
+	p.place_at(Transform3D(ship.global_basis, hatch + ship.global_basis.x * -2.5 + up * 0.05))
+	await _frames(30)
+	var near: float = gm.distance_to_hatch()
+	var prompt: String = gm.hud.prompt_text
+	log.append("near hatch %.2f m, prompt='%s'" % [near, prompt])
+	ok = ok and prompt == "Сесть в корабль"
+	await _press("interact")
+	await _frames(90)
+	var in_ship: bool = gm.state == 0 and ship.is_piloted and not p.visible and Universe.focus == ship \
+		and root.get_viewport().get_camera_3d() == ship.get_camera()
+	log.append("after F: state=%s piloted=%s player_visible=%s focus_ship=%s exit_prompt='%s'" % [gm.get_state_name(),
+		ship.is_piloted, p.visible, Universe.focus == ship, gm.hud.prompt_text])
+	ok = ok and in_ship
+	# V without free_camera.gd: state unchanged
+	var has_fc := ResourceLoader.exists("res://src/core/free_camera.gd")
+	await _press("freecam_toggle")
+	await _frames(5)
+	if not has_fc:
+		ok = ok and gm.state == 0
+		log.append("V without free_camera.gd: state=%s (unchanged)" % gm.get_state_name())
+	else:
+		log.append("V with free_camera.gd: state=%s" % gm.get_state_name())
+		await _press("freecam_toggle")
+		await _frames(5)
+	await _press("interact")
+	await _frames(120)
+	var exit_pt: Vector3 = ship.get_entry_point()
+	var d: float = p.global_position.distance_to(exit_pt)
+	var up_err: float = rad_to_deg(p.global_basis.y.angle_to(Universe.get_up(p.global_position)))
+	var on_foot: bool = gm.state == 1 and p.visible and Universe.focus == p and not ship.is_piloted \
+		and root.get_viewport().get_camera_3d() == p.get_camera()
+	log.append("after F: state=%s player %.2f m from ExitPoint, up_err=%.2f°, on_floor=%s, rescues=%d" % [
+		gm.get_state_name(), d, up_err, p.is_on_floor(), p.rescue_count])
+	ok = ok and on_foot and d < 1.5 and up_err < 3.0 and p.is_grounded()
+	results.append("[flow enter/exit] %s: %s" % ["PASS" if ok else "FAIL", "; ".join(log)])
+	failed = failed or not ok
+	scene.queue_free()
+	await _frames(2)

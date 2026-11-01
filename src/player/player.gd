@@ -35,6 +35,10 @@ const MODEL_LAYER := 1 << 19   # visual layer 20: own body, hidden from the firs
 @export var max_fall_speed := 80.0
 ## Ledges up to this height are climbed automatically (rocks, terrain LOD seams).
 @export var step_height := 0.35
+## Still counts as grounded this long after leaving the floor (crests, ledge edges).
+@export var coyote_time := 0.12
+## Feet this close to the analytic ground while not rising count as grounded (edge contacts).
+@export var edge_rest_height := 0.12
 
 @export_group("Look")
 @export var mouse_sensitivity := 0.0022
@@ -68,6 +72,8 @@ var _bob_phase := 0.0
 var _bob_amount := 0.0
 var _land_dip := 0.0
 var _was_grounded := false
+var _air_time := 0.0
+var _jumped := false
 var _last_vert_speed := 0.0
 var _step_side := 0
 var _model: Node3D
@@ -155,8 +161,17 @@ func set_pitch_deg(deg: float) -> void:
 	head.rotation = Vector3(_pitch, 0, 0)
 
 
+## Grounded for control purposes: real floor contact, the analytic safety net, coyote time after
+## leaving the floor, or resting on a ledge edge (contact too steep to count as floor, but the feet
+## are within a few cm of the ground and not moving up).
 func is_grounded() -> bool:
-	return is_on_floor() or analytic_grounded
+	if is_on_floor() or analytic_grounded:
+		return true
+	if _jumped:
+		return false
+	if _air_time < coyote_time:
+		return true
+	return altitude < edge_rest_height and _last_vert_speed <= 0.5
 
 
 ## Forward direction on the local horizontal plane (unit).
@@ -262,12 +277,18 @@ func _physics_process(dt: float) -> void:
 			v_vert = up * sqrt(2.0 * gmag * jump_height)
 			grounded = false
 			analytic_grounded = false
-		else:
+			_jumped = true
+		elif is_on_floor() or analytic_grounded:
 			# On the floor the slope is handled by move_and_slide + snapping; never keep an
 			# upward component (walking up a crest would otherwise launch us), just press down
 			# with one frame of gravity so floor contact stays continuous on a curved surface.
 			v_vert = g * dt
-	if not grounded:
+		else:
+			# coyote / ledge edge: full control, but keep falling naturally
+			if v_vert.dot(up) > 0.0:
+				v_vert = Vector3.ZERO
+			v_vert += g * dt
+	else:
 		v_vert += g * dt
 		if v_vert.dot(up) < -max_fall_speed:
 			v_vert = -up * max_fall_speed
@@ -296,6 +317,11 @@ func _physics_process(dt: float) -> void:
 				analytic_grounded = altitude < 0.05
 
 	# 5) Feedback: landing dip, head bob, limbs, dust.
+	if is_on_floor() or analytic_grounded:
+		_air_time = 0.0
+		_jumped = false
+	else:
+		_air_time += dt
 	var now_grounded := is_grounded()
 	if now_grounded and not _was_grounded:
 		var fall := -_last_vert_speed

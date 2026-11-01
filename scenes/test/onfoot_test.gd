@@ -157,7 +157,7 @@ func apply_capture_preset(preset: String) -> void:
 		if game_mode.state != GameMode.State.ON_FOOT:
 			game_mode.force_on_foot()
 		game_mode.set_hatch_open(true, true)
-		_aim_sun(30.0, 75.0)
+		_aim_sun(38.0, 80.0)
 	match preset:
 		"onfoot_fp":
 			p.set_third_person(false)
