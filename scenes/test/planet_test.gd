@@ -86,13 +86,17 @@ func apply_capture_preset(preset: String) -> void:
 			cam.far = R * 6.0
 			cam.fov = 60.0
 		"low_flight", "ignis_low", "glacia_low":
-			var site := _find_peak()
-			var d := _lowest_around(site, float(Capture.args.get("dist", "11000")))
+			var site := _find_lava() if preset == "ignis_low" else _find_peak()
+			var dist_m := 2200.0 if preset == "ignis_low" else 11000.0
+			var d := _lowest_around(site, float(Capture.args.get("dist", str(dist_m))))
+			if preset == "ignis_low":
+				d = _highest_around(site, dist_m)
 			var alt := planet.get_height(d) + 500.0
 			cam_local = d * (R + alt)
 			var to_peak := (site * (R + planet.get_height(site)) - cam_local).normalized()
 			var level := (to_peak - d * to_peak.dot(d)).normalized()
-			look_dir = (level + d * clampf(to_peak.dot(d) * 0.6, -0.15, 0.2)).normalized()
+			var min_pitch := -0.55 if preset == "ignis_low" else -0.15
+			look_dir = (level + d * clampf(to_peak.dot(d) * 0.8, min_pitch, 0.2)).normalized()
 			_sun_at(d, look_dir, 24.0, 140.0)
 			sun.directional_shadow_max_distance = 20000.0
 			cam.near = 0.5
@@ -105,7 +109,7 @@ func apply_capture_preset(preset: String) -> void:
 			var to_peak := (site * (R + planet.get_height(site)) - cam_local).normalized()
 			look_dir = (to_peak - d * to_peak.dot(d) + d * 0.02).normalized()
 			if preset == "surface_sunset":
-				_sun_at(d, look_dir, 4.0, 115.0)
+				_sun_at(d, look_dir, 4.0, 215.0)
 				sun.light_color = Color(1.0, 0.6, 0.34)
 				sun.light_energy = 2.2
 			else:
@@ -191,6 +195,49 @@ func _find_peak() -> Vector3:
 			if h > best_h:
 				best_h = h
 				best = d
+	return best
+
+
+## Lava channel with the deepest surroundings (canyon floor) — Ignis showcase.
+func _find_lava() -> Vector3:
+	var gen := planet.terrain.generator
+	var best := Vector3.UP
+	var best_s := -1e9
+	var n := 5000
+	var ga := PI * (3.0 - sqrt(5.0))
+	for i in n:
+		var y := 1.0 - (float(i) + 0.5) / float(n) * 2.0
+		var r := sqrt(1.0 - y * y)
+		var d := Vector3(cos(ga * i) * r, y, sin(ga * i) * r)
+		var s := gen.sample(d, 1e9)
+		if s.z < 0.8:
+			continue
+		var t1 := d.cross(Vector3.UP).normalized()
+		var t2 := d.cross(t1)
+		var e := 1200.0 / planet.config.radius
+		var around := 0.0
+		for k in 4:
+			var a := TAU * k / 4.0
+			around += planet.get_height((d + (t1 * cos(a) + t2 * sin(a)) * e).normalized())
+		var score := around * 0.25 - s.x
+		if score > best_s:
+			best_s = score
+			best = d
+	return best
+
+
+func _highest_around(site: Vector3, meters: float) -> Vector3:
+	var t1 := site.cross(Vector3.UP).normalized()
+	var t2 := site.cross(t1)
+	var best := site
+	var best_h := -1e9
+	for k in 12:
+		var a := TAU * k / 12.0
+		var d := (site + (t1 * cos(a) + t2 * sin(a)) * (meters / planet.config.radius)).normalized()
+		var h := planet.get_height(d)
+		if h > best_h:
+			best_h = h
+			best = d
 	return best
 
 

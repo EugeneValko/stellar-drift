@@ -132,7 +132,7 @@ void fragment() {
 	float alpine = smoothstep(snow_h * 0.5, snow_h * 0.75, hb + n2 * 400.0 + n1 * 120.0);
 	float rock = max(rock_slope, smoothstep(0.35, 0.85, v_mask.r + n2 * 0.4) * (1.0 - snow * 0.7));
 	rock = max(rock, alpine * smoothstep(0.35, 0.65, nband.r + slope * 2.0) * (1.0 - snow));
-	snow *= 1.0 - smoothstep(0.32, 0.5, slope + n1 * 0.1);   // snow slides off steep walls
+	snow *= 1.0 - smoothstep(0.2, 0.36, slope + n1 * 0.12);   // snow slides off steep walls
 	// polar ice caps (independent of height, ragged edge)
 	float cap = smoothstep(0.9, 0.95, lat + macro * 0.12 + n2 * 0.06) * step(0.0, polar_snow - 0.01);
 	snow = max(snow, cap * (1.0 - rock_slope * 0.6));
@@ -161,6 +161,17 @@ void fragment() {
 	float soil = smoothstep(0.62, 0.8, nband.b + n2 * 0.4) * (1.0 - forest) * (1.0 - desert);
 	low = mix(low, mix(color_dry, color_rock, 0.5) * 0.8, soil * 0.6);
 	low *= 0.85 + 0.3 * g2 + n1 * 0.2;
+	// close range: grass clumps & pebbles (fades out with distance)
+	float near_f = 1.0 - smoothstep(25.0, 120.0, dist);
+	if (near_f > 0.0) {
+		vec4 nn = tri(tex_noise, p / 0.5, w);
+		vec4 nn2 = tri(tex_noise, p / 2.0, w);
+		float clump = smoothstep(0.3, 0.75, nn.a * 0.6 + nn2.r * 0.6 - 0.1);
+		vec3 lush = low * mix(vec3(0.75, 0.85, 0.7), vec3(1.15, 1.12, 0.9), clump);
+		float peb = smoothstep(0.12, 0.04, nn2.g) * (1.0 - forest * 0.7);
+		lush = mix(lush, mix(color_rock, color_dry, 0.4) * (0.7 + 0.5 * nn.r), peb * 0.75);
+		low = mix(low, lush, near_f);
+	}
 	low = mix(low, low * vec3(1.08, 1.0, 0.85), smoothstep(-0.1, 0.25, n2));
 
 	// rock with strata bands (stronger in canyons / mesas)
