@@ -1,0 +1,36 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scenes/test/onfoot_test.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/space/space_backdrop.tscn" id="2"]
+[ext_resource type="Script" path="res://src/player/test_ship_stub.gd" id="3"]
+[ext_resource type="Script" path="res://src/core/game_mode.gd" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/ui/help_overlay.tscn" id="6"]
+
+[node name="OnFootTest" type="Node3D"]
+script = ExtResource("1")
+
+[node name="SpaceBackdrop" parent="." instance=ExtResource("2")]
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+light_energy = 1.6
+light_angular_distance = 0.5
+shadow_enabled = true
+directional_shadow_mode = 2
+directional_shadow_max_distance = 400.0
+shadow_bias = 0.03
+shadow_normal_bias = 1.2
+
+[node name="World" type="Node3D" parent="."]
+
+[node name="Ship" type="Node3D" parent="World"]
+script = ExtResource("3")
+
+[node name="GameMode" type="Node" parent="."]
+script = ExtResource("4")
+ship_path = NodePath("../World/Ship")
+hud_path = NodePath("../Hud")
+
+[node name="Hud" parent="." instance=ExtResource("5")]
+
+[node name="HelpOverlay" parent="." instance=ExtResource("6")]
