@@ -1,10 +1,14 @@
 class_name ShipFX
 extends Node3D
 ## Visual effects driven by the Ship's flight state (child "FX" of the ship). Builds everything
-## in code: engine thrust (ShipVisual.set_thrust), RCS puffs at Thruster_* markers, re-entry
-## heating (hull overlay + bow shock + plasma wake + embers + glow light), condensation (vapor
-## cone + wingtip trails), space dust streaks, warp tunnel + screen effect + FOV kick, landing dust.
-## All particle systems that must survive floating-origin shifts use local coordinates.
+## in code: engine thrust with spool-up (ShipVisual.set_thrust) + heat shimmer behind the nozzles,
+## RCS puffs at Thruster_* markers, re-entry heating (hull overlay + bow shock + plasma wake +
+## heat haze + embers + glow light), condensation (transonic vapor cone with a sonic-boom burst,
+## wingtip vortex ribbons), space dust streaks, warp tunnel + screen effect + FOV kick + drop-out
+## flash/ripple, landing dust (soft lit billows coloured by the ground biome) and sea spray.
+## Only marker API of ShipVisual is used (EngineExhaust_*, Thruster_*, NavLight_*): the model may
+## change shape. Particle systems that must survive floating-origin shifts use local coordinates;
+## world-space ground effects restart on a shift.
 
 const REENTRY_SHADER := preload("res://shaders/ship_reentry.gdshader")
 const PLASMA_SHADER := preload("res://shaders/ship_plasma.gdshader")
@@ -12,6 +16,8 @@ const VAPOR_SHADER := preload("res://shaders/ship_vapor.gdshader")
 const DUST_SHADER := preload("res://shaders/ship_space_dust.gdshader")
 const TUNNEL_SHADER := preload("res://shaders/ship_warp_tunnel.gdshader")
 const SCREEN_SHADER := preload("res://shaders/ship_warp_screen.gdshader")
+const DUST_CLOUD_SHADER := preload("res://shaders/ship_dust_cloud.gdshader")
+const HAZE_SHADER := preload("res://shaders/ship_heat_haze.gdshader")
 const OVERLAY_PARTS := ["Hull", "Canopy", "GearFront", "GearRearL", "GearRearR", "Hatch"]
 const HALF_EXTENTS := Vector3(7.5, 2.0, 10.3)   # ship half size (support function for the shock)
 
@@ -35,14 +41,36 @@ var _embers: GPUParticles3D
 var _embers_pm: ParticleProcessMaterial
 var _vapor: MeshInstance3D
 var _vapor_mat: ShaderMaterial
-var _wing_trails: Array[GPUParticles3D] = []
+var _trails: Array[ShipTrail] = []
+var _jet_haze: Array[MeshInstance3D] = []
+var _jet_haze_mat: ShaderMaterial
+var _wake_haze: MeshInstance3D
+var _wake_haze_mat: ShaderMaterial
+var _billow: GPUParticles3D
+var _billow_pm: ParticleProcessMaterial
+var _billow_mat: ShaderMaterial
+var _skirt: GPUParticles3D
+var _skirt_pm: ParticleProcessMaterial
+var _skirt_mat: ShaderMaterial
+var _spray: GPUParticles3D
+var _spray_pm: ParticleProcessMaterial
+var _mist: GPUParticles3D
+var _mist_pm: ParticleProcessMaterial
+var _mist_mat: ShaderMaterial
+var _ground_t := 0.0
+var _ground_info: Dictionary = {}
+var _drop_flash := 0.0
+var _ripple := -1.0
+## Engine spool 0..1 (start-up after the clamps release, spin-down when landed).
+var engine_spool := 0.0
+## Total RCS activity (0..~3) for audio.
+var rcs_level := 0.0
+## Wingtip vortex strength 0..1 (read by audio / debug).
+var vortex := 0.0
 var _rcs: Array[Dictionary] = []
 var _dust: MeshInstance3D
 var _dust_mat: ShaderMaterial
 var _travel := Vector3.ZERO
-var _ground_dust: GPUParticles3D
-var _ground_pm: ParticleProcessMaterial
-var _ground_mat: StandardMaterial3D
 var _tunnel: MeshInstance3D
 var _tunnel_mat: ShaderMaterial
 var _screen: MeshInstance3D
@@ -59,6 +87,10 @@ var force_vapor := -1.0
 var force_warp := -1.0
 var force_thrust := -1.0
 var force_dust := -1.0
+var force_vortex := -1.0
+var force_haze := -1.0
+## Capture: ground kind override for the dust ("" = sample the ground).
+var force_ground := ""
 
 
 func _ready() -> void:
@@ -73,14 +105,19 @@ func _ready() -> void:
 	_build_rcs()
 	_build_dust()
 	_build_ground_dust()
+	_build_haze()
 	_build_warp()
 	ship.warp_engaged.connect(func() -> void: _flash = 1.0)
+	ship.warp_dropped.connect(func() -> void:
+		_drop_flash = 1.0
+		_ripple = 0.0)
 	# world-space dust cannot follow a floating-origin shift: drop the live particles (they would
 	# reappear around the ship, which sits at the new origin)
 	Universe.origin_shifted.connect(func(_d: Vector3) -> void:
-		var was := _ground_dust.emitting
-		_ground_dust.restart()
-		_ground_dust.emitting = was)
+		for gp: GPUParticles3D in [_billow, _skirt, _spray, _mist]:
+			var was := gp.emitting
+			gp.restart()
+			gp.emitting = was)
 	if Capture.active:
 		_t = 1.3
 
@@ -241,47 +278,11 @@ func _build_vapor() -> void:
 		var m := vis.get_marker(nm)
 		if m == null:
 			continue
-		var p := GPUParticles3D.new()
-		p.name = "WingVapor"
-		p.amount = 140
-		p.lifetime = 0.35
-		p.local_coords = true
-		p.emitting = false
-		p.visibility_aabb = AABB(Vector3(-20, -20, -10), Vector3(40, 40, 120))
-		var pm := ParticleProcessMaterial.new()
-		pm.direction = Vector3(0, 0, 1)
-		pm.spread = 1.5
-		pm.initial_velocity_min = 110.0
-		pm.initial_velocity_max = 130.0
-		pm.gravity = Vector3.ZERO
-		pm.scale_min = 0.8
-		pm.scale_max = 1.2
-		var sc := CurveTexture.new()
-		var cv := Curve.new()
-		cv.add_point(Vector2(0, 0.4))
-		cv.add_point(Vector2(1, 1.6))
-		sc.curve = cv
-		pm.scale_curve = sc
-		var g := Gradient.new()
-		g.set_color(0, Color(1, 1, 1, 0.32))
-		g.set_color(1, Color(1, 1, 1, 0.0))
-		var gt := GradientTexture1D.new()
-		gt.gradient = g
-		pm.color_ramp = gt
-		p.process_material = pm
-		var q := QuadMesh.new()
-		q.size = Vector2(0.16, 4.5)
-		var mat := StandardMaterial3D.new()
-		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		mat.vertex_color_use_as_albedo = true
-		mat.albedo_texture = _soft_tex
-		q.material = mat
-		p.draw_pass_1 = q
-		p.transform_align = GPUParticles3D.TRANSFORM_ALIGN_Z_BILLBOARD_Y_TO_VELOCITY
-		p.position = m.position
-		add_child(p)
-		_wing_trails.append(p)
+		var tr := ShipTrail.new()
+		tr.name = "Vortex_" + nm.trim_prefix("NavLight_")
+		tr.emitter = m
+		add_child(tr)
+		_trails.append(tr)
 
 
 func _build_rcs() -> void:
@@ -364,61 +365,202 @@ func _build_dust() -> void:
 	_dust.extra_cull_margin = dust_box
 
 
-func _build_ground_dust() -> void:
-	_ground_dust = GPUParticles3D.new()
-	_ground_dust.name = "GroundDust"
-	_ground_dust.amount = 260
-	_ground_dust.lifetime = 2.0
-	_ground_dust.local_coords = false
-	_ground_dust.emitting = false
-	_ground_dust.top_level = true
-	_ground_dust.visibility_aabb = AABB(Vector3(-60, -10, -60), Vector3(120, 40, 120))
-	_ground_pm = ParticleProcessMaterial.new()
-	_ground_pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
-	_ground_pm.emission_ring_axis = Vector3(0, 1, 0)
-	_ground_pm.emission_ring_radius = 6.0
-	_ground_pm.emission_ring_inner_radius = 1.5
-	_ground_pm.emission_ring_height = 0.4
-	_ground_pm.direction = Vector3(0, 1, 0)
-	_ground_pm.spread = 25.0
-	_ground_pm.initial_velocity_min = 1.0
-	_ground_pm.initial_velocity_max = 4.0
-	_ground_pm.radial_velocity_min = 9.0
-	_ground_pm.radial_velocity_max = 18.0
-	_ground_pm.damping_min = 3.0
-	_ground_pm.damping_max = 5.0
-	_ground_pm.gravity = Vector3(0, -0.6, 0)
-	_ground_pm.scale_min = 0.8
-	_ground_pm.scale_max = 1.4
-	var sc := CurveTexture.new()
-	var cv := Curve.new()
-	cv.add_point(Vector2(0, 0.35))
-	cv.add_point(Vector2(1, 1.0))
-	sc.curve = cv
-	_ground_pm.scale_curve = sc
+## Soft lit billows (GPUParticles3D + ship_dust_cloud shader) for landing dust and sea mist.
+func _cloud_particles(nm: String, amount: int, life: float, size: float) -> Array:
+	var gp := GPUParticles3D.new()
+	gp.name = nm
+	gp.amount = amount
+	gp.lifetime = life
+	gp.local_coords = false
+	gp.emitting = false
+	gp.top_level = true
+	gp.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	gp.visibility_aabb = AABB(Vector3(-90, -20, -90), Vector3(180, 70, 180))
+	gp.draw_order = GPUParticles3D.DRAW_ORDER_VIEW_DEPTH
+	var pm := ParticleProcessMaterial.new()
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
+	pm.emission_ring_axis = Vector3(0, 1, 0)
+	pm.emission_ring_radius = 5.0
+	pm.emission_ring_inner_radius = 1.0
+	pm.emission_ring_height = 0.3
+	pm.direction = Vector3(0, 1, 0)
+	pm.angle_min = -180.0
+	pm.angle_max = 180.0
+	pm.angular_velocity_min = -12.0
+	pm.angular_velocity_max = 12.0
+	pm.gravity = Vector3.ZERO
 	var g := Gradient.new()
 	g.set_color(0, Color(1, 1, 1, 0.0))
 	g.set_color(1, Color(1, 1, 1, 0.0))
-	g.add_point(0.1, Color(1, 1, 1, 0.75))
-	g.add_point(0.6, Color(1, 1, 1, 0.35))
+	g.add_point(0.12, Color(1, 1, 1, 0.9))
+	g.add_point(0.55, Color(1, 1, 1, 0.5))
 	var gt := GradientTexture1D.new()
 	gt.gradient = g
-	_ground_pm.color_ramp = gt
-	_ground_dust.process_material = _ground_pm
+	pm.color_ramp = gt
+	var sc := CurveTexture.new()
+	var cv := Curve.new()
+	cv.add_point(Vector2(0, 0.3))
+	cv.add_point(Vector2(0.4, 0.8))
+	cv.add_point(Vector2(1, 1.0))
+	sc.curve = cv
+	pm.scale_curve = sc
+	gp.process_material = pm
+	var mat := ShaderMaterial.new()
+	mat.shader = DUST_CLOUD_SHADER
+	mat.render_priority = 0
 	var q := QuadMesh.new()
-	q.size = Vector2(6.5, 6.5)
-	_ground_mat = StandardMaterial3D.new()
-	_ground_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_ground_mat.vertex_color_use_as_albedo = true
-	_ground_mat.albedo_color = Color(0.62, 0.53, 0.4)
-	_ground_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	_ground_mat.albedo_texture = _soft_tex
-	_ground_mat.proximity_fade_enabled = true
-	_ground_mat.proximity_fade_distance = 4.0
-	_ground_mat.roughness = 1.0
-	q.material = _ground_mat
-	_ground_dust.draw_pass_1 = q
-	add_child(_ground_dust)
+	q.size = Vector2(size, size)
+	q.material = mat
+	gp.draw_pass_1 = q
+	add_child(gp)
+	return [gp, pm, mat]
+
+
+func _build_ground_dust() -> void:
+	# big billows rolling out from under the engines and rising
+	var r := _cloud_particles("DustBillow", 150, 4.2, 9.0)
+	_billow = r[0]
+	_billow_pm = r[1]
+	_billow_mat = r[2]
+	_billow_pm.spread = 30.0
+	_billow_pm.initial_velocity_min = 0.6
+	_billow_pm.initial_velocity_max = 2.4
+	_billow_pm.radial_velocity_min = 6.0
+	_billow_pm.radial_velocity_max = 14.0
+	_billow_pm.damping_min = 2.2
+	_billow_pm.damping_max = 3.4
+	_billow_pm.scale_min = 0.7
+	_billow_pm.scale_max = 1.5
+	_billow_mat.set_shader_parameter("soft_dist", 2.5)
+	_billow_mat.set_shader_parameter("density", 0.85)
+	# fast low skirt of fine dust racing outward along the ground
+	r = _cloud_particles("DustSkirt", 180, 1.6, 4.5)
+	_skirt = r[0]
+	_skirt_pm = r[1]
+	_skirt_mat = r[2]
+	_skirt_pm.emission_ring_radius = 3.5
+	_skirt_pm.emission_ring_inner_radius = 0.5
+	_skirt_pm.spread = 8.0
+	_skirt_pm.initial_velocity_min = 0.2
+	_skirt_pm.initial_velocity_max = 0.8
+	_skirt_pm.radial_velocity_min = 16.0
+	_skirt_pm.radial_velocity_max = 30.0
+	_skirt_pm.damping_min = 6.0
+	_skirt_pm.damping_max = 9.0
+	_skirt_pm.scale_min = 0.6
+	_skirt_pm.scale_max = 1.2
+	_skirt_mat.set_shader_parameter("soft_dist", 1.0)
+	_skirt_mat.set_shader_parameter("density", 0.55)
+	_skirt_mat.set_shader_parameter("noise_scale", 2.2)
+	# sea: white mist + droplet spray
+	r = _cloud_particles("SeaMist", 120, 3.0, 8.0)
+	_mist = r[0]
+	_mist_pm = r[1]
+	_mist_mat = r[2]
+	_mist_pm.spread = 35.0
+	_mist_pm.initial_velocity_min = 1.0
+	_mist_pm.initial_velocity_max = 3.0
+	_mist_pm.radial_velocity_min = 8.0
+	_mist_pm.radial_velocity_max = 15.0
+	_mist_pm.damping_min = 2.5
+	_mist_pm.damping_max = 3.5
+	_mist_mat.set_shader_parameter("dust_color", Color(0.9, 0.94, 0.98))
+	_mist_mat.set_shader_parameter("density", 0.6)
+	_mist_mat.set_shader_parameter("backlight", 0.9)
+	_spray = GPUParticles3D.new()
+	_spray.name = "SeaSpray"
+	_spray.amount = 360
+	_spray.lifetime = 1.4
+	_spray.local_coords = false
+	_spray.emitting = false
+	_spray.top_level = true
+	_spray.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_spray.visibility_aabb = AABB(Vector3(-60, -10, -60), Vector3(120, 40, 120))
+	_spray_pm = ParticleProcessMaterial.new()
+	_spray_pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
+	_spray_pm.emission_ring_axis = Vector3(0, 1, 0)
+	_spray_pm.emission_ring_radius = 6.0
+	_spray_pm.emission_ring_inner_radius = 2.0
+	_spray_pm.emission_ring_height = 0.2
+	_spray_pm.direction = Vector3(0, 1, 0)
+	_spray_pm.spread = 40.0
+	_spray_pm.initial_velocity_min = 3.0
+	_spray_pm.initial_velocity_max = 8.0
+	_spray_pm.radial_velocity_min = 7.0
+	_spray_pm.radial_velocity_max = 16.0
+	_spray_pm.damping_min = 0.5
+	_spray_pm.damping_max = 1.0
+	_spray_pm.gravity = Vector3(0, -9.8, 0)
+	_spray_pm.scale_min = 0.5
+	_spray_pm.scale_max = 1.2
+	var g := Gradient.new()
+	g.set_color(0, Color(1, 1, 1, 0.85))
+	g.set_color(1, Color(1, 1, 1, 0.0))
+	var gt := GradientTexture1D.new()
+	gt.gradient = g
+	_spray_pm.color_ramp = gt
+	_spray.process_material = _spray_pm
+	var q := QuadMesh.new()
+	q.size = Vector2(0.09, 0.7)
+	var m := StandardMaterial3D.new()
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.vertex_color_use_as_albedo = true
+	m.albedo_color = Color(0.92, 0.96, 1.0)
+	m.albedo_texture = _soft_tex
+	m.roughness = 0.3
+	m.backlight_enabled = true
+	m.backlight = Color(0.6, 0.65, 0.7)
+	q.material = m
+	_spray.draw_pass_1 = q
+	_spray.transform_align = GPUParticles3D.TRANSFORM_ALIGN_Z_BILLBOARD_Y_TO_VELOCITY
+	add_child(_spray)
+
+
+## Heat shimmer: a refracting cone behind every engine nozzle + a shell along the re-entry wake.
+func _build_haze() -> void:
+	_jet_haze_mat = ShaderMaterial.new()
+	_jet_haze_mat.shader = HAZE_SHADER
+	_jet_haze_mat.render_priority = -2
+	_jet_haze_mat.set_shader_parameter("flow_axis", Vector3(0, -1, 0))
+	_jet_haze_mat.set_shader_parameter("v_end", 0.85)
+	_jet_haze_mat.set_shader_parameter("freq", 1.4)
+	_jet_haze_mat.set_shader_parameter("scroll", 9.0)
+	for m in vis.get_markers("EngineExhaust_"):
+		var r := 0.55
+		if m.has_meta("extras") and m.get_meta("extras") is Dictionary:
+			r = float((m.get_meta("extras") as Dictionary).get("radius", 0.55))
+		var plen := 16.0
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = r * 1.05
+		cyl.bottom_radius = r * 3.6
+		cyl.height = plen
+		cyl.radial_segments = 16
+		cyl.rings = 4
+		cyl.cap_top = false
+		cyl.cap_bottom = false
+		var mi := MeshInstance3D.new()
+		mi.name = "JetHaze"
+		mi.mesh = cyl
+		mi.material_override = _jet_haze_mat
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+		# cylinder +Y -> marker -Z (plume direction), nozzle end at the marker (as the plumes)
+		mi.transform = Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, 0, -plen * 0.5 - 0.3))
+		mi.visible = false
+		m.add_child(mi)
+		_jet_haze.append(mi)
+	_wake_haze_mat = ShaderMaterial.new()
+	_wake_haze_mat.shader = HAZE_SHADER
+	_wake_haze_mat.render_priority = -2
+	_wake_haze_mat.set_shader_parameter("flow_axis", Vector3(0, 0, 1))
+	_wake_haze_mat.set_shader_parameter("v_start", 0.02)
+	_wake_haze_mat.set_shader_parameter("v_end", 0.9)
+	_wake_haze_mat.set_shader_parameter("freq", 0.35)
+	_wake_haze_mat.set_shader_parameter("scroll", 40.0)
+	_wake_haze_mat.set_shader_parameter("max_offset", 0.02)
+	_wake_haze_mat.set_shader_parameter("tint", Color(1.0, 0.75, 0.55))
+	_wake_haze = _fx_mesh(shell_mesh(70.0, func(v: float) -> float: return 3.0 + 9.0 * pow(v, 0.5), 16, 32),
+		_wake_haze_mat, "WakeHaze")
 
 
 func _build_warp() -> void:
@@ -476,17 +618,37 @@ func _process(dt: float) -> void:
 
 
 func _update_engine(dt: float) -> void:
+	# spool: engines wind up over ~1.5 s after the clamps release, wind down when landed
+	var running := (ship.is_piloted or ship.scripted) and not ship.landed
+	var spool_t := 1.0 if running else 0.0
+	engine_spool = move_toward(engine_spool, spool_t, dt * (0.75 if spool_t > engine_spool else 0.3))
+	if ship.capture_hold:
+		engine_spool = 0.0 if ship.landed else 1.0
+	var sp := engine_spool * engine_spool * (3.0 - 2.0 * engine_spool)
 	var t := clampf(-ship.thrust_norm.z, 0.0, 1.0) * lerpf(0.75, 1.0, ship.boost_t)
-	if ship.is_piloted or ship.scripted:
-		t = maxf(t, 0.06)
-	if ship.landed:
-		t = 0.0
+	# VTOL lift shows in the main engines too (hover / take-off)
+	if ship.mode == Ship.Mode.HOVER:
+		t = maxf(t, clampf(ship.thrust_norm.y, 0.0, 1.0) * 0.45)
+	t = maxf(t, 0.06) * (0.2 + 0.8 * sp)
+	if not running and not ship.capture_hold:
+		t = 0.06 * sp
 	if ship.warp_state != Ship.WarpState.IDLE:
 		t = maxf(t, 0.5 + 0.5 * ship.warp_spool)
 	if force_thrust >= 0.0:
 		t = force_thrust
 	_thrust_s = lerpf(_thrust_s, t, 1.0 - exp(-dt * (8.0 if t > _thrust_s else 3.0)))
 	vis.set_thrust(_thrust_s)
+	# heat shimmer behind the nozzles: strong in air, faint in vacuum
+	var air := clampf(ship.density * 4.0, 0.0, 1.0)
+	var hz := _thrust_s * (0.35 + 0.65 * air)
+	if force_haze >= 0.0:
+		hz = force_haze
+	var on := hz > 0.02
+	for mi in _jet_haze:
+		mi.visible = on
+	if on:
+		_jet_haze_mat.set_shader_parameter("strength", clampf(hz * 1.4, 0.0, 1.6))
+		_jet_haze_mat.set_shader_parameter("time_s", _t)
 
 
 func _update_rcs(dt: float) -> void:
@@ -496,6 +658,7 @@ func _update_rcs(dt: float) -> void:
 	aa = Vector3(clampf(aa.x / alpha.x, -1, 1), clampf(aa.y / alpha.y, -1, 1), clampf(aa.z / alpha.z, -1, 1))
 	var lin := Vector3(ship.thrust_norm.x, ship.thrust_norm.y, 0.0)
 	var active := (ship.is_piloted or ship.scripted) and not ship.landed and not ship.capture_hold
+	var total := 0.0
 	for r: Dictionary in _rcs:
 		var push: Vector3 = -(r["jet"] as Vector3)
 		var li := maxf(push.dot(lin), 0.0)
@@ -507,12 +670,14 @@ func _update_rcs(dt: float) -> void:
 		var s: float = r["s"]
 		s = lerpf(s, target, 1.0 - exp(-dt * (25.0 if target > s else 6.0)))
 		r["s"] = s
+		total += s
 		var p: GPUParticles3D = r["p"]
 		p.emitting = s > 0.06
 		p.amount_ratio = clampf(s, 0.05, 1.0)
+	rcs_level = total
 
 
-func _update_reentry(dt: float, vdir: Vector3, speed: float, B: Basis) -> void:
+func _update_reentry(_dt: float, vdir: Vector3, speed: float, B: Basis) -> void:
 	var h := ship.heat if force_heat < 0.0 else force_heat
 	var on := h > 0.01
 	if on != _overlay_on:
@@ -521,6 +686,7 @@ func _update_reentry(dt: float, vdir: Vector3, speed: float, B: Basis) -> void:
 			mi.material_overlay = reentry_mat if on else null
 	_bow.visible = on
 	_wake.visible = on
+	_wake_haze.visible = on
 	_heat_light.visible = on
 	_embers.emitting = h > 0.12
 	if not on:
@@ -541,6 +707,9 @@ func _update_reentry(dt: float, vdir: Vector3, speed: float, B: Basis) -> void:
 	_wake.scale = Vector3(1.0, 1.0, lerpf(0.35, 1.0, h))
 	_wake_mat.set_shader_parameter("amount", smoothstep(0.1, 0.9, h))
 	_wake_mat.set_shader_parameter("time_s", _t)
+	_wake_haze.global_transform = Transform3D(basis, sp + vdir * (support * 0.2))
+	_wake_haze_mat.set_shader_parameter("strength", smoothstep(0.05, 0.7, h) * 1.2)
+	_wake_haze_mat.set_shader_parameter("time_s", _t)
 	_heat_light.global_position = sp + vdir * (support + 1.0)
 	_heat_light.light_energy = h * h * 9.0
 	_embers_pm.direction = -vl
@@ -549,27 +718,29 @@ func _update_reentry(dt: float, vdir: Vector3, speed: float, B: Basis) -> void:
 	_embers_pm.initial_velocity_max = clampf(speed * 0.09, 120.0, 400.0)
 
 
-func _update_vapor(_dt: float, vdir: Vector3, speed: float, B: Basis) -> void:
+func _update_vapor(dt: float, _vdir: Vector3, speed: float, _B: Basis) -> void:
 	var vp := ship.vapor if force_vapor < 0.0 else force_vapor
 	_vapor.visible = vp > 0.01
 	if _vapor.visible:
 		_vapor_mat.set_shader_parameter("amount", vp)
 		_vapor_mat.set_shader_parameter("time_s", _t)
-	# wingtip trails also appear in hard turns in moderately dense air
+		# the boom burst: the shock ring balloons out and thins
+		var b := ship.boom_t
+		_vapor.scale = Vector3.ONE * (1.0 + ((1.0 - b) * 0.6 if b > 0.0 else 0.0))
+	# wingtip vortices: humid air + lift (hard turns / pulling g) + the transonic cone
 	var w := ship.angular_velocity.length() if not ship.capture_hold else 0.0
-	var turn := clampf(w * speed / 250.0, 0.0, 1.0) * clampf((ship.density - 0.15) / 0.3, 0.0, 1.0) \
-		* clampf(speed / 120.0, 0.0, 1.0)
-	var wt := maxf(vp, turn)
-	if ship.capture_hold:
-		wt = 0.0   # stills render in slow real time: particles would be sparse slashes
-	var vl := B.transposed() * vdir
-	for p in _wing_trails:
-		p.emitting = wt > 0.05
-		p.amount_ratio = clampf(wt, 0.05, 1.0)
-		var pm := p.process_material as ParticleProcessMaterial
-		pm.direction = -vl
-		pm.initial_velocity_min = clampf(speed * 0.25, 30.0, 140.0)
-		pm.initial_velocity_max = pm.initial_velocity_min * 1.15
+	var load_k := clampf(w * speed / 200.0, 0.0, 1.0) + clampf(absf(ship.thrust_norm.y) * speed / 400.0, 0.0, 0.5)
+	var wet := clampf((ship.density - 0.12) / 0.3, 0.0, 1.0)
+	var target := clampf(maxf(vp * 0.8, load_k * wet * clampf((speed - 60.0) / 120.0, 0.0, 1.0)), 0.0, 1.0)
+	if force_vortex >= 0.0:
+		target = force_vortex
+	vortex = lerpf(vortex, target, 1.0 - exp(-dt * 6.0))
+	if force_vortex >= 0.0:
+		vortex = force_vortex
+	for tr in _trails:
+		tr.intensity = vortex
+		tr.synthetic = ship.capture_hold
+		tr.synthetic_vel = ship.vel
 
 
 func _update_dust(dt: float, cam: Camera3D, speed: float) -> void:
@@ -596,35 +767,82 @@ func _update_dust(dt: float, cam: Camera3D, speed: float) -> void:
 	_dust_mat.set_shader_parameter("amount", amt)
 
 
+func _ground_off() -> void:
+	for gp: GPUParticles3D in [_billow, _skirt, _spray, _mist]:
+		gp.emitting = false
+
+
+## Landing dust / sea spray under the engines: strength from height and lift thrust; colour and
+## kind (dust vs water) from the ground under the ship (GroundInfo, sampled ~4x per second).
 func _update_ground_dust(dt: float) -> void:
 	var b := ship.body
-	if b == null:
-		_ground_dust.emitting = false
+	if b == null or not (b is Planet):
+		_ground_off()
 		return
 	var alt := ship.altitude
-	var lift := clampf(absf(ship.thrust_norm.y) * 1.6 + clampf(-ship.thrust_norm.z, 0.0, 1.0) * 0.4, 0.25, 1.0)
-	var k := clampf(1.0 - alt / 40.0, 0.0, 1.0) * lift
-	if ship.landed or not (ship.is_piloted or ship.scripted) or alt < -1.0:
+	var lift := clampf(absf(ship.thrust_norm.y) * 1.6 + clampf(-ship.thrust_norm.z, 0.0, 1.0) * 0.4, 0.3, 1.0)
+	# the exhaust reaches the ground below ~45 m
+	var k := clampf(1.0 - alt / 45.0, 0.0, 1.0)
+	k = k * k * (3.0 - 2.0 * k) * lift * (0.35 + 0.65 * engine_spool)
+	if not (ship.is_piloted or ship.scripted) or alt < -1.0 or (ship.landed and not ship.capture_hold):
 		k = 0.0
-	_ground_dust.emitting = k > 0.04
-	if not _ground_dust.emitting:
+	if force_dust >= 0.0:
+		k = force_dust
+	if k <= 0.02:
+		_ground_off()
 		return
-	_ground_dust.amount_ratio = clampf(k, 0.05, 1.0)
 	var up := ship.up_dir
-	var gp := ship.global_position - up * (alt + Ship.GROUND_OFFSET)
+	var gp_pos := ship.global_position - up * (alt + Ship.GROUND_OFFSET)
+	_ground_t -= dt
+	if _ground_t <= 0.0 or _ground_info.is_empty():
+		_ground_t = 0.25
+		_ground_info = GroundInfo.sample(b, gp_pos)
+		if force_ground != "":
+			_ground_info = _ground_info.duplicate()
+			_ground_info["kind"] = force_ground
+			_ground_info["water"] = force_ground == "water"
+	var water: bool = bool(_ground_info.get("water", false))
+	var kind := String(_ground_info.get("kind", "sand"))
 	var fwd := ship.global_basis.z
-	fwd = (fwd - up * fwd.dot(up)).normalized()
-	_ground_dust.global_transform = Transform3D(Basis(up.cross(fwd).normalized(), up, fwd), gp)
-	_ground_pm.gravity = -up * 0.6
-	var water := false
-	var cfg: Variant = b.get("config")
-	if cfg is Object and (cfg as Object).has_method("get_ocean_radius"):
-		var orad := float((cfg as Object).call("get_ocean_radius"))
-		if orad > 0.0 and b.has_method("get_altitude_global"):
-			water = ship.global_position.distance_to(b.global_position) - orad < b.get_altitude_global(ship.global_position) + 0.1
-	_ground_mat.albedo_color = Color(0.85, 0.9, 0.95) if water else Color(0.78, 0.7, 0.55)
-	_ground_pm.radial_velocity_min = lerpf(6.0, 12.0, k)
-	_ground_pm.radial_velocity_max = lerpf(12.0, 22.0, k)
+	fwd = fwd - up * fwd.dot(up)
+	fwd = fwd.normalized() if fwd.length_squared() > 1e-6 else up.cross(Vector3.RIGHT).normalized()
+	var xf := Transform3D(Basis(up.cross(fwd).normalized(), up, fwd), gp_pos + up * 0.4)
+	# how much loose material: lots on sand/regolith, some on rock/soil, little on grass
+	var loose: float = {"sand": 1.0, "rock": 0.65, "grass": 0.45, "snow": 0.8}.get(kind, 0.8)
+	var dust_k := 0.0 if water else k * loose
+	var sea_k := k if water else 0.0
+	var air := clampf(ship.density * 3.0, 0.0, 1.0)
+	_billow.emitting = dust_k > 0.03
+	_skirt.emitting = dust_k > 0.05
+	_mist.emitting = sea_k > 0.03
+	_spray.emitting = sea_k > 0.06
+	if dust_k > 0.03:
+		var col: Color = _ground_info.get("color", Color(0.7, 0.62, 0.5))
+		# loose dust is lighter than the surface albedo, a touch desaturated
+		var lum := col.get_luminance()
+		var dc := col.lerp(Color(lum, lum, lum), 0.2) * 1.25
+		if kind == "snow":
+			dc = Color(0.95, 0.97, 1.0)
+		for m: ShaderMaterial in [_billow_mat, _skirt_mat]:
+			m.set_shader_parameter("dust_color", Color(dc.r, dc.g, dc.b))
+		_billow.global_transform = xf
+		_skirt.global_transform = xf
+		_billow.amount_ratio = clampf(dust_k, 0.05, 1.0)
+		_skirt.amount_ratio = clampf(dust_k, 0.05, 1.0)
+		_billow_pm.radial_velocity_min = lerpf(4.0, 9.0, dust_k)
+		_billow_pm.radial_velocity_max = lerpf(9.0, 18.0, dust_k)
+		# airless: the dust flies far and falls ballistically, no rising billows
+		_billow_pm.gravity = -up * lerpf(1.2, -0.35, air)
+		_billow_pm.damping_min = lerpf(0.4, 2.2, air)
+		_billow_pm.damping_max = lerpf(0.8, 3.4, air)
+		_skirt_pm.gravity = -up * lerpf(0.8, 0.0, air)
+	if sea_k > 0.03:
+		_mist.global_transform = xf
+		_spray.global_transform = xf
+		_mist.amount_ratio = clampf(sea_k, 0.05, 1.0)
+		_spray.amount_ratio = clampf(sea_k, 0.05, 1.0)
+		_mist_pm.gravity = up * 0.3
+		_spray_pm.gravity = -up * 9.8
 
 
 func _update_warp(dt: float, cam: Camera3D, vdir: Vector3, speed: float) -> void:
@@ -640,16 +858,26 @@ func _update_warp(dt: float, cam: Camera3D, vdir: Vector3, speed: float) -> void
 		target = force_warp
 	warp_amount = lerpf(warp_amount, target, 1.0 - exp(-dt * (2.0 if target > warp_amount else 1.2)))
 	_flash = maxf(_flash - dt * 2.2, 0.0)
+	if not Capture.active:
+		_drop_flash = maxf(_drop_flash - dt * 1.6, 0.0)
+		if _ripple >= 0.0:
+			_ripple += dt / 1.1
+			if _ripple >= 1.0:
+				_ripple = -1.0
 	var rig := ship.camera_rig as ShipCameraRig
 	if rig:
 		var spool_kick := -4.0 * ship.warp_spool if ship.warp_state == Ship.WarpState.SPOOL else 0.0
-		rig.fov_kick = spool_kick + 24.0 * warp_amount * (1.0 if ship.warp_state == Ship.WarpState.ACTIVE or force_warp >= 0.0 else 0.4) + 10.0 * _flash
-		rig.shake_extra = (0.06 * ship.warp_spool if ship.warp_state == Ship.WarpState.SPOOL else 0.0) + _flash * 0.25 \
-			+ warp_amount * 0.01
+		# drop-out: the view "snaps back" (FOV punch below normal, recovering)
+		var drop_kick := -9.0 * _drop_flash * _drop_flash
+		var warp_on := ship.warp_state == Ship.WarpState.ACTIVE or force_warp >= 0.0
+		rig.fov_kick = spool_kick + 24.0 * warp_amount * (1.0 if warp_on else 0.4) + 10.0 * _flash + drop_kick
+		rig.shake_extra = (0.06 * ship.warp_spool if ship.warp_state == Ship.WarpState.SPOOL else 0.0) \
+			+ _flash * 0.25 + warp_amount * 0.01
+	var flash_all := maxf(_flash, _drop_flash * 0.8)
 	var on := warp_amount > 0.01 and cam != null
 	_tunnel.visible = on
-	_screen.visible = (on and warp_amount > 0.08) or _flash > 0.01
-	if not on and _flash <= 0.01:
+	_screen.visible = cam != null and ((on and warp_amount > 0.08) or flash_all > 0.01 or _ripple >= 0.0)
+	if cam == null or (not on and flash_all <= 0.01 and _ripple < 0.0):
 		return
 	var dir := vdir if speed > 100.0 else -ship.global_basis.z
 	var up := ship.global_basis.y
@@ -668,4 +896,23 @@ func _update_warp(dt: float, cam: Camera3D, vdir: Vector3, speed: float) -> void
 		center = cam.unproject_position(ahead) / get_viewport().get_visible_rect().size
 	_screen_mat.set_shader_parameter("center", center)
 	_screen_mat.set_shader_parameter("amount", warp_amount)
-	_screen_mat.set_shader_parameter("flash", _flash * 0.6)
+	_screen_mat.set_shader_parameter("flash", _flash * 0.6 + _drop_flash * _drop_flash * 0.9)
+	_screen_mat.set_shader_parameter("ripple", _ripple)
+
+
+func clear_dropout() -> void:
+	_drop_flash = 0.0
+	_ripple = -1.0
+
+
+## Capture: pre-simulates the ground dust / spray so a still shows developed clouds.
+func prewarm_ground(sec: float) -> void:
+	for gp: GPUParticles3D in [_billow, _skirt, _spray, _mist]:
+		gp.preprocess = sec
+		gp.restart()
+
+
+## Capture helper: freeze a warp drop-out at progress `t` (0..1) for a still.
+func preview_dropout(t: float) -> void:
+	_drop_flash = clampf(1.0 - t * 1.6, 0.0, 1.0)
+	_ripple = clampf(t, 0.0, 0.99)

@@ -44,6 +44,19 @@ var _prev_ship_pos := Vector3.ZERO
 var _have_prev := false
 var _vel_est := Vector3.ZERO
 var _fade_tween: Tween
+# wave 4: animated transitions
+var _mode_prev := -1
+var _mode_t := 10.0            # s since the last speed-mode change
+var _pip_x := -1.0             # animated position of the active mode pip
+var _banner := ""
+var _banner_t := 10.0
+var _show_k := 1.0             # HUD reveal (0..1) when switching layouts
+var _warp_ring := 0.0
+var _land_k := 0.0             # landing-assist panel reveal
+var _target_prev := ""
+var _target_t := 10.0
+var _prev_target_dist := -1.0
+var _closing := 0.0
 
 
 func _ready() -> void:
@@ -80,6 +93,8 @@ func _ready() -> void:
 # ------------------------------------------------------------------ API
 
 func set_mode(m: Mode) -> void:
+	if m != mode:
+		_show_k = 0.0
 	mode = m
 	_have_prev = false
 
@@ -94,6 +109,11 @@ func clear_prompt() -> void:
 
 
 func flash_message(text: String, seconds := 2.5) -> void:
+	# speed-mode names get the animated banner instead of a plain message
+	if text in ["HOVER", "ATMOSPHERE", "SPACE", "CRUISE", "WARP"]:
+		_banner = text
+		_banner_t = 0.0
+		return
 	_message = text
 	_message_t = seconds
 
@@ -135,6 +155,11 @@ func _on_origin_shifted(delta: Vector3) -> void:
 func _process(dt: float) -> void:
 	_time += dt
 	_message_t = maxf(_message_t - dt, 0.0)
+	_mode_t += dt
+	_banner_t += dt
+	_target_t += dt
+	_show_k = move_toward(_show_k, 1.0, dt / 0.45)
+	_root.modulate.a = smoothstep(0.0, 1.0, _show_k)
 	if mode == Mode.SHIP and ship and is_instance_valid(ship) and dt > 0.0:
 		var p := ship.global_position
 		if _have_prev:
@@ -171,22 +196,23 @@ static func fmt_dist(d: float) -> Array:
 
 # ------------------------------------------------------------------ drawing primitives
 
-func _line(a: Vector2, b: Vector2, col: Color, w := 1.4) -> void:
-	_root.draw_line(a, b, C_SHADOW, (w + 2.2) * _s, true)
-	_root.draw_line(a, b, Color(col, col.a * 0.14), (w + 4.0) * _s, true)
+## Thin line with a dark under-stroke (readable on snow and on black) and a soft glow.
+func _line(a: Vector2, b: Vector2, col: Color, w := 1.1) -> void:
+	_root.draw_line(a, b, Color(C_SHADOW, C_SHADOW.a * 0.8), (w + 1.8) * _s, true)
+	_root.draw_line(a, b, Color(col, col.a * 0.08), (w + 5.0) * _s, true)
 	_root.draw_line(a, b, col, w * _s, true)
 
 
-func _poly(pts: PackedVector2Array, col: Color, w := 1.4) -> void:
-	_root.draw_polyline(pts, C_SHADOW, (w + 2.2) * _s, true)
-	_root.draw_polyline(pts, Color(col, col.a * 0.14), (w + 4.0) * _s, true)
+func _poly(pts: PackedVector2Array, col: Color, w := 1.1) -> void:
+	_root.draw_polyline(pts, Color(C_SHADOW, C_SHADOW.a * 0.8), (w + 1.8) * _s, true)
+	_root.draw_polyline(pts, Color(col, col.a * 0.08), (w + 5.0) * _s, true)
 	_root.draw_polyline(pts, col, w * _s, true)
 
 
-func _circle(c: Vector2, r: float, col: Color, w := 1.4, a0 := 0.0, a1 := TAU) -> void:
-	var n := maxi(16, int(r / _s * 0.8))
-	_root.draw_arc(c, r, a0, a1, n, C_SHADOW, (w + 2.2) * _s, true)
-	_root.draw_arc(c, r, a0, a1, n, Color(col, col.a * 0.14), (w + 4.0) * _s, true)
+func _circle(c: Vector2, r: float, col: Color, w := 1.1, a0 := 0.0, a1 := TAU) -> void:
+	var n := maxi(16, int(absf(a1 - a0) * r / _s * 0.14) + 8)
+	_root.draw_arc(c, r, a0, a1, n, Color(C_SHADOW, C_SHADOW.a * 0.8), (w + 1.8) * _s, true)
+	_root.draw_arc(c, r, a0, a1, n, Color(col, col.a * 0.08), (w + 5.0) * _s, true)
 	_root.draw_arc(c, r, a0, a1, n, col, w * _s, true)
 
 
@@ -244,8 +270,26 @@ func _draw_hud() -> void:
 			_draw_on_foot(vs)
 	_draw_prompt(vs)
 	if _message_t > 0.0 and _message != "":
-		var a := clampf(_message_t / 0.5, 0.0, 1.0)
-		_text(Vector2(vs.x * 0.5, vs.y * 0.3), _message, 20, Color(C_MAIN, a), 1, false)
+		var a := clampf(_message_t / 0.5, 0.0, 1.0) * clampf((2.5 - _message_t) / 0.15 + 0.3, 0.0, 1.0)
+		_text(Vector2(vs.x * 0.5, vs.y * 0.3), _message, 19, Color(C_MAIN, a), 1, false)
+	_draw_banner(vs)
+
+
+## Speed-mode banner: letter-spaced name with hairlines drawing outward, fades after ~1.6 s.
+func _draw_banner(vs: Vector2) -> void:
+	if _banner == "" or _banner_t > 2.2 or mode != Mode.SHIP:
+		return
+	var t := _banner_t
+	var a := smoothstep(0.0, 0.18, t) * (1.0 - smoothstep(1.5, 2.2, t))
+	var y := vs.y * 0.27
+	var spaced := " ".join(_banner.split(""))
+	var w := _text_size(spaced, 22, false).x
+	_text(Vector2(vs.x * 0.5, y), spaced, 22, Color(C_MAIN, a), 1, false)
+	var ext := (w * 0.5 + 18.0 * _s) + 90.0 * _s * smoothstep(0.0, 0.5, t)
+	var inner := w * 0.5 + 18.0 * _s
+	var ly := y - 7.0 * _s
+	_line(Vector2(vs.x * 0.5 - ext, ly), Vector2(vs.x * 0.5 - inner, ly), Color(C_ACCENT, a * 0.8), 1.0)
+	_line(Vector2(vs.x * 0.5 + inner, ly), Vector2(vs.x * 0.5 + ext, ly), Color(C_ACCENT, a * 0.8), 1.0)
 
 
 func _draw_prompt(vs: Vector2) -> void:
@@ -276,6 +320,15 @@ func _draw_ship(vs: Vector2) -> void:
 	var d: Dictionary = ship.get_hud_data()
 	var c := vs * 0.5
 	var cam := _camera()
+	var mi := int(d.get("mode", 0))
+	if mi != _mode_prev:
+		if _mode_prev >= 0:
+			_mode_t = 0.0
+		_mode_prev = mi
+	var tn := str(d.get("target_name", ""))
+	if tn != _target_prev:
+		_target_prev = tn
+		_target_t = 0.0
 	# reticle
 	var rc := C_DIM
 	_circle(c, 16.0 * _s, rc, 1.2, deg_to_rad(20), deg_to_rad(70))
@@ -293,6 +346,10 @@ func _draw_ship(vs: Vector2) -> void:
 	_draw_alt_block(d, vs)
 	_draw_flags(d, vs)
 	_draw_target_readout(d, vs)
+	_draw_warp_ring(d, c)
+	_draw_heat(d, c)
+	if cam:
+		_draw_landing(d, cam, vs)
 
 
 func _ship_velocity(d: Dictionary) -> Vector3:
@@ -435,7 +492,13 @@ func _draw_speed_block(d: Dictionary, vs: Vector2) -> void:
 	_value(Vector2(x0, yb - 70.0 * _s), sv[0], sv[1], 42, C_MAIN)
 	# speed mode
 	var mode_name := str(d.get("mode_name", "")).to_upper()
-	_text(Vector2(x0, yb - 38.0 * _s), mode_name, 15, C_ACCENT, 0, false)
+	var mt := clampf(_mode_t / 0.45, 0.0, 1.0)
+	var me := 1.0 - pow(1.0 - mt, 3.0)
+	_text(Vector2(x0 + (1.0 - me) * 14.0 * _s, yb - 38.0 * _s), mode_name, 15, Color(C_ACCENT, me), 0, false)
+	if mt < 1.0:
+		# a light sweep along the speed bar on a mode change
+		var sw := x0 + 300.0 * _s * me
+		_line(Vector2(maxf(x0, sw - 60.0 * _s), yb - 26.0 * _s), Vector2(sw, yb - 26.0 * _s), Color(1, 1, 1, (1.0 - mt) * 0.8), 2.0)
 	var mx := fmt_speed(vmax)
 	_text(Vector2(x0 + 300.0 * _s, yb - 38.0 * _s), "MAX %s %s" % [mx[0], mx[1]], 11, C_DIM, 2)
 	var bw := 300.0 * _s
@@ -449,16 +512,21 @@ func _draw_speed_block(d: Dictionary, vs: Vector2) -> void:
 	# mode pips 1..N
 	var count := int(d.get("mode_count", 5))
 	var mi := int(d.get("mode", 0))
+	var target_x := x0 + 7.0 * _s + mi * 24.0 * _s
+	if _pip_x < 0.0:
+		_pip_x = target_x
+	_pip_x = lerpf(_pip_x, target_x, clampf(get_process_delta_time() * 12.0, 0.0, 1.0))
 	for i in count:
 		var px := x0 + 7.0 * _s + i * 24.0 * _s
 		var py := yb + 4.0 * _s
 		var r := 5.0 * _s
 		var pts := PackedVector2Array([Vector2(px, py - r), Vector2(px + r, py), Vector2(px, py + r), Vector2(px - r, py), Vector2(px, py - r)])
-		if i == mi:
-			_root.draw_colored_polygon(pts.slice(0, 4), C_ACCENT)
-			_poly(pts, C_ACCENT, 1.2)
-		else:
-			_poly(pts, C_DIM, 1.0)
+		_poly(pts, C_ACCENT if i == mi else C_DIM, 1.0)
+	# the active pip slides between positions
+	var r2 := 5.0 * _s
+	var py2 := yb + 4.0 * _s
+	var ap := PackedVector2Array([Vector2(_pip_x, py2 - r2), Vector2(_pip_x + r2, py2), Vector2(_pip_x, py2 + r2), Vector2(_pip_x - r2, py2)])
+	_root.draw_colored_polygon(ap, C_ACCENT)
 	_text(Vector2(x0 + count * 24.0 * _s + 4.0 * _s, yb + 9.0 * _s), "TAB", 10, C_DIM)
 
 
@@ -545,17 +613,207 @@ func _draw_flags(d: Dictionary, vs: Vector2) -> void:
 		x += widths[i] + gap
 
 
-func _draw_target_readout(d: Dictionary, vs: Vector2) -> void:
+func _draw_target_readout(d: Dictionary, _vs: Vector2) -> void:
 	var tn := str(d.get("target_name", ""))
 	if tn == "":
 		return
 	var x0 := 78.0 * _s
 	var y := 52.0 * _s
-	_text(Vector2(x0, y), "TARGET", 11, C_DIM, 0, false)
-	_text(Vector2(x0, y + 22.0 * _s), tn.to_upper(), 16, C_ACCENT, 0, false)
-	var ds := fmt_dist(float(d.get("target_distance", 0.0)))
-	_text(Vector2(x0, y + 42.0 * _s), "%s %s" % [ds[0], ds[1]], 14, C_MAIN)
-	_line(Vector2(x0 - 12.0 * _s, y - 10.0 * _s), Vector2(x0 - 12.0 * _s, y + 46.0 * _s), C_FAINT, 1.0)
+	var k := smoothstep(0.0, 0.5, _target_t)
+	var a := k
+	x0 += (1.0 - k) * -16.0 * _s
+	_text(Vector2(x0, y), "TARGET", 11, Color(C_DIM, C_DIM.a * a), 0, false)
+	_text(Vector2(x0, y + 22.0 * _s), tn.to_upper(), 16, Color(C_ACCENT, a), 0, false)
+	var dist := float(d.get("target_distance", 0.0))
+	var ds := fmt_dist(dist)
+	_text(Vector2(x0, y + 42.0 * _s), "%s %s" % [ds[0], ds[1]], 14, Color(C_MAIN, a))
+	# ETA from the closing speed (to the safe arrival altitude)
+	var eta_s := _eta(d)
+	var eta_txt := "ETA --:--" if eta_s < 0.0 else "ETA " + _fmt_time(eta_s)
+	_text(Vector2(x0 + 150.0 * _s, y + 42.0 * _s), eta_txt, 12, Color(C_MAIN, C_MAIN.a * a * 0.8))
+	var h := 46.0
+	# body info card
+	var b := _body_by_name(tn)
+	if b:
+		var rows := _body_card(b)
+		var yy := y + 66.0 * _s
+		for i in rows.size():
+			var rk := smoothstep(0.15 + i * 0.08, 0.55 + i * 0.08, _target_t)
+			_text(Vector2(x0, yy), str(rows[i][0]), 10, Color(C_DIM, C_DIM.a * rk), 0, false)
+			_text(Vector2(x0 + 88.0 * _s, yy), str(rows[i][1]), 12, Color(C_MAIN, C_MAIN.a * rk * 0.9))
+			yy += 17.0 * _s
+		h = 66.0 + rows.size() * 17.0 - 8.0
+	_line(Vector2(x0 - 12.0 * _s, y - 10.0 * _s), Vector2(x0 - 12.0 * _s, y + (h * k - 10.0) * _s), C_FAINT, 1.0)
+
+
+func _body_by_name(n: String) -> Node3D:
+	for b in Universe.get_bodies():
+		if b.has_method("get_body_name") and b.get_body_name() == n:
+			return b
+	return null
+
+
+static func _fmt_time(sec: float) -> String:
+	var t := int(roundf(sec))
+	if t >= 3600:
+		return "%d:%02d:%02d" % [t / 3600, (t / 60) % 60, t % 60]
+	return "%d:%02d" % [t / 60, t % 60]
+
+
+## Seconds to the target's safe arrival altitude at the current closing speed (-1 = not closing).
+func _eta(d: Dictionary) -> float:
+	var tp: Variant = d.get("target_position", null)
+	var v := _ship_velocity(d)
+	if not (tp is Vector3) or ship == null:
+		return -1.0
+	var to: Vector3 = (tp as Vector3) - ship.global_position
+	var closing := v.dot(to.normalized())
+	_closing = lerpf(_closing, closing, 0.1)
+	var left := float(d.get("target_distance", 0.0)) - float(d.get("target_safe_alt", 0.0))
+	if _closing < 1.0 or left <= 0.0:
+		return -1.0
+	return left / _closing
+
+
+## Type / radius / gravity / atmosphere rows for the targeted body.
+func _body_card(b: Node3D) -> Array:
+	var kind := "PLANET"
+	if b is Star:
+		kind = "STAR"
+	elif b is GasGiantBody:
+		kind = "GAS GIANT"
+	else:
+		for def: Dictionary in SystemDef.bodies():
+			if str(def["name"]) == b.get_body_name() and def.has("parent"):
+				kind = "MOON · " + str(def["parent"]).to_upper()
+	var rows: Array = [["TYPE", kind]]
+	var rr := fmt_dist(b.get_body_radius())
+	rows.append(["RADIUS", "%s %s" % [rr[0], rr[1]]])
+	var g: float = b.get_surface_gravity()
+	rows.append(["GRAVITY", "%.2f m/s²  (%.2f g)" % [g, g / 9.81]])
+	var ah: float = b.get_atmosphere_height()
+	if b is Star:
+		rows.append(["SURFACE", "5 900 K"])
+	elif ah > 0.0:
+		var ad := fmt_dist(ah)
+		rows.append(["ATMOSPHERE", "%s %s" % [ad[0], ad[1]]])
+	else:
+		rows.append(["ATMOSPHERE", "NONE"])
+	return rows
+
+
+## Warp spool ring around the reticle (fills while spooling, spins while in warp).
+func _draw_warp_ring(d: Dictionary, c: Vector2) -> void:
+	var ws := int(d.get("warp_state", 0))
+	var sp := float(d.get("warp_spool", 0.0))
+	_warp_ring = lerpf(_warp_ring, 1.0 if ws != 0 else 0.0, clampf(get_process_delta_time() * 6.0, 0.0, 1.0))
+	if Capture.active:
+		_warp_ring = 1.0 if ws != 0 else 0.0
+	if _warp_ring < 0.02:
+		return
+	var a := _warp_ring
+	var r := 46.0 * _s
+	_circle(c, r, Color(C_FAINT, C_FAINT.a * a), 1.0)
+	if ws == 1:
+		var a1 := -PI * 0.5 + TAU * sp
+		_circle(c, r, Color(C_MAIN, a), 2.0, -PI * 0.5, a1)
+		_root.draw_circle(c + Vector2.from_angle(a1) * r, 2.6 * _s, Color(1, 1, 1, a))
+		_text(c + Vector2(0, r + 22.0 * _s), "WARP SPOOL  %d%%" % roundi(sp * 100.0), 12, Color(C_MAIN, a), 1)
+	else:
+		for i in 6:
+			var a0 := _time * 1.6 + TAU * i / 6.0
+			_circle(c, r, Color(0.7, 0.85, 1.0, a * 0.9), 1.6, a0, a0 + 0.55)
+		_text(c + Vector2(0, r + 22.0 * _s), "W A R P", 12, Color(0.7, 0.85, 1.0, a * 0.9), 1, false)
+
+
+## Re-entry hull temperature: an arc left of the reticle, amber -> red, with a readout.
+func _draw_heat(d: Dictionary, c: Vector2) -> void:
+	var h := float(d.get("heat", 0.0))
+	if h < 0.03:
+		return
+	var a := smoothstep(0.03, 0.12, h)
+	var r := 74.0 * _s
+	var a0 := PI * 0.78
+	var a1 := PI * 1.22
+	_circle(c, r, Color(C_FAINT, C_FAINT.a * a), 3.0, a0, a1)
+	var col := C_ACCENT.lerp(C_WARN, smoothstep(0.45, 0.8, h))
+	if h > 0.7:
+		col.a *= 0.6 + 0.4 * (0.5 + 0.5 * sin(_time * 9.0))
+	var af := a1 - (a1 - a0) * clampf(h, 0.0, 1.0)
+	_circle(c, r, Color(col, col.a * a), 3.0, af, a1)
+	var lp := c + Vector2.from_angle(PI) * (r + 14.0 * _s)
+	_text(lp + Vector2(0, -6.0 * _s), "HULL TEMP", 10, Color(C_DIM, C_DIM.a * a), 2, false)
+	_text(lp + Vector2(0, 10.0 * _s), "%d%%" % roundi(h * 100.0), 12, Color(col, a), 2)
+
+
+## Landing assist (solid ground below ~300 m): radar-altitude tape right of the reticle with the
+## sink rate (green / amber / red against the touchdown limit) and a touchdown marker projected on
+## the ground under the ship.
+func _draw_landing(d: Dictionary, cam: Camera3D, vs: Vector2) -> void:
+	var solid := bool(d.get("solid_ground", false))
+	var alt := float(d.get("pad_alt", -1.0))
+	if alt < 0.0:
+		alt = float(d.get("altitude", -1.0))
+	var want := solid and alt >= -0.5 and alt < 300.0 and not bool(d.get("landed", false))
+	_land_k = move_toward(_land_k, 1.0 if want else 0.0, get_process_delta_time() / 0.35)
+	if Capture.active:
+		_land_k = 1.0 if want else 0.0
+	if _land_k <= 0.01:
+		return
+	var a := _land_k
+	var vsp := float(d.get("vertical_speed", 0.0))
+	var sink := maxf(-vsp, 0.0)
+	var col := C_OK
+	if sink > 2.0:
+		col = C_ACCENT
+	if sink > 5.0 or sink > float(d.get("descent_limit", 99.0)) + 1.0:
+		col = C_WARN
+	# tape: 0..300 m, square-root scale (fine near the ground)
+	var c := vs * 0.5
+	var x := c.x + 150.0 * _s
+	var y0 := c.y + 110.0 * _s
+	var y1 := c.y - 110.0 * _s
+	var f := func(hh: float) -> float: return lerpf(y0, y1, sqrt(clampf(hh, 0.0, 300.0) / 300.0))
+	_line(Vector2(x, y0), Vector2(x, y1), Color(C_FAINT, C_FAINT.a * a * 1.5), 1.0)
+	for hh: float in [0.0, 5.0, 10.0, 25.0, 50.0, 100.0, 200.0, 300.0]:
+		var yy: float = f.call(hh)
+		var big := hh in [0.0, 10.0, 50.0, 100.0, 300.0]
+		_line(Vector2(x, yy), Vector2(x + (8.0 if big else 4.0) * _s, yy), Color(C_DIM, C_DIM.a * a), 1.0)
+		if big:
+			_text(Vector2(x + 12.0 * _s, yy + 4.0 * _s), "%d" % int(hh), 9, Color(C_DIM, C_DIM.a * a * 0.9))
+	var ya: float = f.call(alt)
+	var tri := PackedVector2Array([Vector2(x - 2.0 * _s, ya), Vector2(x - 10.0 * _s, ya - 5.0 * _s), Vector2(x - 10.0 * _s, ya + 5.0 * _s)])
+	_root.draw_colored_polygon(tri, Color(col, a))
+	_text(Vector2(x - 14.0 * _s, ya + 4.0 * _s), "%.1f" % alt if alt < 100.0 else "%d" % roundi(alt), 13, Color(C_MAIN, a), 2)
+	_text(Vector2(x - 14.0 * _s, ya + 20.0 * _s), "▼ %.1f m/s" % sink, 10, Color(col, a), 2)
+	_text(Vector2(x, y0 + 20.0 * _s), "RADAR ALT", 9, Color(C_DIM, C_DIM.a * a), 1, false)
+	if bool(d.get("gear_suggest", false)) or (alt < 60.0 and not bool(d.get("gear_down", true))):
+		var ga := a * (0.55 + 0.45 * sin(_time * 8.0))
+		_text(Vector2(x, y1 - 12.0 * _s), "GEAR UP", 11, Color(C_WARN, ga), 1, false)
+	# touchdown marker on the ground below the ship
+	var up: Vector3 = ship.get("up_dir")
+	var gp: Vector3 = ship.global_position - up * (alt + 2.95)
+	if cam.is_position_behind(gp):
+		return
+	var sp := cam.unproject_position(gp)
+	if not Rect2(Vector2.ZERO, vs).grow(-30.0 * _s).has_point(sp):
+		return
+	# ring flattened by the view angle onto the ground, with a slow pulse
+	var to_cam := (cam.global_position - gp).normalized()
+	var flat := clampf(absf(to_cam.dot(up)), 0.25, 1.0)
+	var rad := clampf(900.0 / maxf(cam.global_position.distance_to(gp), 1.0), 10.0, 60.0) * _s
+	var pts := PackedVector2Array()
+	var pts2 := PackedVector2Array()
+	var pulse := fmod(_time * 0.8, 1.0)
+	for i in 33:
+		var an := TAU * i / 32.0
+		var e := Vector2(cos(an) * rad, sin(an) * rad * flat)
+		pts.append(sp + e)
+		pts2.append(sp + e * (1.0 + pulse * 0.6))
+	_poly(pts, Color(col, a * 0.8), 1.2)
+	_root.draw_polyline(pts2, Color(col, a * 0.35 * (1.0 - pulse)), 1.0 * _s, true)
+	_line(sp + Vector2(-rad * 0.35, 0), sp + Vector2(rad * 0.35, 0), Color(col, a * 0.8), 1.0)
+	_line(sp + Vector2(0, -rad * 0.35 * flat), sp + Vector2(0, rad * 0.35 * flat), Color(col, a * 0.8), 1.0)
 
 
 # ------------------------------------------------------------------ on-foot layout

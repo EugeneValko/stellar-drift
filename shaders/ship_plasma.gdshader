@@ -1,7 +1,10 @@
 shader_type spatial;
 // Plasma sheath / bow shock and wake around the ship during re-entry.
-// Mesh: paraboloid/cone shell, local -Z = direction of travel,
+// Mesh: paraboloid/cone shell around local +Z (apex at z = 0, +Z = downstream),
 // UV.y = 0 at the apex -> 1 at the open end, UV.x = angle (0..1).
+// Wave 4: 3D flowing turbulence in the shell's local space (no UV cells / seam), filaments that
+// break up the shell edge, soft fades everywhere (no visible geometric rim), hot white-yellow
+// cap -> orange -> violet tail.
 render_mode blend_add, unshaded, cull_disabled, depth_draw_never, fog_disabled, shadows_disabled;
 
 uniform float amount : hint_range(0.0, 1.0) = 0.0;
@@ -15,30 +18,37 @@ uniform float scroll = 6.0;
 uniform float depth_fade = 2.0;
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
 
-float hash12(vec2 p) {
-	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
-	p3 += dot(p3, p3.yzx + 33.33);
-	return fract((p3.x + p3.y) * p3.z);
+varying vec3 v_local;
+
+float hash13(vec3 p) {
+	p = fract(p * 0.1031);
+	p += dot(p, p.zyx + 31.32);
+	return fract((p.x + p.y) * p.z);
 }
 
-float vnoise2(vec2 p) {
-	vec2 i = floor(p);
-	vec2 f = fract(p);
+float vnoise(vec3 p) {
+	vec3 i = floor(p);
+	vec3 f = fract(p);
 	f = f * f * (3.0 - 2.0 * f);
-	return mix(mix(hash12(i), hash12(i + vec2(1, 0)), f.x),
-		mix(hash12(i + vec2(0, 1)), hash12(i + vec2(1, 1)), f.x), f.y);
+	return mix(mix(mix(hash13(i), hash13(i + vec3(1, 0, 0)), f.x),
+				mix(hash13(i + vec3(0, 1, 0)), hash13(i + vec3(1, 1, 0)), f.x), f.y),
+			mix(mix(hash13(i + vec3(0, 0, 1)), hash13(i + vec3(1, 0, 1)), f.x),
+				mix(hash13(i + vec3(0, 1, 1)), hash13(i + vec3(1, 1, 1)), f.x), f.y), f.z);
 }
 
-// periodic in x (angle), so the seam at UV.x = 0/1 is invisible
-float pnoise(vec2 uv, float cells_x, float cells_y) {
-	vec2 p = vec2(uv.x * cells_x, uv.y * cells_y);
-	vec2 i = floor(p);
-	vec2 f = fract(p);
-	f = f * f * (3.0 - 2.0 * f);
-	float i0 = mod(i.x, cells_x);
-	float i1 = mod(i.x + 1.0, cells_x);
-	return mix(mix(hash12(vec2(i0, i.y)), hash12(vec2(i1, i.y)), f.x),
-		mix(hash12(vec2(i0, i.y + 1.0)), hash12(vec2(i1, i.y + 1.0)), f.x), f.y);
+float fbm(vec3 p) {
+	float s = 0.0;
+	float a = 0.5;
+	for (int i = 0; i < 4; i++) {
+		s += vnoise(p) * a;
+		p = p * 2.07 + vec3(13.7, 5.1, 9.9);
+		a *= 0.5;
+	}
+	return s / 0.9375;
+}
+
+void vertex() {
+	v_local = VERTEX;
 }
 
 void fragment() {
@@ -46,11 +56,9 @@ void fragment() {
 		discard;
 	}
 	float v = clamp(UV.y, 0.0, 1.0);
-	float rim = 1.0 - clamp(abs(dot(normalize(NORMAL), VIEW)), 0.0, 1.0);
+	float facing = clamp(abs(dot(normalize(NORMAL), VIEW)), 0.0, 1.0);
+	float rim = 1.0 - facing;
 	float t = time_s;
-	float n1 = pnoise(vec2(UV.x, v - t * scroll * 0.1), 48.0, 10.0);
-	float n2 = pnoise(vec2(UV.x + 0.37, v * 0.5 - t * scroll * 0.23), 22.0, 6.0);
-	float flick = 0.6 + 0.8 * n1 * n2;
 	// soft intersection with the hull/terrain
 	float depth = textureLod(depth_tex, SCREEN_UV, 0.0).r;
 	vec4 vp = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, depth, 1.0);
@@ -59,18 +67,31 @@ void fragment() {
 	vec3 col;
 	float a;
 	if (mode == 0) {
-		// bright cap at the apex, glowing rim (shock front seen edge-on)
-		float cap = exp(-v * 10.0);
-		float streak = smoothstep(0.4, 0.95, pnoise(vec2(UV.x, v * 1.5 - t * scroll * 0.15), 36.0, 4.0));
-		float body = pow(rim, 2.5) * (1.0 - smoothstep(0.25, 1.0, v)) * (0.35 + 0.9 * streak);
-		a = (cap * 1.8 + body + 0.05 * (1.0 - v) * streak) * flick;
-		col = mix(vec3(1.0, 0.85, 0.6), color_a, smoothstep(0.0, 0.25, v));
-		col = mix(col, color_b, smoothstep(0.35, 1.0, v) * 0.7);
+		// flow streams aft over the shell: stretched along z, domain-warped
+		vec3 q = v_local * vec3(0.32, 0.32, 0.12) - vec3(0.0, 0.0, t * scroll * 0.9);
+		vec3 w = vec3(fbm(q + 3.1), fbm(q + 7.7), 0.0);
+		float n = fbm(q + w * 1.6);
+		float fil = smoothstep(0.42, 0.85, n);
+		float cap = exp(-v * 9.0) * (0.75 + 0.5 * n);
+		// the sheath brightens toward grazing angles, but softly (no hard silhouette line)
+		float sheath = (0.25 + 0.75 * pow(rim, 1.6)) * (1.0 - smoothstep(0.15, 0.95, v + (n - 0.5) * 0.5));
+		a = cap * 1.7 + sheath * (0.25 + 1.1 * fil);
+		float flick = 0.8 + 0.4 * vnoise(vec3(v_local.xy * 0.5, t * 9.0));
+		a *= flick;
+		col = mix(vec3(1.0, 0.9, 0.72), color_a, smoothstep(0.0, 0.3, v));
+		col = mix(col, color_b, smoothstep(0.35, 1.0, v) * 0.75);
 	} else {
-		float fade = pow(1.0 - v, 2.5) * smoothstep(0.0, 0.08, v);
-		float streaks = smoothstep(0.45, 0.95, pnoise(vec2(UV.x, v * 0.6 - t * scroll * 0.08), 30.0, 3.0));
-		a = fade * (0.15 + 0.85 * streaks) * (0.35 + 0.4 * rim) * flick;
-		col = mix(color_a, color_b, smoothstep(0.1, 0.7, v));
+		vec3 q = v_local * vec3(0.16, 0.16, 0.035) - vec3(0.0, 0.0, t * scroll * 0.35);
+		vec3 w = vec3(fbm(q * 1.3 + 1.7), fbm(q * 1.3 + 9.2), 0.0) - 0.5;
+		float n = fbm(q + vec3(w.xy * 1.8, 0.0));
+		float tongues = smoothstep(0.45, 0.9, n);
+		float fade = pow(1.0 - v, 2.2) * smoothstep(0.0, 0.1, v);
+		// brighter along the axis (looking down the wake), wispy at the sides
+		float body = mix(0.35, 1.0, pow(facing, 0.7));
+		a = fade * (0.12 + 1.1 * tongues) * body;
+		a *= 1.0 - smoothstep(0.55, 1.0, v + (0.5 - n) * 0.35);
+		col = mix(color_a, color_b, smoothstep(0.08, 0.65, v + (n - 0.5) * 0.2));
+		col = mix(col, vec3(1.0, 0.85, 0.65), tongues * (1.0 - v) * 0.35);
 	}
 	ALBEDO = col * a * amount * intensity * soft;
 }
