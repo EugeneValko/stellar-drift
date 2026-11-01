@@ -47,6 +47,7 @@ func _ready() -> void:
 		system.set_quality(int(Capture.args["quality"]))
 	_debug_overrides()
 	ship.hud_message.connect(func(t: String) -> void: hud.flash_message(t, 2.2))
+	Controls.mouse_scale_changed.connect(func(v: float) -> void: hud.flash_message("Чувствительность мыши ×%.2f" % v, 1.5))
 	game.state_changed.connect(_on_state_changed)
 	var preset := Capture.get_preset()
 	var shots: PackedStringArray = String(Capture.args.get("shots", "")).split(",", false)

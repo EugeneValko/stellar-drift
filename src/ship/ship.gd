@@ -63,13 +63,17 @@ const HULL_PROBES: Array[Vector3] = [Vector3(0, -0.2, -10.2), Vector3(0, 0.2, 9.
 
 @export_group("Control")
 @export var start_piloted := false
-@export var mouse_sensitivity := 0.0035
+## Virtual-joystick deflection per mouse pixel (x Controls.mouse_scale): full deflection after
+## ~330 px (1080p), recentres at `mouse_return`. Frame-rate independent (per event / exp decay).
+@export var mouse_sensitivity := 0.003
 ## Virtual-joystick return to centre (1/s). 0 = pure virtual joystick (stick holds).
 @export var mouse_return := 2.2
 @export var stick_deadzone := 0.03
 @export var stick_expo := 1.45
 @export var boost_mult := 1.6
 @export var auto_gear := true
+## Pilot steps out this far to the ship's right of the ramp tip (clear of the belly).
+@export var exit_side_offset := 2.6
 @export_group("Physics")
 @export var drag_k := 1.6e-5
 @export var lift_k := 1.4
@@ -298,17 +302,25 @@ func land_at(planet: Node3D, dir: Vector3, fwd: Vector3) -> void:
 func get_exit_transform() -> Transform3D:
 	var m: Node3D = visual.get_marker("ExitPoint") if visual else null
 	var p: Vector3 = m.global_position if m else global_transform * Vector3(0, -GROUND_OFFSET, -3.8)
+	# the ramp tip is under the fuselage (belly ~1.7 m above the ground, less than the pilot's
+	# 1.8 m capsule): step out beside it, facing away from the hull
+	p += global_basis.x * exit_side_offset
 	var up := up_dir
 	if body:
 		var a := _ground_alt(body, p)
 		if a < 50.0:
 			p -= up * a
 	p += up * 0.05
-	var fwd := -global_basis.z
+	var fwd := (-global_basis.z).lerp(global_basis.x, 0.75)
 	fwd = (fwd - up * fwd.dot(up))
 	if fwd.length_squared() < 1e-4:
-		fwd = up.cross(global_basis.x)
+		fwd = up.cross(global_basis.z)
 	return Transform3D(Basis.looking_at(fwd.normalized(), up), p)
+
+
+## Boarding point used by GameMode (where the pilot steps out, beside the ramp).
+func get_entry_point() -> Vector3:
+	return get_exit_transform().origin
 
 
 func get_pilot_seat_transform() -> Transform3D:
@@ -494,7 +506,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var r: Vector2 = (event as InputEventMouseMotion).relative
-		_stick_raw = (_stick_raw + Vector2(r.x, -r.y) * mouse_sensitivity).limit_length(1.0)
+		_stick_raw = (_stick_raw + Vector2(r.x, -r.y) * mouse_sensitivity * Controls.mouse_scale).limit_length(1.0)
 	elif event is InputEventMouseButton and event.is_pressed() and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	elif event.is_action_pressed("speed_mode_next"):

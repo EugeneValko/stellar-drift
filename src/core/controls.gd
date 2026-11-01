@@ -25,6 +25,8 @@ const KEYS := {
 	"hud_toggle": [KEY_H],
 	"screenshot": [KEY_F12],
 	"pause_menu": [KEY_ESCAPE],
+	"mouse_sens_down": [KEY_BRACKETLEFT],
+	"mouse_sens_up": [KEY_BRACKETRIGHT],
 }
 
 ## Displayed by the F1 overlay. Keep in sync with gameplay code.
@@ -47,8 +49,40 @@ const HELP := [
 	["H", "Скрыть HUD"],
 	["F12", "Скриншот"],
 	["Esc", "Курсор мыши: показать / захватить"],
+	["[ / ]", "Чувствительность мыши − / +"],
 	["F1", "Эта подсказка"],
 ]
+
+
+## Global mouse-look multiplier (ship stick, on-foot look, free camera); `[` / `]` change it in
+## steps of x1.25, saved in user://settings.cfg.
+var mouse_scale := 1.0
+const SETTINGS_PATH := "user://settings.cfg"
+signal mouse_scale_changed(scale: float)
+
+
+func _ready() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(SETTINGS_PATH) == OK:
+		mouse_scale = clampf(float(cfg.get_value("input", "mouse_scale", 1.0)), 0.1, 10.0)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_echo():
+		return
+	if event.is_action_pressed("mouse_sens_up"):
+		set_mouse_scale(mouse_scale * 1.25)
+	elif event.is_action_pressed("mouse_sens_down"):
+		set_mouse_scale(mouse_scale / 1.25)
+
+
+func set_mouse_scale(v: float) -> void:
+	mouse_scale = clampf(v, 0.1, 10.0)
+	var cfg := ConfigFile.new()
+	cfg.load(SETTINGS_PATH)
+	cfg.set_value("input", "mouse_scale", mouse_scale)
+	cfg.save(SETTINGS_PATH)
+	mouse_scale_changed.emit(mouse_scale)
 
 
 func _enter_tree() -> void:

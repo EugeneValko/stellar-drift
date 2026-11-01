@@ -372,7 +372,7 @@ func _exit_walk_enter(tag: String) -> void:
 	var near := game.distance_to_hatch()
 	await game.enter_ship()
 	await _frames(30)
-	ok = game.state == GameMode.State.SHIP and ship.is_piloted and Universe.focus == ship \
+	ok = near < game.interact_distance and game.state == GameMode.State.SHIP and ship.is_piloted and Universe.focus == ship \
 		and get_viewport().get_camera_3d() == ship.get_camera()
 	_result("reenter_" + tag, ok, "hatch distance %.1f m after %.1f s, state=%s piloted=%s" % [near, t,
 		game.get_state_name(), ship.is_piloted])
