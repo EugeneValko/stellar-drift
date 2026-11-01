@@ -6,8 +6,24 @@ global uniform vec3 sun_direction;   // world space, unit, toward the sun
 global uniform vec4 sun_color;       // linear RGB, unattenuated
 global uniform float sun_intensity;  // lambert white facing sun -> radiance = color * intensity
 
+// Per-body override (SolarSystem): world-space direction from THIS body toward the star.
+// Zero = use the global sun_direction (bodies lit by the main light, i.e. near the camera).
+// Distant bodies have their own direction so their phase is correct from anywhere.
+uniform vec3 body_sun_dir = vec3(0.0);
+
 #define SD_PI 3.14159265
 #define SD_INV_4PI 0.0795774715
+
+// Direction toward the sun for this material (see body_sun_dir).
+vec3 sd_sun_dir() {
+	return dot(body_sun_dir, body_sun_dir) > 0.25 ? body_sun_dir : sun_direction;
+}
+
+// Uniform scale of a node (scaled-space proxies are scaled about the camera; ray math is done
+// in body units: divide camera-relative world vectors and scene depth by this).
+float sd_node_scale(mat4 m) {
+	return length(m[0].xyz);
+}
 
 // Robust ray/sphere intersection (sphere centered at origin). Returns (t_near, t_far);
 // no hit -> (1e30, -1e30). Uses the closest-approach form for float32 precision at

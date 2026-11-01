@@ -120,7 +120,7 @@ vec3 atmo_scatter(vec3 ro, vec3 rd, float t_max, int steps, float jitter, out ve
 	T = vec3(1.0);
 	float t0, t1;
 	if (!atmo_ray_range(ro, rd, t_max, t0, t1)) return vec3(0.0);
-	vec3 L = sun_direction;
+	vec3 L = sd_sun_dir();
 	float len = t1 - t0;
 	float k = (length(ro) < atmo_top_radius) ? 2.0 : 1.0;
 	vec3 od = vec3(0.0);
@@ -171,7 +171,7 @@ vec3 atmo_sky_ambient(vec3 p) {
 	vec3 up = normalize(p);
 	vec3 T;
 	vec3 zen = atmo_scatter(p, up, 1e30, 4, 0.5, T);
-	vec3 hor = atmo_scatter(p, normalize(up * 0.25 + normalize(sun_direction - up * dot(sun_direction, up) + vec3(1e-4))), 1e30, 4, 0.5, T);
+	vec3 hor = atmo_scatter(p, normalize(up * 0.25 + normalize(sd_sun_dir() - up * dot(sd_sun_dir(), up) + vec3(1e-4))), 1e30, 4, 0.5, T);
 	return (zen + hor) * 0.5 * SD_PI;
 }
 

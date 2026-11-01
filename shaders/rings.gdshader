@@ -27,9 +27,9 @@ void fragment() {
 	vec3 center = NODE_POSITION_WORLD;
 	vec3 up = normalize(MODEL_MATRIX[1].xyz);
 	vec3 wpos = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
-	vec3 p = wpos - center;
+	vec3 p = (wpos - center) / sd_node_scale(MODEL_MATRIX);   // body units (scaled space)
 	vec3 V = normalize(CAMERA_POSITION_WORLD - wpos);
-	vec3 L = sun_direction;
+	vec3 L = sd_sun_dir();
 	float nv = abs(dot(up, V));
 	float nl = dot(up, L);
 

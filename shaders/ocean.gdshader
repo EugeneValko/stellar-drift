@@ -90,18 +90,19 @@ float ggx_d(float nh, float a2) {
 
 void fragment() {
 	vec3 rd = normalize((INV_VIEW_MATRIX * vec4(normalize(VERTEX), 0.0)).xyz);
-	vec3 ro = CAMERA_POSITION_WORLD - NODE_POSITION_WORLD;
+	float S = sd_node_scale(MODEL_MATRIX);   // scaled-space proxy: work in body units
+	vec3 ro = (CAMERA_POSITION_WORLD - NODE_POSITION_WORLD) / S;
 	if (length(ro) < ocean_radius) discard;    // underwater: not handled here
 	vec2 hit = sd_ray_sphere(ro, rd, ocean_radius);
 	if (hit.y < hit.x || hit.x <= 0.0) discard;
 	float t = hit.x;
-	float sd = sd_scene_distance(texture(depth_tex, SCREEN_UV).r, SCREEN_UV, INV_PROJECTION_MATRIX);
+	float sd = sd_scene_distance(texture(depth_tex, SCREEN_UV).r, SCREEN_UV, INV_PROJECTION_MATRIX) / S;
 	if (sd < t) discard;                        // land in front of the water
 
-	mat3 to_local = transpose(mat3(MODEL_MATRIX));
+	mat3 to_local = transpose(mat3(MODEL_MATRIX)) / S;
 	vec3 p = ro + rd * t;                       // world-oriented, planet relative
 	vec3 N = normalize(p);
-	vec3 L = sun_direction;
+	vec3 L = sd_sun_dir();
 
 	// ---- waves (planet-local, camera-anchored lattice for precision)
 	vec3 ro_l = to_local * ro;
@@ -114,7 +115,7 @@ void fragment() {
 	float footprint = t * pix / cosv;
 	float var;
 	vec3 slope_l = ocean_slope(q, N_l, footprint, var);
-	vec3 n = normalize(N - mat3(MODEL_MATRIX) * slope_l);
+	vec3 n = normalize(N - mat3(MODEL_MATRIX) * slope_l / S);
 	// normal variation inside the pixel (resolved waves near Nyquist) -> extra roughness (Toksvig-like)
 	vec3 dnx = dFdx(n);
 	vec3 dny = dFdy(n);

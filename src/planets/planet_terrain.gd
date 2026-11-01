@@ -38,6 +38,9 @@ const EDGE_DY: Array[int] = [-1, 0, 1, 0]
 @export var cast_shadows := true
 ## When true the terrain follows the current viewport camera by itself.
 @export var auto_focus_camera := false
+## VisualInstance3D render layers of the chunk meshes (SolarSystem gives each planet group its
+## own layer so it can be lit by its own directional light).
+@export_flags_3d_render var render_layers := 1
 
 var config: PlanetConfig
 var generator: TerrainGenerator
@@ -167,6 +170,40 @@ func get_surface_point(dir: Vector3) -> Vector3:
 ## Altitude of a planet-local point above the terrain surface.
 func get_altitude(local_pos: Vector3) -> float:
 	return local_pos.length() - config.radius - generator.get_height(local_pos)
+
+
+## Changes the coarsest displayed level at runtime (far planets: 0 = 6 chunks).
+func set_min_level(level: int) -> void:
+	if level == min_level:
+		return
+	min_level = level
+	_tree_dirty = true
+
+
+## Render layers of all existing and future chunk meshes.
+func set_render_layers(layers_mask: int) -> void:
+	render_layers = layers_mask
+	_for_each_mesh(func(mi: MeshInstance3D) -> void: mi.layers = layers_mask)
+
+
+## Shadow casting of all existing and future chunk meshes (only the focus planet should cast).
+func set_cast_shadows(on: bool) -> void:
+	if on == cast_shadows:
+		return
+	cast_shadows = on
+	var mode := GeometryInstance3D.SHADOW_CASTING_SETTING_ON if on \
+		else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_for_each_mesh(func(mi: MeshInstance3D) -> void: mi.cast_shadow = mode)
+
+
+func _for_each_mesh(f: Callable) -> void:
+	var stack: Array[ChunkNode] = []
+	stack.append_array(_roots)
+	while not stack.is_empty():
+		var n: ChunkNode = stack.pop_back()
+		if n.mesh:
+			f.call(n.mesh)
+		stack.append_array(n.children)
 
 
 func get_stats() -> Dictionary:
@@ -605,6 +642,7 @@ func _upload(n: ChunkNode, res: Dictionary) -> void:
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if cast_shadows \
 		else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	mi.visible = false
+	mi.layers = render_layers
 	add_child(mi)
 	n.mesh = mi
 	_prof_mesh = maxf(_prof_mesh, (Time.get_ticks_usec() - tm) / 1000.0)

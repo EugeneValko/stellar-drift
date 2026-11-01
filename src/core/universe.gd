@@ -116,6 +116,26 @@ func get_true_position(local_pos: Vector3) -> Array[float]:
 	return [local_pos.x + origin_x, local_pos.y + origin_y, local_pos.z + origin_z]
 
 
+## Local (scene) position of a true system-frame point given as 64-bit components.
+## Precise near the origin even when the true coordinates are ~1e8 m.
+func true_to_local(x: float, y: float, z: float) -> Vector3:
+	return Vector3(x - origin_x, y - origin_y, z - origin_z)
+
+
+## Moves the floating origin to the true point (x, y, z) (teleport / capture presets).
+## Like shift_origin(): every child of world_root is moved by -delta, `origin_shifted` fires.
+func teleport_origin(x: float, y: float, z: float) -> void:
+	var delta := Vector3(x - origin_x, y - origin_y, z - origin_z)
+	if world_root:
+		for c in world_root.get_children():
+			if c is Node3D:
+				(c as Node3D).global_position -= delta
+	origin_x = x
+	origin_y = y
+	origin_z = z
+	origin_shifted.emit(delta)
+
+
 func _physics_process(_dt: float) -> void:
 	if world_root == null or focus == null or not is_instance_valid(focus):
 		return

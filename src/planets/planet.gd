@@ -68,9 +68,11 @@ func build() -> void:
 	terrain_ready.emit()
 
 
-func add_component(node: Node) -> Node:
+## `params` (optional): passed to `node.setup()` instead of the PlanetConfig (e.g. the
+## Dictionary an AtmosphereLayer / CloudLayer / OceanLayer expects).
+func add_component(node: Node, params: Variant = null) -> Node:
 	if node.has_method("setup"):
-		node.setup(config)
+		node.setup(config if params == null else params)
 	if node.has_method("set_planet"):
 		node.set_planet(self)
 	components.add_child(node)
