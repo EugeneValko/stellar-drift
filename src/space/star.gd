@@ -28,9 +28,9 @@ const FLARE_SHADER := preload("res://shaders/star_flare.gdshader")
 	set(v):
 		tint = v
 		_update_materials()
-@export var seed: int = 1:
+@export var noise_seed: int = 1:
 	set(v):
-		seed = v
+		noise_seed = v
 		_queue_rebuild()
 
 @export_group("Surface")
@@ -50,7 +50,7 @@ const FLARE_SHADER := preload("res://shaders/star_flare.gdshader")
 ## "Eye adaptation" on the star only: when the disc grows large on screen its brightness is
 ## scaled toward `close_intensity_scale`, so surface detail stays readable up close while the
 ## distant star still blows out into a dazzling bloom. Angular radius range in radians.
-@export var close_intensity_scale: float = 0.13
+@export var close_intensity_scale: float = 0.16
 @export var adapt_radius_range: Vector2 = Vector2(0.03, 0.22)
 ## Mesh resolution (radial segments). 128 keeps the silhouette smooth at 600 km.
 @export var sphere_segments: int = 160
@@ -70,7 +70,7 @@ const FLARE_SHADER := preload("res://shaders/star_flare.gdshader")
 	set(v):
 		prominence_count = v
 		_queue_rebuild()
-@export var prominence_intensity: float = 5.0:
+@export var prominence_intensity: float = 7.0:
 	set(v):
 		prominence_intensity = v
 		_update_materials()
@@ -214,13 +214,13 @@ func _update_materials() -> void:
 	surface_material.set_shader_parameter("intensity", surface_intensity)
 	surface_material.set_shader_parameter("granule_scale", granule_scale)
 	surface_material.set_shader_parameter("spot_amount", spot_amount)
-	surface_material.set_shader_parameter("seed", seed)
+	surface_material.set_shader_parameter("seed", noise_seed)
 	surface_material.set_shader_parameter("time_scale", time_scale)
 	corona_material.set_shader_parameter("star_color", cv)
 	corona_material.set_shader_parameter("star_radius", radius)
 	corona_material.set_shader_parameter("extent", corona_extent)
 	corona_material.set_shader_parameter("intensity", corona_intensity)
-	corona_material.set_shader_parameter("seed", seed)
+	corona_material.set_shader_parameter("seed", noise_seed)
 	corona_material.set_shader_parameter("time_scale", time_scale)
 	prominence_material.set_shader_parameter("intensity", prominence_intensity)
 	prominence_material.set_shader_parameter("star_radius", radius)
@@ -302,7 +302,7 @@ func _update_flare(cam: Camera3D) -> void:
 
 func _build_prominence_mesh() -> ArrayMesh:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash(seed * 7919 + 13)
+	rng.seed = hash(noise_seed * 7919 + 13)
 	var verts := PackedVector3Array()
 	var norms := PackedVector3Array()
 	var uvs := PackedVector2Array()
@@ -327,7 +327,7 @@ func _build_prominence_mesh() -> ArrayMesh:
 		var twist := rng.randf_range(3.0, 9.0) * (1.0 if rng.randf() < 0.5 else -1.0)
 		for k in strands:
 			var hk := height * rng.randf_range(0.85, 1.12)
-			var wk := radius * rng.randf_range(0.008, 0.02)
+			var wk := radius * rng.randf_range(0.012, 0.03)
 			var rope := Vector3(radius * rng.randf_range(0.006, 0.026), TAU * float(k) / strands + rng.randf_range(-0.4, 0.4), twist)
 			var id := float(i * strands + k) + 0.37
 			_add_arc(verts, norms, uvs, uv2s, idx, a, b, axis, hk, wk, lean, rope, id, segs, sides)

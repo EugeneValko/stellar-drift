@@ -13,8 +13,8 @@ uniform float time_scale = 1.0;
 uniform int seed = 1;
 uniform float granule_scale = 110.0;          // granules per radius (approx.)
 uniform float meso_scale = 34.0;              // mesogranulation (visible from ~2000 km)
-uniform float color_saturation : hint_range(0.5, 6.0) = 3.4; // pushes the disc toward yellow-orange
-uniform float granule_contrast : hint_range(0.0, 2.0) = 0.9;
+uniform float color_saturation : hint_range(0.5, 10.0) = 6.0; // pushes the disc toward yellow-orange
+uniform float granule_contrast : hint_range(0.0, 2.0) = 0.7;
 uniform float supergranule_scale = 18.0;
 uniform float mottling : hint_range(0.0, 1.0) = 0.35;
 uniform float spot_amount : hint_range(0.0, 1.0) = 0.55;
@@ -88,7 +88,7 @@ void fragment() {
 	vec2 sv = sn_voronoi(sp, t * 0.04);
 	float sg = smoothstep(0.0, 0.25, sv.y - sv.x);   // network lanes slightly brighter (chromospheric network)
 	float mott = sn_fbm(n * 7.0 + so + vec3(t * 0.01), 5, 0.55);
-	float bright = 1.0 + granule_contrast * gran + 0.45 * meso + mottling * (0.3 * mott - 0.10 * sg);
+	float bright = 1.0 + granule_contrast * gran + 0.6 * meso + mottling * (0.45 * mott - 0.12 * sg);
 
 	// --- sunspots in active latitude belts
 	float lat = abs(n.y);
@@ -96,7 +96,7 @@ void fragment() {
 	float sn1 = sn_fbm(n * spot_scale + so * 1.3, 4, 0.5);
 	float sn2 = sn_fbm(n * spot_scale * 4.0 + so, 4, 0.5);
 	float act = belt * spot_amount;
-	float spot_f = (sn1 * 0.75 + sn2 * 0.35) - (0.55 - 0.32 * act);
+	float spot_f = (sn1 * 0.8 + sn2 * 0.35) - (0.44 - 0.30 * act);
 	float pen = smoothstep(0.0, 0.035, spot_f) * step(0.001, act);
 	float umb = smoothstep(0.05, 0.08, spot_f) * step(0.001, act);
 	// filamentary penumbra: radial-ish streaks from noise on the spot field gradient direction

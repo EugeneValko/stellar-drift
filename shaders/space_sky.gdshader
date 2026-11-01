@@ -20,7 +20,7 @@ uniform float baked_face_size = 1024.0;
 uniform float bake_version = 0.0;
 
 group_uniforms stars;
-uniform float star_brightness : hint_range(0.0, 8.0) = 1.0;
+uniform float star_brightness : hint_range(0.0, 8.0) = 1.35;
 uniform float star_density : hint_range(0.0, 3.0) = 1.0;
 uniform float star_saturation : hint_range(0.0, 2.0) = 0.85;
 uniform float star_psf_pixels : hint_range(0.5, 2.0) = 0.72;

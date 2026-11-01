@@ -33,6 +33,8 @@ func _ready() -> void:
 		env.tonemap_mode = int(Capture.args["tonemap"]) as Environment.ToneMapper
 	if Capture.args.has("exposure"):
 		env.tonemap_exposure = float(Capture.args["exposure"])
+	if star and Capture.args.has("time_scale"):
+		star.time_scale = float(Capture.args["time_scale"])
 	var p := Capture.get_preset()
 	apply_capture_preset(p if p != "" else "star_far")
 
@@ -43,7 +45,8 @@ func _process(delta: float) -> void:
 		var pos := _orbit_center + Vector3(sin(_orbit_angle), 0.0, cos(_orbit_angle)) * _orbit_radius
 		pos.y += _orbit_height
 		camera.global_position = pos
-		camera.look_at(_orbit_center + Vector3(0, _orbit_height * 0.2, 0), Vector3.UP)
+		var side := (pos - _orbit_center).cross(Vector3.UP).normalized()
+		camera.look_at(_orbit_center + side * 260.0 * KM + Vector3(0, 60.0 * KM, 0), Vector3.UP)
 
 
 func _look(from: Vector3, target: Vector3, fov: float = 70.0, up: Vector3 = Vector3.UP) -> void:
@@ -97,13 +100,14 @@ func apply_capture_preset(preset_name: String) -> void:
 			var from := Vector3(9000.0, 2500.0, 12000.0) * KM
 			var to_star := (Vector3.ZERO - from).normalized()
 			var side := to_star.cross(Vector3.UP).normalized()
-			_look_dir(from, (to_star + side * 0.62 + Vector3.UP * 0.18).normalized(), 70.0)
+			_look_dir(from, (to_star + side * 0.80 + Vector3.UP * 0.22).normalized(), 70.0)
 		"orbit":
 			_orbit = true
 			_orbit_center = Vector3.ZERO
-			_orbit_radius = 2200.0 * KM
-			_orbit_speed = 0.06
-			_orbit_height = 300.0 * KM
+			_orbit_radius = 1900.0 * KM
+			_orbit_speed = 0.035
+			_orbit_height = 250.0 * KM
+			camera.fov = 55.0
 		_:
 			_look(Vector3(-4000.0, 1500.0, 15000.0) * KM, Vector3.ZERO, 70.0)
 

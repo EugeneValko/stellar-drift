@@ -25,7 +25,7 @@ uniform float ray_source_radius : hint_range(1.0, 8.0) = 2.4; // in star radii: 
 group_uniforms lens;
 uniform float starburst_strength : hint_range(0.0, 4.0) = 0.7;
 uniform float streak_strength : hint_range(0.0, 4.0) = 0.35;
-uniform float ghost_strength : hint_range(0.0, 4.0) = 0.45;
+uniform float ghost_strength : hint_range(0.0, 4.0) = 0.7;
 uniform float halo_strength : hint_range(0.0, 4.0) = 0.18;
 uniform float glare_strength : hint_range(0.0, 4.0) = 0.5;
 group_uniforms;

@@ -55,7 +55,7 @@ void fragment() {
 	float rays = sn_fbm(ud * 9.0 + so + vec3(lb * 0.9, -lb * 0.6, t * 0.02), 5, 0.6) * 0.5 + 0.5;
 	float fine = sn_fbm(ud * 38.0 + so + vec3(lb * 2.0, t * 0.05, -lb), 3, 0.55) * 0.5 + 0.5;
 	float streak = mix(rays, fine, 0.35);
-	streak = pow(streak, 2.2) * 2.4;
+	streak = pow(streak, 3.0) * 3.2;
 
 	// radial falloffs
 	float k_inner = exp(-h / 0.045);
@@ -63,12 +63,12 @@ void fragment() {
 	float k_out = pow(b, -3.0) * smoothstep(extent, extent * 0.55, b);
 
 	float cor = inner_glow * k_inner * (0.7 + 0.3 * streak);
-	cor += k_mid * (0.25 + 0.75 * streak) * (0.4 + 0.9 * helmet) * streamer_strength;
+	cor += k_mid * (0.08 + 0.92 * streak) * (0.3 + 1.0 * helmet) * streamer_strength;
 	cor += k_out * (0.2 + 1.6 * helmet * streak) * streamer_strength;
 
 	// colour: warm white close to the limb, pearly / slightly cool further out
 	vec3 col_in = star_color * vec3(1.0, 0.92, 0.80);
-	vec3 col_out = vec3(0.85, 0.90, 1.0);
+	vec3 col_out = vec3(0.92, 0.92, 1.0);
 	vec3 col = mix(col_in, col_out, smoothstep(0.02, 0.8, h)) * cor;
 
 	// chromosphere: thin pink-red rim with spicule texture

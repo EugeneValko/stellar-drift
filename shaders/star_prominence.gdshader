@@ -15,7 +15,10 @@ uniform float wiggle = 0.012;              // vertex turbulence, in star radii
 uniform float time_scale = 1.0;
 uniform float flow_speed = 0.06;
 
+uniform float on_disc_dim : hint_range(0.0, 1.0) = 0.22; // seen against the photosphere -> fainter
+
 varying float v_id;
+varying vec3 v_world;
 
 void vertex() {
 	v_id = UV2.x;
@@ -24,6 +27,7 @@ void vertex() {
 	vec3 q = VERTEX / star_radius * 6.0 + vec3(v_id * 3.1, tt, -tt);
 	vec3 w = vec3(sn_gnoise(q), sn_gnoise(q + 17.3), sn_gnoise(q + 41.7));
 	VERTEX += w * wiggle * star_radius * sin(3.14159 * UV.x);
+	v_world = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
 
 void fragment() {
@@ -44,5 +48,13 @@ void fragment() {
 	float foot = smoothstep(0.0, 0.07, s) * smoothstep(1.0, 0.93, s);
 	float d = dens * body * foot;
 	vec3 col = mix(color_cool, color_hot, smoothstep(0.4, 1.0, dens * body));
-	ALBEDO = col * intensity * d;
+	// is the star's disc behind this fragment? (ray-sphere test, works in scaled space too)
+	vec3 cam = CAMERA_POSITION_WORLD;
+	vec3 dir = normalize(v_world - cam);
+	vec3 oc = NODE_POSITION_WORLD - cam;
+	float tca = dot(oc, dir);
+	float R = star_radius * length(MODEL_MATRIX[0].xyz);
+	float b = sqrt(max(dot(oc, oc) - tca * tca, 0.0));
+	float against_disc = (1.0 - smoothstep(R * 0.985, R * 1.005, b)) * step(0.0, tca);
+	ALBEDO = col * intensity * d * mix(1.0, on_disc_dim, against_disc);
 }
