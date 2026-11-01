@@ -418,23 +418,24 @@ func _cloud_particles(nm: String, amount: int, life: float, size: float) -> Arra
 
 func _build_ground_dust() -> void:
 	# big billows rolling out from under the engines and rising
-	var r := _cloud_particles("DustBillow", 150, 4.2, 9.0)
+	var r := _cloud_particles("DustBillow", 280, 4.5, 12.0)
 	_billow = r[0]
 	_billow_pm = r[1]
 	_billow_mat = r[2]
 	_billow_pm.spread = 30.0
 	_billow_pm.initial_velocity_min = 0.6
 	_billow_pm.initial_velocity_max = 2.4
-	_billow_pm.radial_velocity_min = 6.0
-	_billow_pm.radial_velocity_max = 14.0
-	_billow_pm.damping_min = 2.2
-	_billow_pm.damping_max = 3.4
-	_billow_pm.scale_min = 0.7
-	_billow_pm.scale_max = 1.5
-	_billow_mat.set_shader_parameter("soft_dist", 2.5)
-	_billow_mat.set_shader_parameter("density", 0.85)
+	_billow_pm.radial_velocity_min = 4.0
+	_billow_pm.radial_velocity_max = 10.0
+	_billow_pm.damping_min = 2.6
+	_billow_pm.damping_max = 3.8
+	_billow_pm.scale_min = 0.6
+	_billow_pm.scale_max = 1.4
+	_billow_mat.set_shader_parameter("soft_dist", 3.0)
+	_billow_mat.set_shader_parameter("density", 0.42)
+	_billow_mat.set_shader_parameter("edge_breakup", 1.1)
 	# fast low skirt of fine dust racing outward along the ground
-	r = _cloud_particles("DustSkirt", 180, 1.6, 4.5)
+	r = _cloud_particles("DustSkirt", 240, 1.8, 6.0)
 	_skirt = r[0]
 	_skirt_pm = r[1]
 	_skirt_mat = r[2]
@@ -450,7 +451,7 @@ func _build_ground_dust() -> void:
 	_skirt_pm.scale_min = 0.6
 	_skirt_pm.scale_max = 1.2
 	_skirt_mat.set_shader_parameter("soft_dist", 1.0)
-	_skirt_mat.set_shader_parameter("density", 0.55)
+	_skirt_mat.set_shader_parameter("density", 0.35)
 	_skirt_mat.set_shader_parameter("noise_scale", 2.2)
 	# sea: white mist + droplet spray
 	r = _cloud_particles("SeaMist", 120, 3.0, 8.0)
@@ -820,7 +821,7 @@ func _update_ground_dust(dt: float) -> void:
 		var col: Color = _ground_info.get("color", Color(0.7, 0.62, 0.5))
 		# loose dust is lighter than the surface albedo, a touch desaturated
 		var lum := col.get_luminance()
-		var dc := col.lerp(Color(lum, lum, lum), 0.2) * 1.25
+		var dc := col.lerp(Color(lum, lum, lum), 0.45).lerp(Color(0.78, 0.74, 0.68), 0.3) * 1.1
 		if kind == "snow":
 			dc = Color(0.95, 0.97, 1.0)
 		for m: ShaderMaterial in [_billow_mat, _skirt_mat]:
@@ -829,8 +830,8 @@ func _update_ground_dust(dt: float) -> void:
 		_skirt.global_transform = xf
 		_billow.amount_ratio = clampf(dust_k, 0.05, 1.0)
 		_skirt.amount_ratio = clampf(dust_k, 0.05, 1.0)
-		_billow_pm.radial_velocity_min = lerpf(4.0, 9.0, dust_k)
-		_billow_pm.radial_velocity_max = lerpf(9.0, 18.0, dust_k)
+		_billow_pm.radial_velocity_min = lerpf(3.0, 6.0, dust_k)
+		_billow_pm.radial_velocity_max = lerpf(6.0, 12.0, dust_k)
 		# airless: the dust flies far and falls ballistically, no rising billows
 		_billow_pm.gravity = -up * lerpf(1.2, -0.35, air)
 		_billow_pm.damping_min = lerpf(0.4, 2.2, air)

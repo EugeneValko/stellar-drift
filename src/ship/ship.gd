@@ -768,7 +768,7 @@ func _update_landing(dt: float) -> void:
 	var s := vel.length()
 	# resting on an obstacle (a boulder / the hull on a ridge): pads just above the ground, not moving
 	var resting := gear_down and gear_contacts < 3 and pad_alt < 0.7 and s < 0.6 \
-		and angular_velocity.length() < 0.16 and body != null and _is_solid(body)
+		and angular_velocity.length() < 0.16 and body != null and _is_solid(body) and global_basis.y.dot(up_dir) > 0.9
 	if gear_contacts >= 3 and s < 0.8 and angular_velocity.length() < 0.15 and in_move.y <= 0.05 \
 			and in_move.z <= 0.05:
 		_land_timer += dt
