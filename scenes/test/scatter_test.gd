@@ -165,6 +165,10 @@ func apply_capture_preset(preset: String) -> void:
 	var t0 := Time.get_ticks_msec()
 	planet.terrain.build_until_stable()
 	var t1 := Time.get_ticks_msec()
+	if scatter:
+		scatter.enabled = preset != "lineup"
+		if preset == "lineup":
+			scatter.clear()
 	if preset == "lineup":
 		_build_lineup(d, look)
 	elif scatter:

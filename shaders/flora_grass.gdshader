@@ -69,6 +69,7 @@ void fragment() {
 	if (!FRONT_FACING) {
 		NORMAL = -NORMAL;
 	}
+	NORMAL = flora_view_safe_normal(NORMAL, VIEW);
 	vec3 c = v_col;
 	vec3 emit = vec3(0.0);
 	if (mode == 0) {
@@ -85,7 +86,7 @@ void fragment() {
 	}
 	ALBEDO = c;
 	ROUGHNESS = mode == 2 ? 0.35 : 0.7;
-	SPECULAR = 0.3;
+	SPECULAR = 0.25;
 	AO = v_ao;
 	AO_LIGHT_AFFECT = 0.6;
 	BACKLIGHT = c * translucency;

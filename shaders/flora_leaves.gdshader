@@ -116,12 +116,13 @@ void fragment() {
 	if (!FRONT_FACING) {
 		NORMAL = -NORMAL;
 	}
+	NORMAL = flora_view_safe_normal(NORMAL, VIEW);
 	vec3 c = v_tint * mix(0.8, 1.12, vein);
 	c *= 0.9 + 0.2 * lid;
 	c = mix(c, c * vec3(1.15, 1.2, 0.9), v_tip * 0.35);
 	ALBEDO = c;
 	ROUGHNESS = roughness;
-	SPECULAR = 0.35;
+	SPECULAR = 0.22;
 	AO = v_ao;
 	AO_LIGHT_AFFECT = 0.55;
 	BACKLIGHT = c * translucency * (0.5 + 0.5 * v_ao);

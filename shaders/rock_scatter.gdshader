@@ -61,9 +61,7 @@ void vertex() {
 	v_bx = normalize(MODEL_MATRIX[0].xyz);
 	v_by = normalize(MODEL_MATRIX[1].xyz);
 	v_bz = normalize(MODEL_MATRIX[2].xyz);
-	// planet up at the instance: patch nodes are not rotated, so the instance origin direction from
-	// the planet centre is not available here; the scatter writes the up into the basis before tilt,
-	// so use the (tilted) instance Y — close enough for a cover mask.
+	// instance +Y = planet up (plus the small random tilt) — good enough for the cover mask
 	v_up = v_by;
 	v_custom = INSTANCE_CUSTOM;
 	v_ao = COLOR.r;

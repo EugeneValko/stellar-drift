@@ -66,3 +66,10 @@ vec3 flora_wind(vec3 inst_world, vec3 node_world, vec3 up, vec3 nrm, vec3 vtx_re
 	off += (nrm * 0.75 + up * 0.25) * fl * flutter_w * flutter_amp * (0.4 + 0.6 * gust);
 	return off * wind_strength;
 }
+
+// Foliage cards / blades use "volume" normals that often face away from the camera; GGX specular
+// explodes at N.V ~ 0 (bright sparkles + bloom). Bend such normals toward the viewer (view space).
+vec3 flora_view_safe_normal(vec3 n, vec3 view) {
+	float nv = dot(n, view);
+	return normalize(n + view * max(0.0, 0.25 - nv) * 1.2);
+}

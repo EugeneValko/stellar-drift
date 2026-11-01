@@ -568,9 +568,9 @@ def grass(lod, seed=61, tall=False):
         if tall and b < 3:
             # seed head: a narrow strip continuing past the blade tip
             hd = (tip - pts[-1]).normalized()
-            hs = [tip + hd * 0.05 * i for i in range(4)]
-            strip(mb, hs, [side] * 4, [0.012, 0.035, 0.03, 0.008], "grass",
-                  lambda t: (1.0, 1.0, 1.0, 0.99), lambda t, p, s: UP)
+            hs = [tip + hd * 0.035 * i for i in range(4)]
+            strip(mb, hs, [side] * 4, [0.006, 0.016, 0.012, 0.003], "grass",
+                  lambda t: (1.0, 1.0, 0.8, 0.99), lambda t, p, s: UP)
     return mb
 
 
