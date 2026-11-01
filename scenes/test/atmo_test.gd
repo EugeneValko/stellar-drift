@@ -89,7 +89,9 @@ func _build_terra() -> void:
 	terra.add_child(terra_ground)
 	terra_atmo = ATMO_SCENE.instantiate()
 	terra.add_child(terra_atmo)
-	terra_atmo.setup({"preset": "terra_nova", "radius": R_TERRA, "quality": 2})
+	# --atmo_preset=ignis|glacia previews other planets' atmospheres on the placeholder body
+	var ap: String = Capture.args.get("atmo_preset", "terra_nova")
+	terra_atmo.setup({"preset": ap, "radius": R_TERRA, "quality": 2})
 	LayerParams.apply_uniforms(terra_ground.material, terra_atmo.uniforms)
 	terra_ocean = OCEAN_SCENE.instantiate()
 	terra.add_child(terra_ocean)
@@ -276,7 +278,7 @@ func _gg_preset(preset: String) -> void:
 			var c := Vector3(0.3, 0.0, 1.0).normalized()
 			c = (c - up * c.dot(up)).normalized()
 			_set_sun((c.rotated(up, deg_to_rad(-75.0)) + up * 0.42).normalized())
-			var pos := (c + up * 0.32).normalized() * 1.75e6
+			var pos := (c + up * 0.3).normalized() * 1.3e6
 			_look(pos, Vector3(0, -40000, 0), up)
 		"rings":
 			# just above the ring plane near the outer A ring, looking across the rings at the planet

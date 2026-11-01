@@ -39,10 +39,10 @@ const PRESETS := {
 		"mie_g": 0.78, "ozone_density": 1.0, "intensity": PI, "multi_scatter": 0.35,
 	},
 	"ignis": {  # thin dusty orange-red (Mars-like: dust absorbs blue)
-		"radius": 30000.0, "height": 8000.0, "rayleigh_height": 1100.0, "mie_height": 900.0,
-		"rayleigh_density": 0.25, "rayleigh_tint": Vector3(1, 1, 1),
-		"mie_density": 2.5, "mie_color": Color(1.0, 0.62, 0.38), "mie_absorb": Vector3(0.12, 0.35, 0.7),
-		"mie_g": 0.65, "ozone_density": 0.0, "intensity": PI, "multi_scatter": 0.5,
+		"radius": 30000.0, "height": 12000.0, "rayleigh_height": 1400.0, "mie_height": 1600.0,
+		"rayleigh_density": 0.12, "rayleigh_tint": Vector3(1, 1, 1),
+		"mie_density": 45.0, "mie_color": Color(1.0, 0.6, 0.36), "mie_absorb": Vector3(0.15, 0.45, 0.9),
+		"mie_g": 0.6, "ozone_density": 0.0, "intensity": PI, "multi_scatter": 0.6,
 	},
 	"glacia": {  # teal / cyan
 		"radius": 45000.0, "height": 11000.0, "rayleigh_height": 1400.0, "mie_height": 450.0,

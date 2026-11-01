@@ -20,6 +20,7 @@ extends Node3D
 ##   shape_size        m per shape noise tile; detail_size m per detail tile
 ##   rot_speed         weather drift around the axis (rad/s); wind_vel Vector3 (m/s) shape drift
 ##   brightness, ambient, albedo (Color)
+##   cirrus_opacity (0 = off), cirrus_altitude (m above top), cirrus_scale   thin high cirrus sheet
 ##   atmosphere        AtmosphereLayer or its uniforms Dictionary (sun colour + aerial perspective)
 ##   ocean_radius      rays stop at this sphere (sea level); 0 = off
 ##   shadow_strength   for receivers (0..1, default 0.75)
@@ -59,7 +60,8 @@ func setup(cfg: Variant = null) -> void:
 		"cloud_cyclones": int(params.get("cyclones", 7)),
 		"cloud_cyclone_strength": float(params.get("cyclone_strength", 1.0)),
 	}
-	_ensure_nodes(top)
+	var cirrus_alt: float = float(params.get("cirrus_altitude", 3500.0))
+	_ensure_nodes(top + (cirrus_alt if float(params.get("cirrus_opacity", 0.6)) > 0.0 else 0.0))
 	_bake_weather(int(params.get("weather_resolution", 2048)))
 	uniforms["cloud_weather_tex"] = weather_viewport.get_texture()
 	var render := {
@@ -69,6 +71,9 @@ func setup(cfg: Variant = null) -> void:
 		"cloud_ambient": float(params.get("ambient", 1.0)),
 		"cloud_albedo": LayerParams.col3(params.get("albedo", Color.WHITE)),
 		"cloud_ocean_radius": float(params.get("ocean_radius", 0.0)),
+		"cirrus_opacity": float(params.get("cirrus_opacity", 0.6)),
+		"cirrus_altitude": cirrus_alt,
+		"cirrus_scale": float(params.get("cirrus_scale", 1.0)),
 	}
 	LayerParams.apply_uniforms(material, uniforms)
 	LayerParams.apply_uniforms(material, render)
