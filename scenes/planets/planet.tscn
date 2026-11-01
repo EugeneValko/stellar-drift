@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/planets/planet.gd" id="1"]
+[ext_resource type="Resource" path="res://src/planets/presets/terra_nova.tres" id="2"]
+
+[node name="Planet" type="Node3D"]
+script = ExtResource("1")
+config = ExtResource("2")
+
+[node name="Components" type="Node3D" parent="."]

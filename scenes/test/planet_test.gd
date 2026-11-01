@@ -9,6 +9,7 @@ extends Node3D
 
 const PRESET_DIR := "res://src/planets/presets/"
 const OceanScript := preload("res://scenes/test/placeholder_ocean.gd")
+const PlanetScene := preload("res://scenes/planets/planet.tscn")
 
 const VIEWS := {
 	"orbit": {"planet": "terra_nova"},
@@ -67,7 +68,7 @@ func apply_capture_preset(preset: String) -> void:
 	match preset:
 		"orbit", "moon_orbit", "ignis_orbit", "glacia_orbit", "vex_orbit", "nyx_orbit":
 			var d := Vector3(0.35, 0.3, 1.0).normalized()
-			cam_local = d * R * 3.1
+			cam_local = d * R * 3.9
 			look_dir = (-cam_local).normalized()
 			_sun_from(Vector3(1.0, 0.25, -0.05))
 			up = Vector3.UP
@@ -136,7 +137,7 @@ func _ensure_planet(key: String) -> void:
 	if planet:
 		planet.queue_free()
 	var cfg: PlanetConfig = load(PRESET_DIR + key + ".tres")
-	planet = Planet.new()
+	planet = PlanetScene.instantiate() as Planet
 	planet.name = "Planet_" + key
 	planet.config = cfg
 	planet.auto_focus_camera = false
