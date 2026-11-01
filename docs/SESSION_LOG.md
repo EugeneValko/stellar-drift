@@ -13,3 +13,4 @@
 - Влит этап 2b (ветка worktree-agent-a4754233eca952b1c): атмосфера, облака, океан, газ-гигант, кольца; shader_globals `sun_direction/sun_color/sun_intensity` в project.godot. Отчёт `docs/reports/stage2_atmosphere.md`.
 - Влит этап 2a (ветка worktree-agent-ae8880ba5a545a7ba): рельеф планет, 6 пресетов. Отчёт `docs/reports/stage2_terrain.md`.
 - Навигатор: autoload `Universe` (реестр тел, гравитация, плотность атмосферы, floating origin), `Controls` (раскладка + текст F1). Planet реализует интерфейс тела.
+- Влита волна 2D (ветка worktree-agent-a39a69a1827d2ebad): Player, GameMode, HUD, F1. Отчёт `docs/reports/wave2_player_ui.md` (там же инструкция по подключению в main).
