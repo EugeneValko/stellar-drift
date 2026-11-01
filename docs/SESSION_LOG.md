@@ -17,3 +17,4 @@
 - Влита волна 2C (ветка worktree-agent-a375ead7b7a66ef87): флора и камни. Отчёт `docs/reports/wave2_flora.md`.
 - Влита волна 2B (ветка worktree-agent-a78af03e5256bca68): летающий корабль. Отчёт `docs/reports/wave2_ship_flight.md`. TODO интеграции: terra_nova atmosphere_height 8000 → ~24000 (видимая атмосфера 24 км); ship — прямой ребёнок world_root.
 - Влита волна 2A (ветка worktree-agent-a9f715c4003145118): вся система в `scenes/main.tscn`, scaled space, освещение по группам тел, экспозиция, FreeCamera, доработки облаков/рельефа/Ignis. Отчёт `docs/reports/wave2_system.md`. Волна 2 завершена.
+- Влита волна 3 (ветка worktree-agent-ab914c52ff93137f9): первая играбельная сборка, playtest 20/20. Отчёт `docs/reports/wave3_integration.md`. Известно: корабль тёмный со спины/в тени, жёсткие посадки на Selene, загрузка ~20 с.
