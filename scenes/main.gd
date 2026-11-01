@@ -786,6 +786,7 @@ func _start_session_async() -> void:
 	help.show_hint_on_start = false
 	help._hint.visible = false
 	loading.set_progress(0.02, "Звёзды и небо системы Helios")
+	(ship.camera_rig as ShipCameraRig).idle_orbit = false
 	await _frames(3)
 	loading.set_progress(0.05, "Место посадки · Terra Nova")
 	await _frames(1)
@@ -807,7 +808,10 @@ func _start_session_async() -> void:
 	await _frames(2)
 	load_ms = Time.get_ticks_msec() - _t0
 	print("[main] session ready in %d ms (loading screen)" % load_ms)
+	pause.enabled = true
 	session_started.emit()
+	(ship.camera_rig as ShipCameraRig).idle_time = 0.0
+	(ship.camera_rig as ShipCameraRig).idle_orbit = true
 	await loading.finish(0.7)
 	loading = null
 	hud.set_shown(true)
@@ -839,13 +843,19 @@ func _build_world_async(cam: Camera3D, on_progress: Callable) -> void:
 		var p0 := 0.15 * i / maxf(n - 1.0, 1.0) if not is_focus else 0.15
 		var span := 0.15 / maxf(n - 1.0, 1.0) if not is_focus else 0.6
 		var txt := "Рельеф · %s" % r.name
+		var tb := Time.get_ticks_msec()
+		var fb := Engine.get_process_frames()
 		await _terrain_async(r.planet.terrain, 60.0 if is_focus else 20.0, func(f: float) -> void:
 			on_progress.call(p0 + span * f, txt))
+		print("[load] terrain %s: %d ms, %d frames" % [r.name, Time.get_ticks_msec() - tb, Engine.get_process_frames() - fb])
 		i += 1.0
 	system.process_frame(cam)   # enables the focus vegetation
 	if system.focus and system.focus.scatter:
+		var tb := Time.get_ticks_msec()
+		var fb := Engine.get_process_frames()
 		await _scatter_async(system.focus.scatter, func(f: float) -> void:
 			on_progress.call(0.75 + 0.25 * f, "Растительность · %s" % system.focus.name))
+		print("[load] vegetation: %d ms, %d frames" % [Time.get_ticks_msec() - tb, Engine.get_process_frames() - fb])
 	on_progress.call(1.0, "Последние штрихи")
 	system.build_terrain_now(cam)   # everything idle by now: instant; snaps exposure / ambient
 
@@ -864,7 +874,7 @@ func _terrain_async(t: PlanetTerrain, max_s: float, prog: Callable) -> void:
 		var jobs: Array = t.get("_jobs")
 		est = maxf(est, float(t.get("_built_total") - built0) + jobs.size() * 1.6 + 1.0)
 		while not jobs.is_empty():
-			t.call("_collect", 1 << 30, 12.0, false)
+			t.call("_collect", 1 << 30, 70.0, true)
 			prog.call(clampf(float(t.get("_built_total") - built0) / est, 0.0, 0.98))
 			await get_tree().process_frame
 			jobs = t.get("_jobs")
@@ -892,7 +902,7 @@ func _scatter_async(sc: PlanetScatter, prog: Callable) -> void:
 	var total := float((sc.get("_queue") as Array).size()) + 1.0
 	while not (sc.get("_queue") as Array).is_empty() or not (sc.get("_jobs") as Array).is_empty():
 		sc.call("_dispatch", maxi(sc.max_jobs, OS.get_processor_count() - 1))
-		sc.call("_collect", 1 << 30, 12.0, false)
+		sc.call("_collect", 1 << 30, 70.0, true)
 		var left := float((sc.get("_queue") as Array).size() + (sc.get("_jobs") as Array).size())
 		total = maxf(total, left)
 		prog.call(clampf(1.0 - left / total, 0.0, 0.98))

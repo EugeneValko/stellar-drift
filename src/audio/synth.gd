@@ -148,6 +148,14 @@ static func loopify(x: PackedFloat32Array, fade: int) -> PackedFloat32Array:
 
 
 static func normalize(x: PackedFloat32Array, peak := 0.9) -> PackedFloat32Array:
+	# remove DC first (filtered noise drifts), then scale to the peak
+	var mean := 0.0
+	for v in x:
+		mean += v
+	mean /= maxf(float(x.size()), 1.0)
+	if absf(mean) > 1e-5:
+		for i in x.size():
+			x[i] -= mean
 	var m := 0.0
 	for v in x:
 		m = maxf(m, absf(v))
@@ -239,7 +247,7 @@ static func build_bank() -> Dictionary:
 	# --- noise beds (loops)
 	b["noise_white"] = to_wav(normalize(loopify(white(R * 2 + 4000, rng), 4000), 0.7), R, true)
 	b["noise_pink"] = to_wav(normalize(loopify(pink(R * 2 + 4000, rng), 4000), 0.8), R, true)
-	b["noise_brown"] = to_wav(normalize(loopify(brown(R * 3 + 6000, rng), 6000), 0.85), R, true)
+	b["noise_brown"] = to_wav(normalize(loopify(biquad(brown(R * 3 + 6000, rng), F.LP, 240.0, 0.7), 6000), 0.85), R, true)
 	# --- engine: low harmonic hum (50 Hz base, beating partials), turbine whine
 	var hum := []
 	for h in range(1, 13):
@@ -276,8 +284,8 @@ static func build_bank() -> Dictionary:
 	# --- mechanics
 	b["thump"] = to_wav(_thump(rng), R)
 	b["clunk"] = to_wav(_clunk(rng, 1.0), R)
-	b["gear_motor"] = to_wav(_servo(rng, 2.4, 170.0, 0.9), R)
-	b["hatch_servo"] = to_wav(_servo(rng, 2.0, 105.0, 1.4), R)
+	b["gear_motor"] = to_wav(_servo(rng, 2.4, 170.0, 0.3), R)
+	b["hatch_servo"] = to_wav(_servo(rng, 2.0, 105.0, 0.8), R)
 	b["cockpit_hum"] = to_wav(normalize(_cockpit_hum(rng), 0.6), R, true)
 	# --- on foot
 	for surf in ["sand", "grass", "rock", "snow"]:
@@ -419,7 +427,8 @@ static func _servo(rng: RandomNumberGenerator, dur: float, f0: float, hiss: floa
 		var ramp := smoothstep(0.0, 0.25, t) * (1.0 - smoothstep(dur - 0.3, dur - 0.05, t))
 		var f := f0 * (0.85 + 0.15 * ramp) * (1.0 + 0.012 * sin(t * TAU * 6.0))
 		ph += TAU * f / R
-		var s := sin(ph) + 0.5 * sin(2.0 * ph) + 0.33 * sin(3.0 * ph) + 0.18 * sin(5.0 * ph)
+		var s := sin(ph) + 0.5 * sin(2.0 * ph) + 0.33 * sin(3.0 * ph) + 0.25 * sin(4.0 * ph) \
+			+ 0.2 * sin(5.0 * ph) + 0.12 * sin(7.0 * ph) + 0.08 * sin(9.0 * ph)
 		x[i] = s * ramp * 0.35
 	var hs := biquad(pink(n, rng), F.BP, 1800.0, 0.9)
 	for i in n:

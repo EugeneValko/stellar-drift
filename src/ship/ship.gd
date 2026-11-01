@@ -981,18 +981,30 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		var err := Bt * B.y.cross(up_dir)
 		wt.x += err.x * 2.2 * (1.0 - absf(st.y))
 		wt.z += err.z * 2.2 * (1.0 - absf(in_roll))
+	var settling := false
+	if assist and wow and not landed and gear_contacts < 3 and body and _is_solid(body) and speed < 2.5 \
+			and in_move.y <= 0.05 and steer_dir == Vector3.ZERO:
+		# settle onto uneven ground: some pads touch, one hangs over a dip — rotate the hull onto the
+		# plane through the three ground points under the pads (gentle, like the gear rocking over)
+		var ng := _ground_plane_normal(pos, B)
+		if ng != Vector3.ZERO and ng.angle_to(up_dir) < deg_to_rad(28.0):
+			var e := Bt * B.y.cross(ng)
+			wt.x = e.x * 1.6
+			wt.z = e.z * 1.6
+			settling = true
 	var w := Bt * state.angular_velocity
 	var alpha := rate * 4.0
 	var dw := wt - w
 	dw = Vector3(clampf(dw.x, -alpha.x * dt, alpha.x * dt), clampf(dw.y, -alpha.y * dt, alpha.y * dt),
 		clampf(dw.z, -alpha.z * dt, alpha.z * dt))
 	if wow:
-		dw.x *= 0.1
-		dw.z *= 0.1
+		var k := 0.5 if settling else 0.1
+		dw.x *= k
+		dw.z *= k
 		dw.y *= 0.4
 	ang_accel_local = dw / dt
 	w += dw
-	if wow:
+	if wow and not settling:
 		w.x *= exp(-3.0 * dt)
 		w.z *= exp(-3.0 * dt)
 	state.angular_velocity = B * w
@@ -1020,6 +1032,20 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	if body and altitude < 25.0 and _is_solid(body):
 		_hull_clamp(state, B)
 	_finish_velocity(state.linear_velocity, dt)
+
+
+## Normal of the plane through the ground points under the three gear pads (ZERO if unknown).
+func _ground_plane_normal(pos: Vector3, B: Basis) -> Vector3:
+	var g: Array[Vector3] = []
+	for f in FEET:
+		var p := pos + B * f
+		var u := (p - body.global_position).normalized()
+		g.append(p - u * _ground_alt(body, p))
+	var n := (g[1] - g[0]).cross(g[2] - g[0])
+	if n.length_squared() < 1e-6:
+		return Vector3.ZERO
+	n = n.normalized()
+	return n if n.dot(up_dir) > 0.0 else -n
 
 
 func _emit_touchdown(sp: float) -> void:

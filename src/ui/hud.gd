@@ -282,7 +282,10 @@ func _draw_banner(vs: Vector2) -> void:
 	var t := _banner_t
 	var a := smoothstep(0.0, 0.18, t) * (1.0 - smoothstep(1.5, 2.2, t))
 	var y := vs.y * 0.27
-	var spaced := " ".join(_banner.split(""))
+	var spaced := ""
+	for ch in _banner:
+		spaced += ch + " "
+	spaced = spaced.strip_edges()
 	var w := _text_size(spaced, 22, false).x
 	_text(Vector2(vs.x * 0.5, y), spaced, 22, Color(C_MAIN, a), 1, false)
 	var ext := (w * 0.5 + 18.0 * _s) + 90.0 * _s * smoothstep(0.0, 0.5, t)
@@ -785,7 +788,7 @@ func _draw_landing(d: Dictionary, cam: Camera3D, vs: Vector2) -> void:
 	var tri := PackedVector2Array([Vector2(x - 2.0 * _s, ya), Vector2(x - 10.0 * _s, ya - 5.0 * _s), Vector2(x - 10.0 * _s, ya + 5.0 * _s)])
 	_root.draw_colored_polygon(tri, Color(col, a))
 	_text(Vector2(x - 14.0 * _s, ya + 4.0 * _s), "%.1f" % alt if alt < 100.0 else "%d" % roundi(alt), 13, Color(C_MAIN, a), 2)
-	_text(Vector2(x - 14.0 * _s, ya + 20.0 * _s), "▼ %.1f m/s" % sink, 10, Color(col, a), 2)
+	_text(Vector2(x - 14.0 * _s, ya + 20.0 * _s), "SINK %.1f" % sink, 10, Color(col, a), 2)
 	_text(Vector2(x, y0 + 20.0 * _s), "RADAR ALT", 9, Color(C_DIM, C_DIM.a * a), 1, false)
 	if bool(d.get("gear_suggest", false)) or (alt < 60.0 and not bool(d.get("gear_down", true))):
 		var ga := a * (0.55 + 0.45 * sin(_time * 8.0))

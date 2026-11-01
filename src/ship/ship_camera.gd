@@ -266,8 +266,12 @@ func _process(dt: float) -> void:
 	var chase_fov := _fov
 
 	# --- idle orbit ("photo mode")
+	# only while the player is actually looking through the ship's chase camera (not the free
+	# camera / loading / scripted runs) and the game is running
+	var vc := get_viewport().get_camera_3d()
 	var can_orbit := idle_orbit and ship.landed and ship.is_piloted and view == View.CHASE \
-		and not view_override.is_valid() and (not Capture.active or force_orbit >= 0.0)
+		and not view_override.is_valid() and ship.input_enabled and (vc == chase or vc == cockpit) \
+		and ((not Capture.active and not ship.scripted) or force_orbit >= 0.0)
 	if can_orbit:
 		idle_time += dt
 	else:
