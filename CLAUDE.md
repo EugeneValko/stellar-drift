@@ -2,20 +2,25 @@
 
 Godot 4.7.2 (GDScript, Forward+), прототип космоса и планет: один корабль, одна звёздная система,
 полёт космос ↔ атмосфера ↔ поверхность, выход из корабля пешком. Цель №1 — максимальная красота.
-Целевая платформа — Windows (сборка через GitHub Actions). Разработка — в облачном Linux-контейнере без GPU.
+Целевая платформа — Windows (сборка через GitHub Actions). **С 2026-11-02 основная разработка — локально на Windows
+(RTX 3060)**; облачный Linux-контейнер без GPU — запасной вариант (рендер там очень медленный).
 
 ## Перед началом работы (обязательно)
-1. `tools/setup_env.sh` — ставит Godot, шаблоны экспорта, lavapipe (CPU Vulkan), Xvfb, ffmpeg, Blender. Идемпотентно.
-2. Прочитать `docs/STATUS.md` (где мы сейчас), `docs/ROADMAP.md` (этапы), `docs/ARCHITECTURE.md` (масштабы, системы).
+0. **Прочитать `docs/HANDOFF.md`** — точка входа: состояние, незавершённые ветки, грабли, процесс.
+1. Окружение: Windows — `tools/setup_windows.ps1` (один раз; Godot + шаблоны, путь в `tools/.godot_path.txt`);
+   Linux/облако — `tools/setup_env.sh` (Godot, шаблоны, lavapipe, Xvfb, ffmpeg, Blender). Оба идемпотентны.
+2. Прочитать `docs/STATUS.md` (где мы сейчас), `docs/ROADMAP.md` (этапы), `docs/ARCHITECTURE.md` (масштабы, системы)
+   и отчёт `docs/reports/*` той системы, которую меняешь.
 3. Взять задачу из своего этапа. Не трогать чужие системы без нужды — описать в отчёте, если пришлось.
 
 ## Во время работы
-- `tools/check.sh` — импорт + парсинг всех скриптов. Запускать перед каждым коммитом.
-- `tools/shot.sh <scene> <out.png> [--cam=preset] [--key=val]` — скриншот в реальном рендере (20–40 с).
-  `tools/shot.sh <scene> --shots=a,b,c --outdir=<dir>` — несколько ракурсов за один запуск. См. `docs/TOOLS.md`.
-- `tools/movie.sh <scene> <out.mp4> <sec>` — короткое видео (рендер не в реальном времени, медленно).
+- Проверка перед каждым коммитом: `tools/check.ps1` (Windows) / `tools/check.sh` (Linux).
+- Скриншоты: `tools/shot.ps1|.sh <scene> <out.png> [--cam=preset] [--key=val]`, несколько ракурсов —
+  `--shots=a,b,c --outdir=<dir>`. Видео: `tools/movie.ps1|.sh <scene> <out.mp4> <sec>`. См. `docs/TOOLS.md`, `docs/HANDOFF.md` §2.
+- Сквозной автотест геймплея: `tools/playtest.ps1` / `godot --headless --fixed-fps 60 -s tools/dev/playtest.gd -- all seed=7` —
+  обязателен (20/20) после изменений полёта, корабля, рельефа, игрока, GameMode.
 - **Всегда смотреть свои скриншоты** (Read на PNG) и итерировать по картинке, а не вслепую.
-- Рендер на CPU медленный: тестовые кадры — `--res=960x540`, финальные — 1920x1080.
+- На Windows/GPU кадр 1080p ~1–2 с. В облаке (CPU) — медленно: тест 960x540, main.tscn до ~20 мин и 3 ГБ RAM, не параллелить.
 - Модели — скриптами Blender в `tools/blender/*.py` → `assets/models/*.glb` (`blender -b -P script.py -- out.glb`).
 - Каждая сцена/система, которую можно показать, должна иметь тестовую сцену `scenes/test/*.tscn`
   с узлом в группе `capture_target` (метод `apply_capture_preset(name)`), чтобы её можно было снять без геймплея.

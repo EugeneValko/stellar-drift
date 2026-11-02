@@ -11,6 +11,7 @@
 ## Документация
 | Файл | Что внутри |
 |---|---|
+| [docs/HANDOFF.md](docs/HANDOFF.md) | **Начать отсюда**: как продолжить работу (локально), незавершённые ветки, грабли |
 | [docs/STATUS.md](docs/STATUS.md) | Текущее состояние проекта, следующий шаг |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Этапы и задачи |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Масштабы, режимы скорости, устройство систем |
@@ -21,7 +22,15 @@
 | [CLAUDE.md](CLAUDE.md) | Правила для AI-агентов |
 
 ## Разработка
+```powershell
+# Windows (основной вариант)
+powershell -ExecutionPolicy Bypass -File tools/setup_windows.ps1   # Godot 4.7.2 + шаблоны экспорта
+powershell -ExecutionPolicy Bypass -File tools/check.ps1
+powershell -ExecutionPolicy Bypass -File tools/playtest.ps1
+powershell -ExecutionPolicy Bypass -File tools/build_windows.ps1
+```
 ```bash
+# Linux / облако
 tools/setup_env.sh     # Godot 4.7.2, шаблоны экспорта, Blender, рендер без GPU
 tools/check.sh         # проверка скриптов
 tools/shot.sh scenes/main.tscn out.png

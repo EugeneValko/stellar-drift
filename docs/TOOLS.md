@@ -1,5 +1,8 @@
 # Инструменты
 
+> Windows-версии: `tools/setup_windows.ps1`, `check.ps1`, `shot.ps1`, `movie.ps1`, `playtest.ps1`, `build_windows.ps1`, `fps_bench.ps1`,
+> `dev/gpu_bench.ps1`, `dev/gpu_ab.ps1` — сводная таблица в `docs/HANDOFF.md` §2.
+
 ## Окружение
 `tools/setup_env.sh` — Godot (версия в `tools/versions.env`), шаблоны экспорта, `mesa-vulkan-drivers` (lavapipe),
 Xvfb, ffmpeg, Blender. В облаке нет GPU: рендер идёт через **lavapipe** (Vulkan на CPU) в виртуальном X-сервере —
