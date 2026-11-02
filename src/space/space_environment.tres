@@ -4,6 +4,8 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_sky"]
 shader = ExtResource("1_sky")
+shader_parameter/star_brightness = 1.1
+shader_parameter/spike_strength = 0.55
 
 [sub_resource type="Sky" id="Sky_space"]
 sky_material = SubResource("ShaderMaterial_sky")
@@ -35,3 +37,7 @@ glow_blend_mode = 0
 glow_hdr_threshold = 1.0
 glow_hdr_scale = 2.0
 glow_hdr_luminance_cap = 40.0
+adjustment_enabled = true
+adjustment_brightness = 1.0
+adjustment_contrast = 1.03
+adjustment_saturation = 1.1

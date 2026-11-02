@@ -100,7 +100,9 @@ void fragment() {
 	// results after the loop: ~half the march cost per pixel, slightly softer cloud image.
 	float px = mod(floor(FRAGCOORD.x), 2.0);
 	float py = mod(floor(FRAGCOORD.y), 2.0);
-	float jit = fract(sin(dot(floor(FRAGCOORD.xy), vec2(12.9898, 78.233))) * 43758.5453);
+	// R2 low-discrepancy jitter (wave 4): evenly spread offsets read as fine, even grain instead
+	// of white-noise clumps
+	float jit = sd_ign(FRAGCOORD.xy * vec2(0.5, 0.5) + vec2(px * 37.0, py * 61.0));
 	if (cloud_temporal_jitter) jit = fract(jit + TIME * 7.3123);
 	// quarter per pixel, rotated randomly per quad: a fixed assignment shows up as a regular
 	// row/column pattern (the quarters are biased differently inside the doubled cells)
@@ -141,12 +143,17 @@ void fragment() {
 			dl *= 2.0;
 		}
 		od *= cloud_density;
+		// wave 4: seen from far away (orbit, high altitude) the self-shadowing is softened -
+		// cloud fields read as bright, flat-ish sheets with soft relief instead of lumpy
+		// "cauliflower" (the layer is very thick relative to this compressed planet)
+		float far_soft = smoothstep(15000.0, 90000.0, t);
+		od *= 1.0 - 0.45 * far_soft;
 		float f = (t - t0) / max(len, 1.0);
 		vec3 sunc = mix(sun_a, sun_b, f);
 		float powder = 1.0 - 0.6 * exp(-sig * 250.0);
 		vec3 S_sun = Esun * sunc * powder * (ph0 * exp(-od) + 0.5 * ph1 * exp(-od * 0.3) + 0.25 * ph2 * exp(-od * 0.1));
 		float hh = clamp((r - cloud_bottom) / (cloud_top - cloud_bottom), 0.0, 1.0);
-		vec3 S_amb = (sky_amb * mix(0.45, 1.0, hh) + ground_amb * (1.0 - hh)) * cloud_ambient;
+		vec3 S_amb = (sky_amb * mix(0.45 + 0.3 * far_soft, 1.0, hh) + ground_amb * (1.0 - hh)) * cloud_ambient;
 		vec3 S = (S_sun + S_amb) * cloud_albedo;
 		float tr = exp(-sig * ds);
 		col += T * S * (1.0 - tr);
@@ -201,11 +208,17 @@ void fragment() {
 			vec3 drift = vec3(TIME * 0.00004, 0.0, TIME * 0.00002);
 			// streaks stretched east-west (compressed latitude frequency), patchy mask
 			vec3 sq = dc * cirrus_scale + drift;
-			float s1 = cl_tex(vec3(sq.x * 5.0, sq.y * 22.0, sq.z * 5.0));
-			float s2 = cl_tex(vec3(sq.x * 13.0, sq.y * 55.0, sq.z * 13.0) + vec3(0.3));
+			// wave 4: domain-warped streaks (curved, hooked fibres instead of parallel dashes)
+			// plus a soft veil component (cirrostratus)
+			vec3 wq = vec3(cl_tex(sq * 1.3 + vec3(0.1)), cl_tex(sq * 1.3 + vec3(0.5, 0.2, 0.7)),
+				cl_tex(sq * 1.3 + vec3(0.9, 0.6, 0.3))) - 0.5;
+			vec3 sw = sq + wq * vec3(0.35, 0.012, 0.35);   // bend along the streaks, not across
+			float s1 = cl_tex(vec3(sw.x * 5.0, sw.y * 22.0, sw.z * 5.0));
+			float s2 = cl_tex(vec3(sw.x * 13.0, sw.y * 55.0, sw.z * 13.0) + vec3(0.3));
 			float s3 = texture(cloud_detail_tex, dc * cirrus_scale * 40.0).r;
-			float mask = smoothstep(0.5, 0.72, cl_tex(sq * 1.7 + vec3(0.4)));
-			float dens = smoothstep(0.55, 0.9, s1 * 0.65 + s2 * 0.35 + s3 * 0.15) * mask;
+			float mask = smoothstep(0.45, 0.75, cl_tex(sq * 1.7 + vec3(0.4)));
+			float veil = smoothstep(0.48, 0.8, cl_tex(sq * 3.1 + vec3(0.7, 0.1, 0.2)));
+			float dens = (smoothstep(0.52, 0.92, s1 * 0.65 + s2 * 0.35 + s3 * 0.1) + veil * 0.3) * mask;
 			float cosv = max(abs(dot(rd, dcw)), 0.3);
 			float ca = (1.0 - exp(-dens * 0.25 / cosv)) * cirrus_opacity;
 			if (ca > 0.001) {

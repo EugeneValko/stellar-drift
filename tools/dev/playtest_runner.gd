@@ -143,6 +143,10 @@ func _telemetry(tag: String, every := 2.0) -> void:
 		tag, frame * DT, h["mode_name"], h["altitude"], h["speed"], h["vertical_speed"], h["atmosphere_density"],
 		h["heat"], h["throttle"], h["autopilot"], h["body_name"], h["target_name"],
 		float(h["target_distance"]) / 1000.0, h["gear_down"], h["landed"], h["message"]])
+	if ship.altitude < 30.0 and not ship.landed and ship.body is Planet:
+		print("    near ground: alt %.2f pad %.2f contacts %d v %s w %.3f in_move %s up·B.y %.4f" % [ship.altitude,
+			ship.pad_alt, ship.gear_contacts, str(ship.vel), ship.angular_velocity.length(), str(ship.in_move),
+			ship.up_dir.dot(ship.global_basis.y)])
 
 
 func _true_pos(n: Node3D) -> Vector3:
@@ -166,9 +170,21 @@ func _check_start() -> void:
 		and h["body_name"] == "Terra Nova" and cam == ship.get_camera() and Universe.focus == ship \
 		and system.focus != null and system.focus.name == "Terra Nova"
 	var sun_el := rad_to_deg(asin(ship.up_dir.dot(system.sun_dir)))
-	_result("start_state", ok, "state=%s landed=%s gear=%s body=%s cam=%s focus=%s sun=%.1f° alt=%.2f m" % [
+	# wave 4: Esc pause menu pauses the tree and resumes; the procedural sound bank is ready
+	var pm := main.get("pause") as PauseMenu
+	var paused_ok := false
+	if pm:
+		pm.set_open(true, true)
+		paused_ok = get_tree().paused and pm.is_open
+		pm.set_open(false, true)
+		paused_ok = paused_ok and not get_tree().paused
+	var au := main.get("audio") as GameAudio
+	var audio_ok := au != null and au.is_ready()
+	ok = ok and paused_ok and audio_ok
+	_result("start_state", ok, "state=%s landed=%s gear=%s body=%s cam=%s focus=%s sun=%.1f° alt=%.2f m, pause menu ok=%s, audio bank=%s (%d ms)" % [
 		game.get_state_name(), ship.landed, ship.gear_down, h["body_name"], cam.name if cam else "-",
-		Universe.focus.name if Universe.focus else "-", sun_el, ship.altitude])
+		Universe.focus.name if Universe.focus else "-", sun_el, ship.altitude, paused_ok, audio_ok,
+		au.build_ms if au else -1])
 
 
 ## V: free camera takes over (camera, focus), flies 600 m away; the terrain under the landed ship
@@ -279,10 +295,31 @@ func _autopilot_to(b: Node3D, timeout: float, step: String) -> void:
 	var max_v := 0.0
 	var min_surf := INF
 	var max_mode := 0
+	# speed smoothness: count big dips (speed falls below 60 % of its running peak, then recovers)
+	var peak := 0.0
+	var dips := 0
+	var in_dip := false
+	var thr_flips := 0
+	var prev_thr := ship.throttle
+	var prev_dthr := 0.0
 	while t < timeout and ship.autopilot:
 		max_v = maxf(max_v, ship.vel.length())
 		max_mode = maxi(max_mode, ship.mode)
 		min_surf = minf(min_surf, ship.surface_dist)
+		var sv := ship.vel.length()
+		var dthr := ship.throttle - prev_thr
+		if absf(dthr) > 1e-4:
+			if prev_dthr != 0.0 and signf(dthr) != signf(prev_dthr):
+				thr_flips += 1
+			prev_dthr = dthr
+		prev_thr = ship.throttle
+		if ship.mode <= Ship.Mode.CRUISE and ship.warp_state == Ship.WarpState.IDLE:
+			peak = maxf(peak, sv)
+			if not in_dip and peak > 2000.0 and sv < peak * 0.6:
+				in_dip = true
+				dips += 1
+			elif in_dip and sv > peak * 0.9:
+				in_dip = false
 		_telemetry(step, 3.0)
 		await _frames(1)
 		t += DT
@@ -290,8 +327,9 @@ func _autopilot_to(b: Node3D, timeout: float, step: String) -> void:
 	var d: float = b.global_position.distance_to(ship.global_position) - b.get_body_radius()
 	var safe: float = ship.safe_orbit_altitude(b)
 	var ok: bool = not ship.autopilot and d > safe * 0.8 and d < safe * 1.6 and ship.vel.length() < 300.0
-	_result(step, ok, "%.0f s: dist to %s surface %.0f km (safe %.0f km), max speed %.0f km/s, top mode %s, speed now %.0f m/s" % [
-		t, b.get_body_name(), d / 1000.0, safe / 1000.0, max_v / 1000.0, Ship.MODE_NAMES[max_mode], ship.vel.length()])
+	_result(step, ok, "%.0f s: dist to %s surface %.0f km (safe %.0f km), max speed %.0f km/s, top mode %s, speed now %.0f m/s, speed dips %d, throttle reversals %d" % [
+		t, b.get_body_name(), d / 1000.0, safe / 1000.0, max_v / 1000.0, Ship.MODE_NAMES[max_mode], ship.vel.length(),
+		dips, thr_flips])
 
 
 ## Pilot descent: nose down in SPACE/ATMOSPHERE at a speed that follows the altitude, then HOVER
@@ -339,8 +377,11 @@ func _descend_and_land(b: Node3D, step: String, timeout: float) -> void:
 	_clear_inputs()
 	await _frames(60)
 	var water := ship.is_over_water()
-	_result(step, ship.landed and ship.body == b, "%.0f s: landed=%s on %s, touchdown %.1f m/s, max heat %.2f, alt %.2f m, water=%s" % [
-		t, ship.landed, ship.body.get_body_name() if ship.body else "-", touch_v, max_heat, ship.altitude, water])
+	# wave 4: soft touchdowns everywhere (vertical speed into the ground at first contact <= 2 m/s)
+	var td := ship.last_touchdown
+	_result(step, ship.landed and ship.body == b and td <= 2.0 and touch_v <= 2.5,
+		"%.0f s: landed=%s on %s, touchdown %.2f m/s vertical (%.1f m/s total at contact), max heat %.2f, alt %.2f m, water=%s" % [
+		t, ship.landed, ship.body.get_body_name() if ship.body else "-", td, touch_v, max_heat, ship.altitude, water])
 
 
 func _exit_walk_enter(tag: String) -> void:

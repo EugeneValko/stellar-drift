@@ -27,6 +27,12 @@ tools/shot.sh ... --res=960x540 --warmup=60                      # быстры�
 FPS=30 RES=1280x720 tools/movie.sh scenes/test/flyby.tscn docs/screenshots/s1/flyby.mp4 6
 ```
 Godot Movie Maker с фиксированным FPS — видео плавное независимо от скорости рендера (но рендерится долго).
+`tools/dev/movie_av.sh` — то же, но со звуком игры (Movie Maker пишет `frame.wav` рядом с кадрами; WAV кладётся и рядом с mp4).
+Демо-полёты главной сцены: `--demo=takeoff|landing` (синхронная загрузка, без интро).
+
+## Звук — `tools/dev/audio_dump.gd`
+`godot --headless -s tools/dev/audio_dump.gd -- out=<dir>` — процедурный банк звуков (`Synth.build_bank()`) в WAV
+для проверки уровней/спектров без прослушивания.
 
 ## Проверка — `tools/check.sh`
 Импорт + запуск на 5 кадров headless; падает при ошибках парсинга/скриптов.

@@ -11,7 +11,8 @@ extends Node
 ## * FREECAM: V toggles a free camera if res://src/core/free_camera.gd exists (instantiated with
 ##   load(), duck-typed: Camera3D itself or a node with a Camera3D child, optional
 ##   set_active(bool)). The previous state is restored on V again.
-## Esc toggles mouse capture.
+## Esc opens the pause menu (a node in group "pause_menu", see PauseMenu) or, without one,
+## toggles mouse capture.
 ##
 ## Wiring: set `ship_path` (the Ship), optional `player_path` (otherwise player.tscn is
 ## instantiated under Universe.world_root), `hud_path` (Hud). See docs/reports/wave2_player_ui.md.
@@ -383,8 +384,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		toggle_freecam()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("pause_menu"):
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED \
-			else Input.MOUSE_MODE_CAPTURED
+		# Esc: the pause menu (group "pause_menu") if the scene has one, else toggle the cursor
+		var menus := get_tree().get_nodes_in_group("pause_menu")
+		if not menus.is_empty() and bool(menus[0].get("enabled")):
+			menus[0].call("set_open", true)
+		else:
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED \
+				else Input.MOUSE_MODE_CAPTURED
 		get_viewport().set_input_as_handled()   # the free camera / ship must not toggle it back
 	elif event is InputEventMouseButton and (event as InputEventMouseButton).pressed \
 			and capture_mouse and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not Capture.active:
