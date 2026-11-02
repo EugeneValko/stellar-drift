@@ -6,10 +6,11 @@ param([Parameter(Mandatory=$true)][string]$Scene, [Parameter(ValueFromRemainingA
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot "godot_path.ps1")
+function Abs([string]$p) { if ([IO.Path]::IsPathRooted($p)) { [IO.Path]::GetFullPath($p) } else { [IO.Path]::GetFullPath((Join-Path (Get-Location) $p)) } }
 $args2 = @()
 foreach ($a in $Rest) {
-  if (-not $a.StartsWith("--")) { $args2 += "--shot=" + [IO.Path]::GetFullPath((Join-Path (Get-Location) $a)) }
-  elseif ($a.StartsWith("--outdir=")) { $args2 += "--outdir=" + [IO.Path]::GetFullPath((Join-Path (Get-Location) $a.Substring(9))) }
+  if (-not $a.StartsWith("--")) { $args2 += "--shot=" + (Abs $a) }
+  elseif ($a.StartsWith("--outdir=")) { $args2 += "--outdir=" + (Abs $a.Substring(9)) }
   else { $args2 += $a }
 }
 & $Godot --headless --path $root --import | Out-Null  # always: cheap when nothing changed

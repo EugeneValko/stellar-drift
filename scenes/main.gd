@@ -965,6 +965,9 @@ func _ship_at(r: SolarSystem.BodyRec, off: Vector3, b: Basis, v := Vector3.ZERO,
 		ship.warp_state = Ship.WarpState.ACTIVE
 		ship.warp_spool = 1.0
 	else:
+		# leaving the previous preset's warp quietly: warp_dropped would freeze the drop-out
+		# flash (it does not decay in captures) -> a white frame
+		ship.warp_state = Ship.WarpState.IDLE
 		ship.set_mode(mode, true)
 	ship.set_gear(mode == Ship.Mode.HOVER, true)
 	ship._update_environment()
