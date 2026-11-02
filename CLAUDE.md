@@ -17,6 +17,8 @@ Godot 4.7.2 (GDScript, Forward+), прототип космоса и плане�
 - Проверка перед каждым коммитом: `tools/check.ps1` (Windows) / `tools/check.sh` (Linux).
 - Скриншоты: `tools/shot.ps1|.sh <scene> <out.png> [--cam=preset] [--key=val]`, несколько ракурсов —
   `--shots=a,b,c --outdir=<dir>`. Видео: `tools/movie.ps1|.sh <scene> <out.mp4> <sec>`. См. `docs/TOOLS.md`, `docs/HANDOFF.md` §2.
+- Окно игры не должно мешать пользователю: `shot.ps1`/`movie.ps1` рендерят за пределами экрана (по умолчанию);
+  полноэкранные замеры FPS (`dev/gpu_bench.ps1`, `gpu_ab.ps1`) — только в задачах оптимизации.
 - Сквозной автотест геймплея: `tools/playtest.ps1` / `godot --headless --fixed-fps 60 -s tools/dev/playtest.gd -- all seed=7` —
   обязателен (20/20) после изменений полёта, корабля, рельефа, игрока, GameMode.
 - **Всегда смотреть свои скриншоты** (Read на PNG) и итерировать по картинке, а не вслепую.

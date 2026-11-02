@@ -1,7 +1,8 @@
 # Инструменты
 
 > Windows-версии: `tools/setup_windows.ps1`, `check.ps1`, `shot.ps1`, `movie.ps1`, `playtest.ps1`, `build_windows.ps1`, `fps_bench.ps1`,
-> `dev/gpu_bench.ps1`, `dev/gpu_ab.ps1` — сводная таблица в `docs/HANDOFF.md` §2.
+> `dev/gpu_bench.ps1`, `dev/gpu_ab.ps1` — сводная таблица в `docs/HANDOFF.md` §2. На Windows `shot.ps1`/`movie.ps1` рендерят
+> в окне за пределами экрана (`--offscreen`, не мешает работе; `-Front` — полный экран), замеры FPS — в полном экране.
 
 ## Окружение
 `tools/setup_env.sh` — Godot (версия в `tools/versions.env`), шаблоны экспорта, `mesa-vulkan-drivers` (lavapipe),
