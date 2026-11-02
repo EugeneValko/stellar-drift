@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/test/sky_test.gd" id="1_sky"]
+[ext_resource type="PackedScene" path="res://scenes/main.tscn" id="2_main"]
+
+[node name="SkyTest" type="Node"]
+script = ExtResource("1_sky")
+
+[node name="Main" parent="." instance=ExtResource("2_main")]

@@ -25,6 +25,13 @@ uniform vec2 gg_storm_size = vec2(0.20, 0.11);        // half-extent (rad) lon /
 uniform vec3 gg_storm_color : source_color = vec3(0.78, 0.36, 0.20);
 uniform float gg_ring_shadow = 0.0;           // 0 = no rings
 uniform float gg_brightness = 1.0;
+// wave 4: second storm, brown barges, equatorial festoons, polar cyclone rings, aurora
+uniform vec3 gg_storm2_dir = vec3(-0.55, 0.40, -0.73);
+uniform vec2 gg_storm2_size = vec2(0.085, 0.05);
+uniform vec3 gg_storm2_color : source_color = vec3(0.55, 0.30, 0.20);
+uniform float gg_detail = 1.0;                // fine band detail / festoon strength
+uniform vec3 gg_aurora_color : source_color = vec3(0.25, 1.0, 0.55);
+uniform float gg_aurora = 1.0;               // night-side polar aurora (0 = off)
 group_uniforms;
 
 varying vec3 v_local;
@@ -156,6 +163,32 @@ void fragment() {
 		}
 	}
 
+	// second (northern) storm: smaller dark red-brown anticyclone
+	vec3 S2 = normalize(gg_storm2_dir);
+	vec3 east2 = normalize(cross(vec3(0.0, 1.0, 0.0), S2));
+	vec3 north2 = cross(S2, east2);
+	vec3 dv2 = n - S2;
+	vec2 e2 = vec2(dot(dv2, east2) / gg_storm2_size.x, dot(dv2, north2) / gg_storm2_size.y);
+	float sr2 = length(e2);
+	if (sr2 < 2.5) {
+		float sw2 = exp(-sr2 * sr2 * 1.3);
+		ns = normalize(gg_rot_axis(ns, S2, sw2 * 4.0 + ft * 5.0 * sw2));
+	}
+	// polar cyclone clusters: a ring of vortices around each pole + one at the pole
+	float pc = 0.0;
+	for (int i = 0; i < 9; i++) {
+		float fi = float(i);
+		float hemi = i < 5 ? 1.0 : -1.0;
+		float lon = fi * 1.2566 + gg_seed * 0.7 + (hemi < 0.0 ? 0.6 : 0.0);
+		float colat = (i == 0 || i == 5) ? 0.0 : 0.3;
+		vec3 c = normalize(vec3(sin(colat) * cos(lon), hemi * cos(colat), sin(colat) * sin(lon)));
+		float d2 = dot(n - c, n - c) / (0.07 * 0.07);
+		if (d2 < 6.0) {
+			ns = normalize(gg_rot_axis(ns, c, hemi * exp(-d2) * 4.0));
+			pc = max(pc, exp(-d2 * 1.4));
+		}
+	}
+
 	vec2 A = gg_pattern(ns, (ph - 0.5) * 0.35);
 	vec2 B = gg_pattern(ns, (ph2 - 0.5) * 0.35);
 	vec2 P = mix(B, A, wa);
@@ -175,6 +208,29 @@ void fragment() {
 	col = mix(col, gg_col_zone * 1.05, collar * 0.6);
 	col = mix(col, gg_storm_color * (0.85 + 0.35 * turb), core);
 	col = mix(col, vec3(0.97, 0.95, 0.9), ov * 0.85);
+	// storm 2 colour + bright rim
+	float core2 = smoothstep(1.1, 0.4, sr2);
+	col = mix(col, gg_col_zone * 1.08, smoothstep(1.45, 1.05, sr2) * (1.0 - core2) * 0.5);
+	col = mix(col, gg_storm2_color * (0.85 + 0.3 * turb), core2);
+	// fine streaks along the bands (Kelvin-Helmholtz detail) + equatorial festoons
+	float fine = gg_snoise(vec3(ns.x * 34.0, ns.y * 190.0, ns.z * 34.0) + gg_seed * 3.1);
+	col *= 1.0 + 0.07 * gg_detail * fine;
+	float eq = exp(-pow((abs(n.y) - 0.075) / 0.028, 2.0));
+	float fest = smoothstep(0.15, 0.7, gg_snoise(vec3(ns.x * 11.0, ns.y * 26.0, ns.z * 11.0) + vec3(gg_seed * 1.7)));
+	col = mix(col, col * vec3(0.42, 0.48, 0.6), eq * fest * 0.6 * gg_detail);
+	// brown barges in the northern belt
+	for (int i = 0; i < 5; i++) {
+		float fi = float(i);
+		float lon = fi * 1.31 + 0.9 + gg_seed * 0.3;
+		vec3 c = normalize(vec3(cos(lon) * 0.955, 0.295, sin(lon) * 0.955));
+		vec3 ce = normalize(cross(vec3(0.0, 1.0, 0.0), c));
+		vec3 d = n - c;
+		vec2 q = vec2(dot(d, ce) / 0.05, dot(d, cross(c, ce)) / 0.014);
+		float b = exp(-dot(q, q) * 1.2);
+		col = mix(col, vec3(0.36, 0.2, 0.12), b * 0.75 * gg_detail);
+	}
+	// polar cyclones: slightly lighter cores, dark collars
+	col = mix(col, col * vec3(1.15, 1.12, 1.08), pc * 0.5);
 
 	// lighting (world space)
 	vec3 Nw = normalize(mat3(MODEL_MATRIX) * n);
@@ -210,6 +266,17 @@ void fragment() {
 		float lu = dot(L, upr);
 		float face = max(dot(Nw, upr) * sign(lu), 0.0);
 		lit += col * sun_color.rgb * sun_intensity * 0.05 * abs(lu) * sqrt(face) * (1.0 - smoothstep(-0.1, 0.2, nl)) * gg_brightness;
+	}
+	// aurora: thin auroral ovals around both (slightly tilted) magnetic poles, night side only
+	if (gg_aurora > 0.0) {
+		vec3 mp = normalize(vec3(0.12, 1.0, 0.05));
+		float cn = abs(dot(n, mp));
+		float ang = acos(clamp(cn, 0.0, 1.0));
+		float oval = exp(-pow((ang - 0.21 - 0.02 * gg_snoise(n * 9.0 + vec3(TIME * 0.02))) / 0.018, 2.0));
+		float curtain = 0.55 + 0.45 * gg_snoise(vec3(n.x * 60.0, TIME * 0.05, n.z * 60.0));
+		float night = 1.0 - smoothstep(-0.12, 0.08, nl);
+		vec3 aur = mix(gg_aurora_color, vec3(0.9, 0.25, 0.55), smoothstep(0.205, 0.17, ang) * 0.6);
+		lit += aur * oval * curtain * night * gg_aurora * 0.06 * sun_intensity;
 	}
 	ALBEDO = lit;
 }

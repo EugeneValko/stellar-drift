@@ -5,6 +5,9 @@
 shader_type spatial;
 render_mode unshaded, cull_front, depth_test_disabled, depth_draw_never, blend_add, fog_disabled;
 
+// cloud shadows in the in-scattering (uniforms from CloudLayer.set_atmosphere(); strength 0 = off)
+#define ATMO_CLOUD_SHADOWS
+#include "res://shaders/include/clouds_common.gdshaderinc"
 #include "res://shaders/include/atmosphere_common.gdshaderinc"
 
 uniform int atmo_debug = 0;
