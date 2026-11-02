@@ -131,8 +131,11 @@ func _debug_overrides() -> void:
 			terra.ocean.material.set_shader_parameter(k.substr(3), v)
 		elif k.begins_with("tu_"):
 			terra.planet.terrain_material.set_shader_parameter(k.substr(3), v)
-		elif k == "hide":   # --hide=Terra_Nova/Atmosphere+Aurelion (body or body/component)
+		elif k == "hide":   # --hide=Terra_Nova/Atmosphere+Aurelion+@World/Ship/FX (body, body/component, @node path)
 			for item: String in String(Capture.args[k]).split("+"):
+				if item.begins_with("@"):
+					(get_node(item.substr(1)) as Node3D).visible = false
+					continue
 				var parts := item.replace("_", " ").split("/")
 				var rec := system.get_body(parts[0])
 				if parts.size() == 1:

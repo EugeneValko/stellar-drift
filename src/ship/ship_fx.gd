@@ -518,10 +518,15 @@ func _build_ground_dust() -> void:
 
 
 ## Heat shimmer: a refracting cone behind every engine nozzle + a shell along the re-entry wake.
+## Drawn first among the transparents: in 3D the screen texture is copied after the opaque
+## pass, so it never holds the planet layers (ocean/atmosphere/clouds, LayerParams.PRIO_*).
+## Drawn after them, the haze (ALPHA 1) pasted that copy (bare terrain) over them — a band of
+## naked ground past Terra's limb in orbit. First, it refracts opaque + sky and the layers
+## blend over it unchanged.
 func _build_haze() -> void:
 	_jet_haze_mat = ShaderMaterial.new()
 	_jet_haze_mat.shader = HAZE_SHADER
-	_jet_haze_mat.render_priority = -2
+	_jet_haze_mat.render_priority = RenderingServer.MATERIAL_RENDER_PRIORITY_MIN
 	_jet_haze_mat.set_shader_parameter("flow_axis", Vector3(0, -1, 0))
 	_jet_haze_mat.set_shader_parameter("v_end", 0.85)
 	_jet_haze_mat.set_shader_parameter("freq", 1.4)
@@ -552,7 +557,7 @@ func _build_haze() -> void:
 		_jet_haze.append(mi)
 	_wake_haze_mat = ShaderMaterial.new()
 	_wake_haze_mat.shader = HAZE_SHADER
-	_wake_haze_mat.render_priority = -2
+	_wake_haze_mat.render_priority = RenderingServer.MATERIAL_RENDER_PRIORITY_MIN
 	_wake_haze_mat.set_shader_parameter("flow_axis", Vector3(0, 0, 1))
 	_wake_haze_mat.set_shader_parameter("v_start", 0.02)
 	_wake_haze_mat.set_shader_parameter("v_end", 0.9)
