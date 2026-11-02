@@ -29,3 +29,5 @@
 - Решение пользователя: дальше работа с локального ПК (Windows, RTX 3060) — облако слишком медленное для рендера.
 - Добавлены: `docs/HANDOFF.md` (точка входа для новых сессий), `tools/setup_windows.ps1`, `tools/check.ps1`, `tools/playtest.ps1`, `tools/build_windows.ps1`;
   CLAUDE.md, README, STATUS, ROADMAP, TOOLS обновлены под локальный процесс.
+- Playtest на `wave4-combined`: **20/20 PASS** (Selene touchdown 1.43 м/с, Terra 0.84 м/с; загрузка 48 с headless в нагруженном облаке).
+  Проверены кадры корабля v2, заката, экрана загрузки → `wave4-combined` **влит в main**. Остаток — живая проверка на ПК (HANDOFF §4).
