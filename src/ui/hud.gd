@@ -159,6 +159,11 @@ func _process(dt: float) -> void:
 	_banner_t += dt
 	_target_t += dt
 	_show_k = move_toward(_show_k, 1.0, dt / 0.45)
+	if Capture.active:
+		# stills: transitions settled
+		_target_t = maxf(_target_t, 5.0)
+		_mode_t = maxf(_mode_t, 5.0)
+		_show_k = 1.0
 	_root.modulate.a = smoothstep(0.0, 1.0, _show_k)
 	if mode == Mode.SHIP and ship and is_instance_valid(ship) and dt > 0.0:
 		var p := ship.global_position

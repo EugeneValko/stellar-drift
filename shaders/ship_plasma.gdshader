@@ -74,21 +74,23 @@ void fragment() {
 		float fil = smoothstep(0.42, 0.85, n);
 		float cap = exp(-v * 9.0) * (0.75 + 0.5 * n);
 		// the sheath brightens toward grazing angles, but softly (no hard silhouette line)
-		float sheath = (0.25 + 0.75 * pow(rim, 1.6)) * (1.0 - smoothstep(0.15, 0.95, v + (n - 0.5) * 0.5));
-		a = cap * 1.7 + sheath * (0.25 + 1.1 * fil);
+		// brightest just inside the silhouette, fading to nothing at the exact grazing edge
+		float sheath = pow(rim, 1.4) * (1.0 - smoothstep(0.8, 1.0, rim)) * 1.6
+			* (1.0 - smoothstep(0.08, 0.85, v + (n - 0.5) * 0.7));
+		a = cap * 1.5 + sheath * (0.08 + 1.5 * fil) + exp(-v * 3.0) * 0.12 * fil;
 		float flick = 0.8 + 0.4 * vnoise(vec3(v_local.xy * 0.5, t * 9.0));
 		a *= flick;
 		col = mix(vec3(1.0, 0.9, 0.72), color_a, smoothstep(0.0, 0.3, v));
 		col = mix(col, color_b, smoothstep(0.35, 1.0, v) * 0.75);
 	} else {
-		vec3 q = v_local * vec3(0.16, 0.16, 0.035) - vec3(0.0, 0.0, t * scroll * 0.35);
+		vec3 q = v_local * vec3(0.26, 0.26, 0.04) - vec3(0.0, 0.0, t * scroll * 0.35);
 		vec3 w = vec3(fbm(q * 1.3 + 1.7), fbm(q * 1.3 + 9.2), 0.0) - 0.5;
 		float n = fbm(q + vec3(w.xy * 1.8, 0.0));
-		float tongues = smoothstep(0.45, 0.9, n);
-		float fade = pow(1.0 - v, 2.2) * smoothstep(0.0, 0.1, v);
-		// brighter along the axis (looking down the wake), wispy at the sides
-		float body = mix(0.35, 1.0, pow(facing, 0.7));
-		a = fade * (0.12 + 1.1 * tongues) * body;
+		float tongues = smoothstep(0.52, 0.82, n);
+		float fade = pow(1.0 - v, 2.0) * smoothstep(0.0, 0.1, v);
+		// the shell vanishes toward its silhouette (no cone outline): only tongues of flame
+		float body = pow(facing, 1.4);
+		a = fade * (0.03 + 1.25 * tongues) * body;
 		a *= 1.0 - smoothstep(0.55, 1.0, v + (0.5 - n) * 0.35);
 		col = mix(color_a, color_b, smoothstep(0.08, 0.65, v + (n - 0.5) * 0.2));
 		col = mix(col, vec3(1.0, 0.85, 0.65), tongues * (1.0 - v) * 0.35);

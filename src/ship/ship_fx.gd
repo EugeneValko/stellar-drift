@@ -858,6 +858,8 @@ func _update_warp(dt: float, cam: Camera3D, vdir: Vector3, speed: float) -> void
 	if force_warp >= 0.0:
 		target = force_warp
 	warp_amount = lerpf(warp_amount, target, 1.0 - exp(-dt * (2.0 if target > warp_amount else 1.2)))
+	if force_warp >= 0.0:
+		warp_amount = force_warp   # stills: no ramp
 	_flash = maxf(_flash - dt * 2.2, 0.0)
 	if not Capture.active:
 		_drop_flash = maxf(_drop_flash - dt * 1.6, 0.0)
@@ -904,6 +906,8 @@ func _update_warp(dt: float, cam: Camera3D, vdir: Vector3, speed: float) -> void
 func clear_dropout() -> void:
 	_drop_flash = 0.0
 	_ripple = -1.0
+	_flash = 0.0
+	warp_amount = 0.0
 
 
 ## Capture: pre-simulates the ground dust / spray so a still shows developed clouds.
