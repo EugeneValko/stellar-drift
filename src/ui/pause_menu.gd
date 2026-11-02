@@ -1,8 +1,9 @@
 class_name PauseMenu
 extends CanvasLayer
 ## Esc pause menu: frosted game view, a slim left column — "STELLAR DRIFT" / ПАУЗА / Продолжить,
-## Управление, Звук, Выход — and a right panel for the controls list or the sound settings
-## (Общая громкость / Музыка / Эффекты / Чувствительность мыши). Keyboard (↑ ↓ Enter Esc) and
+## Управление, Звук, Графика, Выход — and a right panel for the controls list, the sound settings
+## (Общая громкость / Музыка / Эффекты / Чувствительность мыши) or the graphics options
+## (GraphicsSettings: сглаживание, качество неба). Keyboard (↑ ↓ Enter Esc) and
 ## mouse. Pauses the tree; music keeps playing, effects are paused. Opens by itself when the
 ## window loses focus. Releases the mouse while open, recaptures it on close.
 
@@ -219,6 +220,7 @@ func _build() -> void:
 	_buttons.append(_menu_button("Продолжить", func() -> void: set_open(false)))
 	_buttons.append(_menu_button("Управление", func() -> void: _show_section("controls")))
 	_buttons.append(_menu_button("Звук", func() -> void: _show_section("sound")))
+	_buttons.append(_menu_button("Графика", func() -> void: _show_section("graphics")))
 	_buttons.append(_menu_button("Выход", func() -> void: get_tree().quit()))
 	for b in _buttons:
 		_column.add_child(b)
@@ -262,6 +264,8 @@ func _show_section(sec: String) -> void:
 			_build_controls()
 		"sound":
 			_build_sound()
+		"graphics":
+			_build_graphics()
 
 
 func _build_controls() -> void:
@@ -351,3 +355,73 @@ func _build_sound() -> void:
 	(last.get_child(1) as HSlider).value_changed.connect(func(_x: float) -> void:
 		lbl.text = "×%.2f" % Controls.mouse_scale)
 	_panel_box.add_child(_label("Звук синтезируется процедурно при запуске — без файлов.", 14, C_DIM))
+
+
+## One option row: title + mutually exclusive buttons (labels), `cb(index)` on change.
+func _choice_row(title: String, labels: Array, current: int, cb: Callable) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	var l := _label(title, 19, C_TEXT)
+	l.custom_minimum_size = Vector2(250, 0)
+	row.add_child(l)
+	var group := ButtonGroup.new()
+	for i in labels.size():
+		var b := Button.new()
+		b.text = str(labels[i])
+		b.toggle_mode = true
+		b.button_group = group
+		b.button_pressed = i == current
+		b.focus_mode = Control.FOCUS_ALL
+		b.custom_minimum_size = Vector2(150, 40)
+		b.add_theme_font_override("font", _font)
+		b.add_theme_font_size_override("font_size", 17)
+		b.add_theme_color_override("font_color", Color(C_TEXT, 0.6))
+		b.add_theme_color_override("font_hover_color", C_TEXT)
+		b.add_theme_color_override("font_focus_color", C_TEXT)
+		b.add_theme_color_override("font_pressed_color", C_ACCENT)
+		b.add_theme_color_override("font_hover_pressed_color", C_ACCENT)
+		var off := StyleBoxFlat.new()
+		off.bg_color = Color(0.6, 0.9, 1.0, 0.05)
+		off.border_color = C_LINE
+		off.set_border_width_all(1)
+		off.set_corner_radius_all(4)
+		var on := off.duplicate() as StyleBoxFlat
+		on.bg_color = Color(C_ACCENT, 0.12)
+		on.border_color = C_ACCENT
+		var hover := off.duplicate() as StyleBoxFlat
+		hover.bg_color = Color(0.6, 0.9, 1.0, 0.12)
+		b.add_theme_stylebox_override("normal", off)
+		b.add_theme_stylebox_override("hover", hover)
+		b.add_theme_stylebox_override("focus", hover)
+		b.add_theme_stylebox_override("pressed", on)
+		b.add_theme_stylebox_override("hover_pressed", on)
+		b.toggled.connect(func(on_now: bool) -> void:
+			if on_now:
+				GameAudio.ui("ui_click", -10.0)
+				cb.call(i))
+		row.add_child(b)
+	_panel_box.add_child(row)
+
+
+func _build_graphics() -> void:
+	_panel_box.add_child(_label("Графика", 30, C_TEXT, _font_thin))
+	_choice_row("Сглаживание", ["MSAA 4x", "MSAA 2x", "TAA"], int(GraphicsSettings.aa), func(i: int) -> void:
+		GraphicsSettings.aa = i as GraphicsSettings.AA
+		GraphicsSettings.save_cfg()
+		GraphicsSettings.apply_aa(get_viewport()))
+	_choice_row("Облака и атмосфера", ["Высокое", "Среднее"], 1 - GraphicsSettings.sky_quality, func(i: int) -> void:
+		GraphicsSettings.sky_quality = 1 - i
+		GraphicsSettings.save_cfg()
+		GraphicsSettings.apply(get_viewport(), get_tree().root.find_child("SolarSystem", true, false) as SolarSystem))
+	var sep := ColorRect.new()
+	sep.color = C_LINE
+	sep.custom_minimum_size = Vector2(0, 1)
+	_panel_box.add_child(sep)
+	for t: String in ["MSAA 4x — самые гладкие края, дороже всего (+1,5 мс к 2x).",
+			"MSAA 2x — по умолчанию: чётко в движении.",
+			"TAA — чуть быстрее (−1 мс), мягче трава и зерно облаков, в движении картинка мягче.",
+			"Среднее небо — меньше шагов облаков и атмосферы (−1,5…−2,5 мс у земли)."]:
+		var l := _label(t, 14, C_DIM)
+		l.custom_minimum_size = Vector2(560, 0)
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_panel_box.add_child(l)

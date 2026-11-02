@@ -69,6 +69,9 @@ func _ready() -> void:
 		audio.name = "Audio"
 		add_child(audio)
 		audio.setup(ship, game)
+	# user graphics options (Esc -> Графика); captures and benchmarks keep the defaults
+	if not Capture.active and Capture.get_preset() == "":
+		GraphicsSettings.apply(get_viewport(), system)
 	if Capture.args.has("no_shadows"):
 		system.shadows_enabled = false
 	if Capture.args.has("quality"):
@@ -142,6 +145,35 @@ func _debug_overrides() -> void:
 					rec.node.visible = false
 				elif rec.planet:
 					rec.planet.get_component(parts[1]).visible = false
+		# render A/B knobs (tools/dev/gpu_ab.ps1)
+		elif k == "shadow_size":
+			RenderingServer.directional_shadow_atlas_set_size(int(v), true)
+		elif k == "shadow_angular":
+			system.main_light.light_angular_distance = float(v)
+		elif k == "shadow_splits":
+			system.main_light.directional_shadow_mode = [DirectionalLight3D.SHADOW_ORTHOGONAL,
+				DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS, DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS,
+				DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS, DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS][clampi(int(v), 1, 4)]
+		elif k == "shadow_blend":
+			system.main_light.directional_shadow_blend_splits = int(v) != 0
+		elif k == "shadow_soft":
+			RenderingServer.directional_soft_shadow_filter_set_quality(int(v) as RenderingServer.ShadowQuality)
+		elif k == "msaa":
+			get_viewport().msaa_3d = int(v) as Viewport.MSAA
+		elif k == "fxaa":
+			get_viewport().screen_space_aa = int(v) as Viewport.ScreenSpaceAA
+		elif k == "terrain_shadows":
+			system.terrain_shadows = int(v) != 0
+		elif k == "shadow_base":
+			system.shadow_base = float(v)
+		elif k == "lod":
+			terra.planet.terrain.lod_factor = float(v)
+		elif k == "taa":
+			get_viewport().use_taa = int(v) != 0
+		elif k == "scale3d":
+			get_viewport().scaling_3d_scale = float(v)
+		elif k == "scale_mode":
+			get_viewport().scaling_3d_mode = int(v) as Viewport.Scaling3DMode
 
 
 ## CPU benchmark (headless ok): descent from 150 km to 50 m over Terra Nova in N frames,
@@ -1349,7 +1381,7 @@ func _wave4_preset(preset: String, fx: ShipFX, rig: ShipCameraRig) -> void:
 			await _clear_start_weather()
 			pause.enabled = true
 			pause.set_open(true, true)
-			pause.show_section("sound")
+			pause.show_section(String(Capture.args.get("section", "sound")))
 		"loading_screen":
 			if loading == null:
 				loading = LoadingScreen.new()

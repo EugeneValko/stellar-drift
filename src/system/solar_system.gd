@@ -62,6 +62,8 @@ const PRESET_DIR := "res://src/planets/presets/"
 
 @export_group("Lighting")
 @export var shadows_enabled := true
+## The focus planet's terrain casts shadows (mountains, cliffs; the main shadow-pass cost near ground).
+@export var terrain_shadows := true
 ## Shadow distance = clamp(shadow_base + altitude * shadow_per_alt, shadow_base, shadow_max).
 @export var shadow_base := 1500.0
 @export var shadow_per_alt := 10.0
@@ -196,7 +198,9 @@ func _build_lights() -> void:
 	main_light.name = "SunLight"
 	main_light.shadow_enabled = shadows_enabled
 	main_light.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
-	main_light.directional_shadow_blend_splits = true
+	# no split blending, 4096 atlas, "very low" soft filter (project.godot): -2.5..-3.5 ms at
+	# the start meadow on an RTX 3060 with no visible change (docs/reports/perf_wave5.md)
+	main_light.directional_shadow_blend_splits = false
 	main_light.directional_shadow_split_1 = 0.06
 	main_light.directional_shadow_split_2 = 0.18
 	main_light.directional_shadow_split_3 = 0.45
@@ -686,7 +690,7 @@ func _update_terrain(cam: Camera3D) -> void:
 			var px := r.radius / d / t * vp_h * 0.5
 			lvl = 0 if px < 120.0 else (1 if px < 450.0 else 2)
 		r.planet.terrain.set_min_level(lvl)
-		r.planet.terrain.set_cast_shadows(r == focus)
+		r.planet.terrain.set_cast_shadows(r == focus and terrain_shadows)
 
 
 ## Only the focus planet scatters vegetation; others are idle (and cleared once they leave).
