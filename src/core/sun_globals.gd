@@ -44,5 +44,22 @@ static func aim_light(light: DirectionalLight3D, direction_to_sun: Vector3) -> v
 	light.global_transform = Transform3D(Basis(x, y, z), light.global_transform.origin)
 
 
+## Raymarch jitter offset per frame (global `sd_temporal`): on with TAA, which then averages the
+## cloud / atmosphere grain over frames; off (static pattern) otherwise. Call once per frame.
+static var temporal_jitter := false
+static var _frame := 0
+static var _temporal_applied := -1.0
+
+
+static func advance_frame() -> void:
+	var v := 0.0
+	if temporal_jitter:
+		_frame = (_frame + 1) % 4096
+		v = fposmod(float(_frame) * 0.6180339887, 1.0)
+	if v != _temporal_applied:
+		_temporal_applied = v
+		RenderingServer.global_shader_parameter_set(&"sd_temporal", v)
+
+
 static func get_direction() -> Vector3:
 	return RenderingServer.global_shader_parameter_get(P_DIRECTION)

@@ -5,6 +5,9 @@
 global uniform vec3 sun_direction;   // world space, unit, toward the sun
 global uniform vec4 sun_color;       // linear RGB, unattenuated
 global uniform float sun_intensity;  // lambert white facing sun -> radiance = color * intensity
+// Per-frame offset (0..1, golden-ratio sequence) of the raymarch jitter while TAA is on, so TAA
+// averages the grain over frames; 0 (static jitter) otherwise. SunGlobals.advance_frame().
+global uniform float sd_temporal;
 
 // Per-body override (SolarSystem): world-space direction from THIS body toward the star.
 // Zero = use the global sun_direction (bodies lit by the main light, i.e. near the camera).
@@ -37,10 +40,15 @@ vec2 sd_ray_sphere(vec3 ro, vec3 rd, float R) {
 	return vec2(-b - h, -b + h);
 }
 
-// Per-pixel jitter (0..1), stable.
+// Per-pixel jitter (0..1): stable, or shifted every frame under TAA (sd_temporal).
 float sd_ign(vec2 fc) {
 	// R2 low-discrepancy pattern (more isotropic than IGN when not accumulated temporally)
-	return fract(dot(floor(fc), vec2(0.7548776662, 0.5698402910)) + 0.5);
+	return fract(dot(floor(fc), vec2(0.7548776662, 0.5698402910)) + 0.5 + sd_temporal);
+}
+
+// Per-frame rotation (0..3) of the 2x2 quad quarter assignment (quad-shared marches) under TAA.
+float sd_quad_rot() {
+	return floor(sd_temporal * 4.0);
 }
 
 // Distance along the view ray to the opaque scene (from a hint_depth_texture value).

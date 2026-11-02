@@ -122,8 +122,10 @@ static func make_uniforms(p: Dictionary) -> Dictionary:
 	var hz: float = float(p.get("ozone_height", 0.0))
 	var oz := EARTH_OZONE * 1.9 * float(p.get("ozone_density", 1.0)) * (8000.0 / (hz if hz > 0.0 else hr))
 	var q: int = int(p.get("quality", 1))
-	# steps_mul: dense, hazy atmospheres need more view samples (jitter grain otherwise)
-	var steps: int = int(p.get("steps", roundi([8, 12, 16][clampi(q, 0, 2)] * float(p.get("steps_mul", 1.0)))))
+	# steps_mul: dense, hazy atmospheres need more view samples (jitter grain otherwise); not
+	# under TAA, which averages the per-frame jitter (SunGlobals.temporal_jitter)
+	var mul: float = 1.0 if SunGlobals.temporal_jitter else float(p.get("steps_mul", 1.0))
+	var steps: int = int(p.get("steps", roundi([8, 12, 16][clampi(q, 0, 2)] * mul)))
 	return {
 		"atmo_planet_radius": radius,
 		"atmo_top_radius": radius + float(p.get("height", 12000.0)),

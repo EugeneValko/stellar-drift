@@ -10,7 +10,7 @@ $tmp = Join-Path ([IO.Path]::GetTempPath()) ("sd_movie_" + [guid]::NewGuid())
 New-Item -ItemType Directory $tmp | Out-Null
 $ErrorActionPreference = "Continue"   # Godot's exit warnings on stderr must not abort before ffmpeg
 & $Godot --path $root --write-movie (Join-Path $tmp "frame.png") --fixed-fps $fps --quit-after ($Seconds*$fps) --resolution $res --fullscreen $Scene -- @Rest 2>&1 | Where-Object { $_ -match "ERROR|SCRIPT" }
-$outFull = [IO.Path]::GetFullPath((Join-Path (Get-Location) $Out))
+$outFull = if ([IO.Path]::IsPathRooted($Out)) { [IO.Path]::GetFullPath($Out) } else { [IO.Path]::GetFullPath((Join-Path (Get-Location) $Out)) }
 New-Item -ItemType Directory -Force (Split-Path $outFull) | Out-Null
 if (Get-Command ffmpeg -ErrorAction SilentlyContinue) {
   ffmpeg -y -loglevel error -framerate $fps -i (Join-Path $tmp "frame%08d.png") -c:v libx264 -pix_fmt yuv420p -crf 18 $outFull

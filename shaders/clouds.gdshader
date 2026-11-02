@@ -106,7 +106,7 @@ void fragment() {
 	if (cloud_temporal_jitter) jit = fract(jit + TIME * 7.3123);
 	// quarter per pixel, rotated randomly per quad: a fixed assignment shows up as a regular
 	// row/column pattern (the quarters are biased differently inside the doubled cells)
-	float qrot = floor(fract(sin(dot(floor(FRAGCOORD.xy * 0.5), vec2(39.346, 11.135))) * 43758.5453) * 4.0);
+	float qrot = floor(fract(sin(dot(floor(FRAGCOORD.xy * 0.5), vec2(39.346, 11.135))) * 43758.5453) * 4.0) + sd_quad_rot();
 	if (cloud_quad_share) jit = (jit + mod(px + 2.0 * py + qrot, 4.0)) * 0.25;
 	vec3 col = vec3(0.0);
 	float T = 1.0;

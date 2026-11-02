@@ -617,6 +617,7 @@ func _update_lights(cam: Camera3D) -> void:
 		star.light_color.b * light_tint.z)
 	main_light.light_energy = star.light_energy
 	SunGlobals.set_sun(to_sun, star.light_color, star.light_energy)
+	SunGlobals.advance_frame()
 	main_light.light_cull_mask = 1 | (group_layer(focus_group) if focus_group > 0 else 0)
 	for g in group_lights:
 		var l: DirectionalLight3D = group_lights[g]

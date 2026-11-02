@@ -272,7 +272,7 @@ float atmo_quad_jitter(vec2 frag, float jitter) {
 	if (!atmo_quad_share) return jitter;
 	float px = mod(floor(frag.x), 2.0);
 	float py = mod(floor(frag.y), 2.0);
-	float rot = floor(fract(sin(dot(floor(frag * 0.5), vec2(39.346, 11.135))) * 43758.5453) * 4.0);
+	float rot = floor(fract(sin(dot(floor(frag * 0.5), vec2(39.346, 11.135))) * 43758.5453) * 4.0) + sd_quad_rot();
 	return (jitter + mod(px + 2.0 * py + rot, 4.0)) * 0.25;
 }
 

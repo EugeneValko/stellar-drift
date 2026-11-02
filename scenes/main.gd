@@ -168,8 +168,10 @@ func _debug_overrides() -> void:
 			system.shadow_base = float(v)
 		elif k == "lod":
 			terra.planet.terrain.lod_factor = float(v)
-		elif k == "taa":
+		elif k == "taa":   # TAA + per-frame raymarch jitter (as Esc -> Графика -> TAA)
 			get_viewport().use_taa = int(v) != 0
+			SunGlobals.temporal_jitter = int(v) != 0
+			system.set_quality(system.quality)   # atmosphere steps depend on the temporal jitter
 		elif k == "scale3d":
 			get_viewport().scaling_3d_scale = float(v)
 		elif k == "scale_mode":

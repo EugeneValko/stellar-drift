@@ -44,3 +44,7 @@ sun_intensity={
 "type": "float",
 "value": 1.6
 }
+sd_temporal={
+"type": "float",
+"value": 0.0
+}

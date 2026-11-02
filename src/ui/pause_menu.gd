@@ -408,7 +408,7 @@ func _build_graphics() -> void:
 	_choice_row("Сглаживание", ["MSAA 4x", "MSAA 2x", "TAA"], int(GraphicsSettings.aa), func(i: int) -> void:
 		GraphicsSettings.aa = i as GraphicsSettings.AA
 		GraphicsSettings.save_cfg()
-		GraphicsSettings.apply_aa(get_viewport()))
+		GraphicsSettings.apply(get_viewport(), get_tree().root.find_child("SolarSystem", true, false) as SolarSystem))
 	_choice_row("Облака и атмосфера", ["Высокое", "Среднее"], 1 - GraphicsSettings.sky_quality, func(i: int) -> void:
 		GraphicsSettings.sky_quality = 1 - i
 		GraphicsSettings.save_cfg()
@@ -417,9 +417,9 @@ func _build_graphics() -> void:
 	sep.color = C_LINE
 	sep.custom_minimum_size = Vector2(0, 1)
 	_panel_box.add_child(sep)
-	for t: String in ["MSAA 4x — самые гладкие края, дороже всего (+1,5 мс к 2x).",
-			"MSAA 2x — по умолчанию: чётко в движении.",
-			"TAA — чуть быстрее (−1 мс), мягче трава и зерно облаков, в движении картинка мягче.",
+	for t: String in ["TAA — по умолчанию: гладкие края облаков без зерна, быстрее всего; в движении земля чуть мягче.",
+			"MSAA 2x — чётче в движении, но на краях облаков видно зерно (+1,5 мс).",
+			"MSAA 4x — самые гладкие края геометрии, дороже всего (+1,5 мс к 2x).",
 			"Среднее небо — меньше шагов облаков и атмосферы (−1,5…−2,5 мс у земли)."]:
 		var l := _label(t, 14, C_DIM)
 		l.custom_minimum_size = Vector2(560, 0)
