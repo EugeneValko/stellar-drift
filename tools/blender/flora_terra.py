@@ -4,9 +4,10 @@ Run:
     blender -b -P tools/blender/flora_terra.py -- assets/models/flora_terra.glb
 
 Objects (one glTF node each, pivot at the ground contact point, Blender Z = Godot Y):
-  spirepine_lod0/1/2   alien conifer (~20 m): tiered drooping whorls whose tips flick upward
-  parasol_lod0/1/2     umbrella broadleaf (~11 m): forked limbs carrying flattened leaf domes
-  fernpalm_lod0/1/2    tall fern-palm (~8 m): ringed curved trunk with arching pinnate fronds
+  spirepine[_b|_c]_lod0/1/2  alien conifer (16-23 m): irregular drooping whorls whose tips flick
+                       upward, volumetric needle sprays on branches and secondary twigs (3 skeletons)
+  parasol[_b|_c]_lod0/1/2   umbrella broadleaf (~11 m): forked limbs carrying flattened leaf domes
+  fernpalm[_b|_c]_lod0/1/2  tall fern-palm (~8 m): ringed curved trunk with arching pinnate fronds
   bush_round_lod0/1    leafy dome shrub (~1.4 m)
   bush_quill_lod0      radial quill shrub (~1.2 m)
   fern_lod0            ground fern (~0.8 m)
@@ -49,76 +50,111 @@ def rotate_about(v, axis, ang):
 # Spirepine (conifer)
 # ==========================================================================================
 
-def spirepine_skeleton(seed=11, H=20.0):
+def spirepine_skeleton(seed=11, H=20.0, tiers=13, width=5.4, droop=1.0, slender=1.0):
+    """Irregular whorls: random tier spacing / branch count / length, some missing or broken
+    branches, a few secondary twigs per branch (needle clusters hang off those too)."""
     rnd = random.Random(seed)
     bend = Vector((rnd.uniform(-1, 1), rnd.uniform(-1, 1), 0)).normalized()
+    wob = rnd.uniform(0, 6.28)
 
     def axis(z):
         t = z / H
-        return bend * math.sin(t * math.pi * 1.2) * 0.35 * t + UP * z
+        side = Vector((math.cos(wob + t * 5.0), math.sin(wob + t * 5.0), 0)) * 0.08 * t
+        return bend * math.sin(t * math.pi * 1.2) * 0.35 * t + side + UP * z
 
     def trunk_r(z):
         t = min(z / H, 1.0)
-        r = 0.4 * (1 - t) ** 1.15 + 0.025
+        r = 0.4 * (H / 20.0) * (1 - t) ** 1.15 + 0.025
         return r * (1.0 + 0.9 * math.exp(-z / 0.5))
 
     branches = []
-    tiers = 13
-    z0, z1 = 3.0, H - 1.1
+    z0, z1 = 2.6 + rnd.uniform(-0.4, 0.6), H - 1.1
+    zs = []
     for k in range(tiers):
         f = k / (tiers - 1)
-        zt = z0 + (z1 - z0) * (f ** 0.92)
+        zs.append(z0 + (z1 - z0) * (f ** 0.92) + rnd.uniform(-0.25, 0.25) * (1 - f))
+    for k, zt in enumerate(zs):
         rel = (zt - z0) / (z1 - z0)
-        L = 5.4 * (1 - rel) ** 0.85 + 0.75
+        L = (width * (1 - rel) ** (0.85 * slender) + 0.75)
         nb = 7 if rel < 0.45 else (6 if rel < 0.7 else (5 if rel < 0.88 else 4))
-        az0 = k * 2.39996 + rnd.uniform(-0.3, 0.3)
+        nb += rnd.choice([-1, 0, 0, 1])
+        az0 = k * 2.39996 + rnd.uniform(-0.4, 0.4)
         for b in range(nb):
-            az = az0 + 2 * math.pi * b / nb + rnd.uniform(-0.25, 0.25)
+            if rel < 0.35 and rnd.random() < 0.12:
+                continue          # self-pruned lower branch
+            az = az0 + 2 * math.pi * b / nb + rnd.uniform(-0.35, 0.35)
             dh = Vector((math.cos(az), math.sin(az), 0))
-            Lb = L * rnd.uniform(0.85, 1.12)
-            zb = zt + rnd.uniform(-0.25, 0.25)
+            Lb = L * rnd.uniform(0.75, 1.18)
+            if rnd.random() < 0.08:
+                Lb *= 0.55        # broken branch
+            zb = zt + rnd.uniform(-0.3, 0.3)
             p0 = axis(zb) + dh * trunk_r(zb) * 0.8
-            droop = 0.22 + 0.1 * (1 - rel)
-            p1 = p0 + dh * Lb * 0.35 + UP * (Lb * 0.02)
-            p2 = p0 + dh * Lb * 0.72 - UP * (Lb * droop)
-            p3 = p0 + dh * Lb * 1.0 - UP * (Lb * droop * 0.45)   # tip flicks back up
-            branches.append({"p": [p0, p1, p2, p3], "L": Lb, "phase": rnd.random(), "rel": rel})
-    return {"H": H, "axis": axis, "trunk_r": trunk_r, "branches": branches}
+            dr = (0.18 + 0.12 * (1 - rel)) * droop * rnd.uniform(0.75, 1.25)
+            p1 = p0 + dh * Lb * 0.35 + UP * (Lb * rnd.uniform(0.0, 0.06))
+            p2 = p0 + dh * Lb * 0.72 - UP * (Lb * dr)
+            p3 = p0 + dh * Lb * 1.0 - UP * (Lb * dr * rnd.uniform(0.3, 0.6))   # tip flicks back up
+            twigs = []
+            for tw in range(2 if Lb > 2.0 else 1):
+                tt = rnd.uniform(0.3, 0.75)
+                sgn = rnd.choice([-1, 1])
+                twigs.append({"t": tt, "az": sgn * rnd.uniform(0.6, 1.1), "len": Lb * rnd.uniform(0.25, 0.4),
+                              "drop": rnd.uniform(0.05, 0.25)})
+            branches.append({"p": [p0, p1, p2, p3], "L": Lb, "phase": rnd.random(), "rel": rel,
+                             "twigs": twigs, "seed": rnd.randint(0, 999999)})
+    return {"H": H, "axis": axis, "trunk_r": trunk_r, "branches": branches, "width": width,
+            "z0": z0}
+
+
+def _needle_cluster(mb, base, along, length, width, ph, sway, ao_at, vol_normal, n_cards, rnd):
+    """Volumetric spray: n cards rotated around the spray axis (flat + two tilted), varied size."""
+    side = horiz_perp(along)
+    angs = [0.0, 0.75, -0.75, 1.4, -1.4][:n_cards]
+    for i, a in enumerate(angs):
+        sv = rotate_about(side, along, a + rnd.uniform(-0.2, 0.2))
+        ln = length * (1.0 if i == 0 else rnd.uniform(0.7, 0.92))
+        wd = width * (1.0 if i == 0 else rnd.uniform(0.65, 0.85))
+        al = (along + UP * rnd.uniform(-0.06, 0.12) + sv * rnd.uniform(-0.1, 0.1)).normalized()
+        tip_p = base + al * ln
+        cb = (sway(base.z), 0.25, ao_at(base), ph)
+        ct = (sway(tip_p.z), 1.0, ao_at(tip_p), ph)
+        card(mb, base, al, sv, ln, wd, "needles", cb, ct, vol_normal, taper=0.5)
 
 
 def spirepine(lod, sk):
     H = sk["H"]
     axis, trunk_r = sk["axis"], sk["trunk_r"]
+    W = sk["width"]
     mb = MeshBuilder()
     sway = lambda z: max(0.0, min(1.0, z / H)) ** 1.6
 
     if lod == 2:
-        # far hull: three stacked cones + trunk prism, single material
-        tiers = [(2.6, 9.5, 4.9), (7.5, 15.0, 3.4), (12.5, H + 0.6, 2.0)]
+        # far hull: three stacked cones + trunk prism, single material (proportions from the skeleton)
+        z0 = sk["z0"]
+        tiers = [(z0, z0 + (H - z0) * 0.45, W * 0.88), (z0 + (H - z0) * 0.3, z0 + (H - z0) * 0.75, W * 0.62),
+                 (z0 + (H - z0) * 0.6, H + 0.6, W * 0.38)]
         sides = 7
         for (za, zb, r) in tiers:
             ring = []
-            for s in range(sides):
-                a = 2 * math.pi * (s + 0.5 * (za > 5)) / sides
+            for s_ in range(sides):
+                a = 2 * math.pi * (s_ + 0.5 * (za > 5)) / sides
                 d = Vector((math.cos(a), math.sin(a), 0))
                 ring.append((mb.vert(axis(za) + d * r), d))
             tip = mb.vert(axis(zb))
             ctip = (sway(zb), 1.0, 1.0, 1.0)
             cb = (sway(za), 1.0, 0.55, 1.0)
-            for s in range(sides):
-                a0, a1 = ring[s], ring[(s + 1) % sides]
+            for s_ in range(sides):
+                a0, a1 = ring[s_], ring[(s_ + 1) % sides]
                 n0 = (a0[1] * 0.75 + UP * 0.55)
                 n1 = (a1[1] * 0.75 + UP * 0.55)
                 mb.face([a0[0], a1[0], tip], [(0, 0), (1, 0), (0.5, 1)], [cb, cb, ctip],
                         [n0, n1, UP], "far_foliage")
-            # underside (seen from below / low angles)
             c = mb.vert(axis(za + (zb - za) * 0.25))
             cu = (sway(za), 1.0, 0.3, 1.0)
-            for s in range(sides):
-                a0, a1 = ring[s], ring[(s + 1) % sides]
+            for s_ in range(sides):
+                a0, a1 = ring[s_], ring[(s_ + 1) % sides]
                 mb.face([a1[0], a0[0], c], [(0, 0), (1, 0), (0.5, 1)], [cu] * 3,
                         [a1[1] - UP * 0.3, a0[1] - UP * 0.3, -UP], "far_foliage")
-        tube(mb, [axis(0), axis(4.0)], [0.55, 0.3], 3, "far_foliage",
+        tube(mb, [axis(0), axis(z0 + 1.0)], [0.55 * H / 20.0, 0.3 * H / 20.0], 3, "far_foliage",
              lambda t, p: (sway(p.z), 0.0, 0.5, 0.0))
         return mb
 
@@ -133,8 +169,14 @@ def spirepine(lod, sk):
         radii.append(trunk_r(z))
     tube(mb, pts, radii, sides, "bark",
          lambda t, p: (sway(p.z), 0.0, 0.55 + 0.45 * smoothstep(0, 4, p.z), 0.0), uv_v_scale=1.6)
-
-    crown_r = 6.2
+    if lod == 0:
+        # root flare buttresses
+        for k in range(5):
+            a = k * 1.256 + 0.3
+            d = Vector((math.cos(a), math.sin(a), 0))
+            tube(mb, [axis(1.2) + d * 0.1, d * 0.45 + UP * 0.35, d * 0.85 - UP * 0.05],
+                 [0.14 * H / 20.0, 0.1 * H / 20.0, 0.03], 4, "bark",
+                 lambda t, p: (0.0, 0.0, 0.5, 0.0), uv_v_scale=1.0)
 
     def vol_normal(p):
         c = axis(p.z)
@@ -148,36 +190,43 @@ def spirepine(lod, sk):
         c = axis(p.z)
         d = Vector((p.x - c.x, p.y - c.y, 0)).length
         rel_h = p.z / H
-        reach = max(0.6, 5.4 * (1 - rel_h) + 0.6)
-        return min(1.0, 0.32 + 0.6 * smoothstep(0.0, 1.0, d / reach) + 0.25 * rel_h)
+        reach = max(0.6, W * (1 - rel_h) + 0.6)
+        return min(1.0, 0.3 + 0.6 * smoothstep(0.0, 1.0, d / reach) + 0.25 * rel_h)
 
     for br in sk["branches"]:
         P = br["p"]
         L = br["L"]
         ph = br["phase"]
+        rnd = random.Random(br["seed"])
+        curve = bezier(P[0], P[1], P[2], P[3], 20)
         spine = bezier(P[0], P[1], P[2], P[3], 4 if lod == 0 else 2)
         if lod == 0:
             tube(mb, spine[:4], [0.08 * min(1, L / 4) + 0.02, 0.05, 0.03, 0.015], 3, "bark",
                  lambda t, p, ph=ph: (sway(p.z), t * 0.6, ao_at(p) * 0.8, ph), uv_v_scale=1.0)
-            spots = [(0.14, 0.6), (0.45, 0.52), (0.74, 0.4)]
+            spots = [(0.12, 0.5), (0.38, 0.46), (0.62, 0.4), (0.84, 0.3)]
+            ncards = 3
         else:
             spots = [(0.06, 1.0)]
+            ncards = 2
         for (t0, frac) in spots:
-            # point & tangent on the bezier
-            u = t0
-            base = bezier(P[0], P[1], P[2], P[3], 20)[int(u * 20)]
-            nxt = bezier(P[0], P[1], P[2], P[3], 20)[min(int(u * 20) + 2, 20)]
+            base = curve[int(t0 * 20)]
+            nxt = curve[min(int(t0 * 20) + 2, 20)]
             along = (nxt - base).normalized()
             along = (along + UP * 0.08).normalized()
             length = L * frac * (1.0 if lod == 0 else 0.98)
-            width = min(L * (0.62 if lod == 0 else 0.58) * (1.0 - 0.35 * t0), 2.6)
-            side = horiz_perp(along)
-            for sgn in (-1, 1):
-                sv = rotate_about(side, along, sgn * math.radians(36))
-                tip_p = base + along * length
-                cb = (sway(base.z), 0.25, ao_at(base), ph)
-                ct = (sway(tip_p.z), 1.0, ao_at(tip_p), ph)
-                card(mb, base, along, sv, length, width, "needles", cb, ct, vol_normal, taper=0.55)
+            width = min(L * (0.55 if lod == 0 else 0.58) * (1.0 - 0.3 * t0), 2.4)
+            _needle_cluster(mb, base, along, length, width, ph, sway, ao_at, vol_normal, ncards, rnd)
+        if lod == 0:
+            for tw in br["twigs"]:
+                base = curve[int(tw["t"] * 20)]
+                nxt = curve[min(int(tw["t"] * 20) + 2, 20)]
+                along = (nxt - base).normalized()
+                d2 = rotate_about(along, UP, tw["az"])
+                d2 = (d2 - UP * tw["drop"]).normalized()
+                tube(mb, [base, base + d2 * tw["len"] * 0.6], [0.02, 0.01], 3, "bark",
+                     lambda t, p, ph=ph: (sway(p.z), 0.4 + 0.4 * t, ao_at(p) * 0.8, ph))
+                _needle_cluster(mb, base + d2 * tw["len"] * 0.1, d2, tw["len"], tw["len"] * 0.75, ph, sway,
+                                ao_at, vol_normal, 2, rnd)
     # leader at the top
     top = axis(H - 2.6)
     for k in range(3 if lod == 0 else 2):
@@ -677,15 +726,22 @@ def flower_b(seed=81):
 def main():
     out = out_path("assets/models/flora_terra.glb")
     reset_scene()
-    sk = spirepine_skeleton()
-    for lod in range(3):
-        spirepine(lod, sk).build("spirepine_lod%d" % lod, MAT_ORDER)
-    sk = parasol_skeleton()
-    for lod in range(3):
-        parasol(lod, sk).build("parasol_lod%d" % lod, MAT_ORDER)
-    sk = fernpalm_skeleton()
-    for lod in range(3):
-        fernpalm(lod, sk).build("fernpalm_lod%d" % lod, MAT_ORDER)
+    # three skeletons per tree species: <name>, <name>_b, <name>_c (different seeds / proportions)
+    pines = {"spirepine": dict(seed=11),
+             "spirepine_b": dict(seed=17, H=16.5, tiers=12, width=4.2, droop=0.8, slender=1.3),
+             "spirepine_c": dict(seed=29, H=23.0, tiers=15, width=6.2, droop=1.25, slender=0.9)}
+    for name, kw in pines.items():
+        sk = spirepine_skeleton(**kw)
+        for lod in range(3):
+            spirepine(lod, sk).build("%s_lod%d" % (name, lod), MAT_ORDER)
+    for name, sd in (("parasol", 23), ("parasol_b", 31), ("parasol_c", 47)):
+        sk = parasol_skeleton(sd)
+        for lod in range(3):
+            parasol(lod, sk).build("%s_lod%d" % (name, lod), MAT_ORDER)
+    for name, sd in (("fernpalm", 37), ("fernpalm_b", 41), ("fernpalm_c", 53)):
+        sk = fernpalm_skeleton(sd)
+        for lod in range(3):
+            fernpalm(lod, sk).build("%s_lod%d" % (name, lod), MAT_ORDER)
     bush_round(0).build("bush_round_lod0", MAT_ORDER)
     bush_round(1).build("bush_round_lod1", MAT_ORDER)
     quill_like("frond", 14, (0.8, 1.35), (38, 72), 0.2, 91, segs=3, H=1.3).build("bush_quill_lod0", MAT_ORDER)

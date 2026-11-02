@@ -34,7 +34,8 @@ void vertex() {
 	float r = INSTANCE_CUSTOM.x;
 	vec3 base = mix(color_a, color_b, clamp(r * variation * 2.0, 0.0, 1.0));
 	float dry = clamp(dry_amount * (1.0 - INSTANCE_CUSTOM.z) * 1.6 - 0.15 + (fract(r * 7.13) - 0.5) * 0.3, 0.0, 1.0);
-	v_tint = mix(base, color_dry, dry * dry) * (0.85 + 0.3 * fract(r * 13.7)) * brightness;
+	v_tint = flora_region_tint(mix(base, color_dry, dry * dry), INSTANCE_CUSTOM.w, r)
+		* (0.85 + 0.3 * fract(r * 13.7)) * brightness;
 	v_ao = COLOR.b;
 	v_fol = COLOR.a;
 }

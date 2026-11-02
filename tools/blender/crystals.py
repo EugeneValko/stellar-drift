@@ -8,6 +8,7 @@ Objects (pivot at ground contact):
   crystal_cluster_b_lod0  5 large crystals (~4 m)
   ice_shard_a_lod0        cluster of tall irregular ice blades (~5 m)
   ice_shard_b_lod0        low wide shard field (~2 m)
+  ice_spire_lod0          penitente-like group of tall, thick ice blades leaning one way (4-10 m)
 Material slots: crystal, ice, rock (base). Vertex colour: r = AO, g = position along the crystal
 (0 base -> 1 tip; drives the glow gradient), b = per-crystal random, a = 1.
 """
@@ -116,6 +117,24 @@ def ice_cluster(seed, n, len_r, spread_deg, field_r):
     return mb
 
 
+def ice_spires(seed, n=8, len_r=(4.0, 10.0), field_r=2.6, lean_deg=10):
+    """Penitente-like group: tall, thick, tapering ice blades all leaning the same way (sun-carved)."""
+    rnd = random.Random(seed)
+    mb = MeshBuilder()
+    lean_a = rnd.uniform(0, 2 * math.pi)
+    lean = Vector((math.cos(lean_a), math.sin(lean_a), 0))
+    for k in range(n):
+        a = rnd.uniform(0, 2 * math.pi)
+        rr = field_r * math.sqrt(rnd.random()) if k else 0.0
+        base = Vector((math.cos(a) * rr, math.sin(a) * rr, 0))
+        tilt = math.radians(rnd.uniform(lean_deg * 0.5, lean_deg * 1.3))
+        d = (UP * math.cos(tilt) + lean * math.sin(tilt)).normalized()
+        L = rnd.uniform(*len_r) * (1 - 0.45 * rr / max(field_r, 1e-3))
+        prism(mb, base, d, L, L * rnd.uniform(0.12, 0.18), rnd.choice([4, 5, 5, 6]), "ice", rnd,
+              tip_len=rnd.uniform(0.45, 0.7), irregular=0.35, chip=0.8, ao_base=0.55)
+    return mb
+
+
 def main():
     out = out_path("assets/models/crystals.glb")
     reset_scene()
@@ -124,6 +143,7 @@ def main():
     crystal_cluster(9, 5, (2.2, 4.0), 0.11, 35, 1.3).build("crystal_cluster_b_lod0", order)
     ice_cluster(13, 9, (2.0, 5.5), 28, 1.4).build("ice_shard_a_lod0", order)
     ice_cluster(17, 12, (0.6, 2.0), 45, 1.8).build("ice_shard_b_lod0", order)
+    ice_spires(23).build("ice_spire_lod0", order)
     export_glb(os.path.abspath(out))
 
 

@@ -90,6 +90,28 @@ enum PlanetType { ROCKY, EARTHLIKE, ICE, VOLCANIC, MOON }
 ## Dark low-lying plains on moons (0..1).
 @export var maria_strength := 0.0
 
+@export_group("Rivers & coasts")
+## River valley network (warped |noise| channels carved into land, deeper in mountains).
+## Wavelength of the network (m); 0 = no rivers.
+@export var river_scale := 0.0
+## Max cut of a valley (m) on lowlands; grows with the height of the land it cuts through.
+@export var river_depth := 0.0
+## Channel half width in noise units (valley sides are ~5x wider).
+@export var river_width := 0.012
+## Coastal cliffs: height (m) of the step behind the coast where the regional cliff noise is high.
+@export var coast_cliff_height := 0.0
+## Low step (m) right behind the waterline on every coast: keeps beaches a narrow band instead of
+## kilometre-wide sand flats on gentle coastal plains.
+@export var coast_berm := 0.0
+## Archipelagos / lagoons: amplitude of small-scale continent noise near the coastline (noise units).
+@export var island_amount := 0.0
+@export var island_scale := 6000.0
+
+@export_group("Moon features")
+## Young bright-ray craters (explicit list from the seed): count and radius range (m).
+@export var ray_craters := 0
+@export var ray_crater_radius := Vector2(250.0, 900.0)
+
 @export_group("Climate")
 @export var moisture_scale := 25000.0
 @export var moisture_bias := 0.0
@@ -114,6 +136,25 @@ enum PlanetType { ROCKY, EARTHLIKE, ICE, VOLCANIC, MOON }
 @export var color_snow := Color(0.92, 0.94, 0.98)
 @export var color_lava := Color(1.0, 0.32, 0.05)
 @export var lava_intensity := 0.0         ## emission multiplier; 0 = no lava
+## Surface look (terrain shader): 0 = generic / Earth-like, 1 = Ignis (basalt, lava, ash, sulfur vents),
+## 2 = Vex (Io-like sulfur), 3 = Glacia (ice cliffs, crevasses, sastrugi), 4 = Selene (regolith, rays),
+## 5 = Nyx (dark, glowing crystal veins).
+@export_range(0, 5) var surface_style := 0
+## Extra biome colours (Earth-like): cold tundra, warm savanna, river / lake water.
+@export var color_tundra := Color(0.42, 0.4, 0.3)
+@export var color_savanna := Color(0.62, 0.55, 0.3)
+@export var color_water := Color(0.03, 0.08, 0.1)
+## Regional alternative forest canopies (alien touch) and their share (0..1).
+@export var color_forest_b := Color(0.22, 0.12, 0.24)
+@export var color_forest_c := Color(0.06, 0.22, 0.22)
+@export var alien_forest := 0.0
+## Regional alternative sand (coloured beaches / dunes) and its share (0..1).
+@export var color_sand_b := Color(0.82, 0.62, 0.56)
+@export var sand_variety := 0.0
+## Style accent colour: sulfur (Ignis / Vex), crystal glow (Nyx), crevasse blue (Glacia).
+@export var color_accent := Color(0.9, 0.8, 0.2)
+## Near-ground stone cover (0..1) and detail strength multipliers.
+@export var stone_amount := 0.5
 ## Strength of rock strata banding in cliffs (0..1).
 @export var strata_strength := 0.3
 ## Albedo contrast of macro (orbit-scale) variation (0..1).

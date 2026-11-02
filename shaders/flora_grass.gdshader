@@ -27,12 +27,15 @@ uniform float glow_energy = 1.5;
 uniform float bend = 0.18;          // m of tip bend at full gust
 uniform float flutter_amp = 0.03;
 uniform float translucency = 0.6;
+// Flowers: one colour per patch of this size (m) for most plants -> drifts of colour, not confetti.
+uniform float patch_scale = 0.0;
 
 varying float v_t;
 varying float v_g;
 varying float v_ao;
 varying vec3 v_col;
 varying float v_rnd;
+varying float v_night;
 
 void vertex() {
 	vec3 inst = MODEL_MATRIX[3].xyz;
@@ -50,11 +53,17 @@ void vertex() {
 	v_g = COLOR.g;
 	v_ao = COLOR.b;
 	v_rnd = COLOR.a;
+	v_night = flora_night(up);
 	float moist = INSTANCE_CUSTOM.z;
 	vec3 g = mix(color_dry, color_grass, smoothstep(0.25, 0.6, moist));
 	g *= 0.82 + 0.36 * fract(INSTANCE_CUSTOM.x * 5.31);
 	if (mode == 1) {
-		float k = fract(INSTANCE_CUSTOM.x * 3.7) * 4.0;
+		float k = fract(INSTANCE_CUSTOM.x * 3.7);
+		if (patch_scale > 0.0 && fract(INSTANCE_CUSTOM.x * 11.3) < 0.8) {
+			vec3 pp = patch_origin + (inst - NODE_POSITION_WORLD);
+			k = flora_hash(floor(pp.xz / patch_scale) + floor(pp.y / patch_scale) * vec2(7.1, 3.3));
+		}
+		k *= 4.0;
 		vec3 fc = k < 1.0 ? flower_a : (k < 2.0 ? flower_b : (k < 3.0 ? flower_c : flower_d));
 		g = fc;
 	}
@@ -77,12 +86,16 @@ void fragment() {
 		c = mix(c, color_tip_dry * brightness, smoothstep(0.55, 1.0, v_t) * tip_dryness * (0.5 + v_rnd));
 		// slight midrib highlight across the blade
 		c *= 0.9 + 0.2 * (1.0 - abs(UV.x - 0.5) * 2.0);
+		// per-blade hue variation: yellow-green, blue-green, a few bronze blades
+		c *= mix(vec3(0.88, 1.04, 0.9), vec3(1.14, 1.06, 0.72), v_rnd);
+		c = mix(c, c * vec3(1.3, 0.85, 0.6), step(0.93, v_rnd) * smoothstep(0.3, 1.0, v_t));
 	} else if (mode == 1) {
 		c = mix(flower_center, c, smoothstep(0.2, 0.45, v_g));
 		c *= 0.85 + 0.25 * v_g;
 	} else {
 		c = mix(glow_color * 0.4, vec3(0.9, 1.0, 0.95), v_g * 0.2);
-		emit = glow_color * glow_energy * (0.35 + 0.65 * v_g);
+		// bioluminescent bulbs: a faint glow by day, the main light source of a meadow at night
+		emit = glow_color * glow_energy * (0.35 + 0.65 * v_g) * (0.45 + 2.2 * v_night);
 	}
 	c = max(c, vec3(0.0));
 	ALBEDO = c;

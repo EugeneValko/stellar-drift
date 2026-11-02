@@ -53,6 +53,11 @@ extends Resource
 @export var align_to_normal := 0.0
 ## Pushed into the ground by sink * scale (m).
 @export var sink := 0.0
+## Extra random height (Y) scale: +-fraction (trees / grass of different heights).
+@export var height_jitter := 0.0
+## Flora: encode the alien canopy region (ScatterBiome alien_b / alien_c) into INSTANCE_CUSTOM.w
+## (= snow + 2 * region); flora shaders tint with region_tint_b / region_tint_c.
+@export var tint_regions := false
 
 @export_group("Rendering")
 @export var cast_shadows := true

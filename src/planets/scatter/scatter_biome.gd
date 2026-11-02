@@ -12,7 +12,7 @@ extends RefCounted
 ## WorkerThreadPool tasks concurrently.
 
 const ATTRS: Array[String] = ["height", "slope", "moist", "forest", "snow", "rock", "desert", "beach",
-	"lava", "ice", "lat"]
+	"lava", "ice", "lat", "river", "temp", "savanna", "tundra", "alien_b", "alien_c", "scree"]
 const A_HEIGHT := 0
 const A_SLOPE := 1
 const A_MOIST := 2
@@ -24,7 +24,14 @@ const A_BEACH := 7
 const A_LAVA := 8
 const A_ICE := 9
 const A_LAT := 10
-const COUNT := 11
+const A_RIVER := 11
+const A_TEMP := 12
+const A_SAVANNA := 13
+const A_TUNDRA := 14
+const A_ALIEN_B := 15
+const A_ALIEN_C := 16
+const A_SCREE := 17
+const COUNT := 18
 
 var gen: TerrainGenerator
 var radius := 1.0
@@ -34,6 +41,9 @@ var snow_line := 4000.0
 var polar_snow := 0.75
 var beach_width := 25.0
 var is_ice := false
+var has_lava := false
+var alien_forest := 0.0
+var earthlike := true
 
 var _tex := PackedByteArray()
 var _size := 512
@@ -47,7 +57,10 @@ func _init(generator: TerrainGenerator, cfg: PlanetConfig) -> void:
 	snow_line = cfg.snow_line
 	polar_snow = cfg.polar_snow
 	beach_width = cfg.beach_width
-	is_ice = cfg.type == PlanetConfig.PlanetType.ICE
+	is_ice = cfg.surface_style == 3 or cfg.type == PlanetConfig.PlanetType.ICE
+	has_lava = cfg.lava_intensity > 0.0
+	alien_forest = cfg.alien_forest
+	earthlike = cfg.surface_style == 0
 	_tex = _noise_data()
 
 
@@ -114,7 +127,9 @@ func evaluate_into(out: PackedFloat32Array, offset: int, d: Vector3, h: float, r
 	var lat := absf(d.y)
 	var slope := 1.0 - clampf(n.dot(d), 0.0, 1.0)
 	var wd := tri_w(d)
-	var macro := tri(d * (radius / 24000.0), wd, 0) * 0.6 + tri(d * (radius / 90000.0), wd, 0) * 0.4 - 0.5
+	var pm1 := d * (radius / 24000.0)
+	var pm2 := d * (radius / 90000.0)
+	var macro := tri(pm1, wd, 0) * 0.6 + tri(pm2, wd, 0) * 0.4 - 0.5
 	var p := d * (radius + h) / 2048.0
 	var w := tri_w(n)
 	var n2 := tri(p, w, 0) - 0.5
@@ -131,9 +146,25 @@ func evaluate_into(out: PackedFloat32Array, offset: int, d: Vector3, h: float, r
 	if polar_snow > 0.01:
 		var cap := smoothstep(0.9, 0.95, lat + macro * 0.12 + n2 * 0.06)
 		snow = maxf(snow, cap * (1.0 - rock_slope * 0.6))
+	var temp := 1.0 - lat * lat * 1.3 - maxf(hb, 0.0) / maxf(snow_line, 1.0) * 0.6 + macro * 0.3 + n2 * 0.15
 	var desert := smoothstep(0.32, 0.12, moist + n2 * 0.1)
+	var savanna := smoothstep(0.2, 0.32, moist + n2 * 0.1) * smoothstep(0.5, 0.38, moist + n2 * 0.1) \
+		* smoothstep(0.45, 0.65, temp)
+	var tundra := smoothstep(0.4, 0.2, temp) * (1.0 - snow)
+	if not earthlike:
+		savanna = 0.0   # Earth-like climate zones only (shader: surface_style != 0)
+		tundra = 0.0
 	var forest := smoothstep(0.5, 0.7, moist + macro * 0.2) \
 		* (1.0 - smoothstep(snow_h * 0.45, snow_h * 0.7, hb)) * (1.0 - smoothstep(0.25, 0.4, slope))
+	forest *= 1.0 - tundra * 0.65
+	var alien_b := 0.0
+	var alien_c := 0.0
+	if alien_forest > 0.0:
+		alien_b = smoothstep(0.72, 0.8, tri(pm1, wd, 2) + n2 * 0.1) * alien_forest
+		alien_c = smoothstep(0.36, 0.28, tri(pm2, wd, 3) + n2 * 0.1) * alien_forest * (1.0 - alien_b)
+	# scree aprons (mean of the shader's noise-broken mask; curvature is not known here)
+	var scree := smoothstep(0.06, 0.14, slope) * (1.0 - rock_slope) \
+		* clampf(alpine * 1.2 + rock_mask * 1.4, 0.0, 1.0) * (1.0 - snow)
 	var beach := 0.0
 	if has_ocean:
 		var bw := beach_width * (1.0 + n2 * 1.2)
@@ -151,9 +182,16 @@ func evaluate_into(out: PackedFloat32Array, offset: int, d: Vector3, h: float, r
 	out[offset + 5] = rock
 	out[offset + 6] = desert
 	out[offset + 7] = beach
-	out[offset + 8] = lava_mask
+	out[offset + 8] = lava_mask if has_lava else 0.0
 	out[offset + 9] = ice
 	out[offset + 10] = lat
+	out[offset + 11] = 0.0 if has_lava else lava_mask
+	out[offset + 12] = temp
+	out[offset + 13] = savanna
+	out[offset + 14] = tundra
+	out[offset + 15] = alien_b
+	out[offset + 16] = alien_c
+	out[offset + 17] = scree
 
 
 ## Convenience (main thread / tools): attributes at a direction, normal from 3 height samples.

@@ -11,9 +11,12 @@ Objects (pivot at ground contact, ~1 m nominal size unless noted; scaled per ins
   pebbles_lod0       scattered small stones (ground detail, ~1.5 m footprint)
   volcanic_a_lod0/1  jagged porous lava rock
   volcanic_b_lod0/1  tall spiky lava spire
-  basalt_a_lod0      basalt column cluster (~5 m wide, columns up to 4 m)
-  basalt_b_lod0      broken low basalt "pavement" with a few standing columns
-Material slots: rock, basalt. Vertex colour: r = baked AO, g = 0, b = variant random, a = 1.
+  basalt_a_lod0/1    basalt column cluster (~5 m wide, columns up to 4 m): bevelled, chipped tops
+  basalt_b_lod0/1    broken low basalt "pavement" with a few standing columns
+  scree_lod0/1       angular talus stones (~4 m footprint) for scree aprons / rock-fall
+  tor_lod0/1         stacked, fractured block outcrop (~2.5 m tall)
+Material slots: rock, basalt. Vertex colour: r = baked AO, g = up-facing "top" mask (basalt column
+tops, weathered ledges), b = variant random, a = 1.
 """
 import bmesh
 import bpy
@@ -96,8 +99,11 @@ def finish(ob, variant, ao_dist=0.8, ao_strength=1.1):
     me = ob.data
     col = me.color_attributes.new("Col", 'FLOAT_COLOR', 'CORNER')
     me.color_attributes.active_color = col
-    for i in range(len(col.data)):
-        col.data[i].color = (1.0, 0.0, variant, 1.0)
+    me.calc_loop_triangles()
+    for poly in me.polygons:
+        top = max(0.0, min(1.0, (poly.normal.z - 0.55) / 0.35))
+        for li in poly.loop_indices:
+            col.data[li].color = (1.0, top, variant, 1.0)
     bake_ao(ob, channel=0, rays=20, dist=ao_dist, strength=ao_strength)
     print("[asset] %-22s %5d tris" % (ob.name, tri_count(ob)))
 
@@ -135,14 +141,16 @@ def merge_bms(parts):
     return out
 
 
-def basalt(rnd, radius=2.6, hmax=4.0, pavement=False):
-    """Hexagonal columns on a hex lattice; heights from a sloped noise field."""
+def basalt(rnd, radius=2.6, hmax=4.0, pavement=False, lod=0):
+    """Hexagonal columns on a hex lattice; heights from a sloped noise field. Tops are bevelled
+    (inset chamfer ring), some corners chipped off, some columns broken / leaning."""
     bm = bmesh.new()
     sp = 0.62
-    a = sp / math.sqrt(3) * 0.96   # hex circumradius (small gap)
+    a = sp / math.sqrt(3) * 0.95   # hex circumradius (small gap)
     rows = int(radius / sp) + 2
     off = Vector((rnd.uniform(0, 50), rnd.uniform(0, 50), 0))
     tilt_dir = Vector((rnd.uniform(-1, 1), rnd.uniform(-1, 1), 0)).normalized()
+    lean_dir = Vector((rnd.uniform(-1, 1), rnd.uniform(-1, 1), 0)).normalized()
     for j in range(-rows, rows + 1):
         for i in range(-rows, rows + 1):
             cx = (i + 0.5 * (j & 1)) * sp
@@ -153,33 +161,53 @@ def basalt(rnd, radius=2.6, hmax=4.0, pavement=False):
                 continue
             n = noise.noise(c * 0.6 + off)
             if pavement:
-                h = 0.25 + 0.25 * rnd.random() + (2.2 * rnd.random() if rnd.random() < 0.12 else 0.0)
+                h = 0.22 + 0.28 * rnd.random() + (2.2 * rnd.random() if rnd.random() < 0.12 else 0.0)
             else:
                 h = hmax * (1.0 - d * 0.75) * (0.75 + 0.35 * n) + c.dot(tilt_dir) * 0.35
-                if rnd.random() < 0.15:
-                    h *= rnd.uniform(0.35, 0.7)   # broken column
+                if rnd.random() < 0.18:
+                    h *= rnd.uniform(0.3, 0.7)   # broken column
             h = max(0.18, h)
-            # each column: hex prism with a slightly tilted top
-            tilt = Vector((rnd.uniform(-0.08, 0.08), rnd.uniform(-0.08, 0.08)))
-            ar = a * rnd.uniform(0.92, 1.0)
-            bot = []
-            top = []
-            rot = rnd.uniform(-0.05, 0.05)
+            tilt = Vector((rnd.uniform(-0.12, 0.12), rnd.uniform(-0.12, 0.12)))
+            if rnd.random() < 0.25:
+                tilt *= 2.5                       # snapped, slanted top
+            ar = a * rnd.uniform(0.9, 1.0)
+            rot = rnd.uniform(-0.06, 0.06)
+            lean = lean_dir * (h * 0.03 * rnd.random()) if not pavement else Vector((0, 0, 0))
+            bev = min(0.06, h * 0.2) * rnd.uniform(0.6, 1.3)
+            bot, mid, top = [], [], []
             for k in range(6):
                 ang = math.pi / 6 + k * math.pi / 3 + rot
-                q = c + Vector((math.cos(ang), math.sin(ang), 0)) * ar
-                bot.append(bm.verts.new(Vector((q.x, q.y, -0.3))))
+                dirk = Vector((math.cos(ang), math.sin(ang), 0))
+                q = c + dirk * ar * rnd.uniform(0.97, 1.03)
                 dz = (q.x - c.x) * tilt.x + (q.y - c.y) * tilt.y
-                top.append(bm.verts.new(Vector((q.x, q.y, h + dz))))
+                chip = 0.0
+                # (random numbers drawn on every LOD so both LODs share one layout)
+                chip_r, chip_v = rnd.random(), rnd.uniform(0.06, 0.22)
+                if lod == 0 and chip_r < 0.22:
+                    chip = chip_v                    # chipped corner
+                bot.append(bm.verts.new(Vector((q.x, q.y, -0.3))))
+                qm = q + lean
+                if lod == 0:
+                    mid.append(bm.verts.new(Vector((qm.x, qm.y, h + dz - bev - chip))))
+                    qt = c + lean + dirk * (ar - bev * 1.2 - chip * 0.6)
+                    top.append(bm.verts.new(Vector((qt.x, qt.y, h + dz - chip * 0.4))))
+                else:
+                    mid.append(bm.verts.new(Vector((qm.x, qm.y, h + dz - bev * 0.5))))
             for k in range(6):
                 k2 = (k + 1) % 6
-                bm.faces.new([bot[k], bot[k2], top[k2], top[k]])
-            # chamfered top: inner ring raised slightly
-            ctr = bm.verts.new(c + Vector((0, 0, h + 0.03)))
+                bm.faces.new([bot[k], bot[k2], mid[k2], mid[k]])
+                if lod == 0:
+                    bm.faces.new([mid[k], mid[k2], top[k2], top[k]])     # chamfer
+            ctr = bm.verts.new(c + lean + Vector((0, 0, h + rnd.uniform(-0.02, 0.03))))
+            cap = top if lod == 0 else mid
             for k in range(6):
-                bm.faces.new([top[k], top[(k + 1) % 6], ctr])
+                bm.faces.new([cap[k], cap[(k + 1) % 6], ctr])
     bm.normal_update()
     return bm
+
+
+def angular(rnd, scale=(1, 0.8, 0.6)):
+    return hull_rock(rnd, 10, scale, 0.015, 3.0, sharp=0.5, subdiv=0, flat_bottom=0.2)
 
 
 def main():
@@ -229,10 +257,44 @@ def main():
     make_lods("volcanic_b", lambda: hull_rock(R(), 18, (0.55, 0.5, 1.6), 0.07, 2.2, sharp=1.0, pits=0.4,
                                               subdiv=2, flat_bottom=0.05), 560, 130, 0.7)
 
-    ob = bm_to_obj(basalt(R()), "basalt_a_lod0", "basalt")
-    finish(ob, 0.3, ao_dist=1.2, ao_strength=1.0)
-    ob = bm_to_obj(basalt(R(), radius=3.0, pavement=True), "basalt_b_lod0", "basalt")
-    finish(ob, 0.7, ao_dist=1.0, ao_strength=1.0)
+    for nm, kw, var in (("basalt_a", {}, 0.3), ("basalt_b", {"radius": 3.0, "pavement": True}, 0.7)):
+        sd = seed[0] + 17
+        seed[0] = sd
+        ob = bm_to_obj(basalt(random.Random(sd), lod=0, **kw), nm + "_lod0", "basalt")
+        finish(ob, var, ao_dist=1.2, ao_strength=1.0)
+        ob = bm_to_obj(basalt(random.Random(sd), lod=1, **kw), nm + "_lod1", "basalt")
+        finish(ob, var, ao_dist=1.2, ao_strength=1.0)
+
+    def scree():
+        rnd = R()
+        parts = []
+        for k in range(26):
+            a = rnd.uniform(0, 6.28)
+            r = 2.0 * math.sqrt(rnd.random())
+            s = rnd.uniform(0.07, 0.32) * (1.25 - 0.4 * r / 2.0)
+            parts.append((angular(rnd, (1, rnd.uniform(0.6, 0.95), rnd.uniform(0.4, 0.75))),
+                          Vector((math.cos(a) * r, math.sin(a) * r, 0)), s, rnd.uniform(0, 6.28)))
+        return merge_bms(parts)
+    make_lods("scree", scree, 700, 200, 0.45, ao_dist=0.5)
+
+    def tor():
+        rnd = R()
+        parts = []
+        z = 0.0
+        for k in range(4):
+            sx = rnd.uniform(0.75, 1.15) * (1.0 - k * 0.12)
+            hh = rnd.uniform(0.35, 0.6)
+            b = hull_rock(rnd, 16, (sx, sx * rnd.uniform(0.7, 0.95), hh), 0.025, 2.4, sharp=0.35, subdiv=1,
+                          flat_bottom=0.3)
+            parts.append((b, Vector((rnd.uniform(-0.15, 0.15), rnd.uniform(-0.15, 0.15), z)), 1.0,
+                          rnd.uniform(0, 6.28)))
+            z += hh * 1.25
+        for k in range(5):
+            a = rnd.uniform(0, 6.28)
+            r = rnd.uniform(1.0, 1.7)
+            parts.append((angular(rnd), Vector((math.cos(a) * r, math.sin(a) * r, 0)), rnd.uniform(0.15, 0.35), 0))
+        return merge_bms(parts)
+    make_lods("tor", tor, 900, 240, 0.9, ao_dist=1.0)
     for o in bpy.data.objects:
         for p in o.data.polygons:
             p.use_smooth = o.data.materials[0].name != "basalt"

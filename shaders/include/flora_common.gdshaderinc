@@ -3,7 +3,8 @@
 // Instances come from MultiMeshInstance3D patches (src/planets/scatter/planet_scatter.gd):
 //   MODEL_MATRIX  = patch * instance transform; instance local +Y = planet up at the instance
 //   INSTANCE_CUSTOM x = random (colour variation / thinning rank), y = random (wind phase),
-//                   z = biome moisture (0..1), w = biome snow / cover (0..1)
+//                   z = biome moisture (0..1), w = biome snow / cover (0..1); layers with
+//                   ScatterLayer.tint_regions: w = snow + 2 * canopy region (0 none, 1 = b, 2 = c)
 // Per-patch instance uniforms (set by PlanetScatter):
 //   fade_range  (in_begin, in_end, out_begin, out_end) distance fade per instance, metres from camera
 //   thin_range  (begin, end, keep_at_end) distance thinning: instances whose rank > keep shrink away
@@ -17,7 +18,16 @@ instance uniform vec3 patch_origin = vec3(0.0);
 // Nominal mesh height (m) of the layer; wind sway amplitude scales with it (and the instance scale).
 instance uniform float sway_height = 10.0;
 
+#include "res://shaders/include/sun_globals.gdshaderinc"
+
 uniform vec3 wind_dir = vec3(1.0, 0.0, 0.35);
+// Regional canopy colours (alien forests; ScatterBiome alien_b / alien_c), strength 0 = off.
+uniform vec3 region_tint_b : source_color = vec3(0.36, 0.16, 0.42);
+uniform vec3 region_tint_c : source_color = vec3(0.08, 0.38, 0.36);
+uniform float region_strength = 0.0;
+// Bioluminescence at night (0 = off): emission colour * energy on a share of the instances.
+uniform vec3 night_glow_color : source_color = vec3(0.25, 0.9, 0.85);
+uniform float night_glow = 0.0;
 uniform float wind_strength = 1.0;
 uniform float wind_speed = 1.0;
 
@@ -32,6 +42,27 @@ float flora_ign(vec2 frag) {
 
 float flora_ramp(float a, float b, float x) {
 	return b > a ? smoothstep(a, b, x) : 1.0;
+}
+
+// Canopy region code from INSTANCE_CUSTOM.w (0 none, 1, 2).
+int flora_region(float w) {
+	return int(floor(w * 0.5 + 0.001));
+}
+
+// Tint a base colour toward the instance's canopy region colour (keeps its brightness variation).
+vec3 flora_region_tint(vec3 c, float w, float r) {
+	int reg = flora_region(w);
+	if (reg == 0 || region_strength <= 0.0) {
+		return c;
+	}
+	vec3 t = reg == 1 ? region_tint_b : region_tint_c;
+	float lum = dot(c, vec3(0.3, 0.55, 0.15)) / max(dot(t, vec3(0.3, 0.55, 0.15)), 1e-3);
+	return mix(c, t * lum * (0.85 + 0.3 * fract(r * 3.3)), region_strength);
+}
+
+// 0 by day, 1 at night (sun below the local horizon) for an instance with world `up`.
+float flora_night(vec3 up) {
+	return smoothstep(0.04, -0.12, dot(up, sd_sun_dir()));
 }
 
 // Per-instance visibility (0 = hidden, 1 = fully shown) from distance to camera.

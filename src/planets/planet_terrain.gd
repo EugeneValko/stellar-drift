@@ -120,6 +120,8 @@ func setup(cfg: PlanetConfig, mat: Material) -> void:
 	clear()
 	config = cfg
 	material = mat
+	if mat is ShaderMaterial:
+		apply_style_params(cfg, mat as ShaderMaterial)
 	generator = TerrainGenerator.new(cfg)
 	var edge0 := cfg.radius * PI * 0.5
 	var quad0 := edge0 / float(TerrainGenerator.GRID - 1)
@@ -133,6 +135,36 @@ func setup(cfg: PlanetConfig, mat: Material) -> void:
 		_init_node(n)
 		_roots.append(n)
 	_ready_to_run = true
+
+
+## Wave 4 surface-look uniforms of planet_terrain.gdshader (beyond Planet.create_terrain_material's
+## basic palette): style, extra biome colours, near-ground textures (assets/textures/*.png).
+static func apply_style_params(cfg: PlanetConfig, m: ShaderMaterial) -> void:
+	m.set_shader_parameter("surface_style", cfg.surface_style)
+	for k in ["tundra", "savanna", "water", "forest_b", "forest_c", "sand_b", "accent"]:
+		m.set_shader_parameter("color_" + k, cfg.get("color_" + k))
+	m.set_shader_parameter("alien_forest", cfg.alien_forest)
+	m.set_shader_parameter("sand_variety", cfg.sand_variety)
+	m.set_shader_parameter("stone_amount", cfg.stone_amount)
+	m.set_shader_parameter("has_rivers", cfg.river_scale > 0.0 and cfg.lava_intensity <= 0.0)
+	for t in GROUND_TEXTURES:
+		m.set_shader_parameter(t, GROUND_TEXTURES[t])
+	# debug / tuning in captures: --tu_<uniform>=<value> (every terrain), e.g. --tu_debug_view=1
+	var tree := Engine.get_main_loop() as SceneTree
+	var cap: Node = tree.root.get_node_or_null("Capture") if tree else null
+	if cap and cap.get("args") is Dictionary:
+		for k: String in cap.args:
+			if k.begins_with("tu_"):
+				m.set_shader_parameter(k.substr(3), str_to_var(cap.args[k]))
+
+
+const GROUND_TEXTURES := {
+	"tex_ground": preload("res://assets/textures/ground_detail.png"),
+	"tex_ground_n": preload("res://assets/textures/ground_normal.png"),
+	"tex_ripple": preload("res://assets/textures/ripples.png"),
+	"tex_ripple_n": preload("res://assets/textures/ripples_normal.png"),
+	"tex_dune_n": preload("res://assets/textures/dunes_normal.png"),
+}
 
 
 func clear() -> void:

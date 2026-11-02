@@ -7,8 +7,8 @@
 script = ExtResource("1_2wtxj")
 name = "basalt"
 model = "res://assets/models/rocks.glb"
-meshes = PackedStringArray("basalt_a_lod0")
-lod_distances = PackedFloat32Array()
+meshes = PackedStringArray("basalt_a_lod0", "basalt_a_lod1")
+lod_distances = PackedFloat32Array(90)
 cell_size = 192.0
 max_distance = 550.0
 fade_length = 70.0
@@ -33,8 +33,8 @@ collision = 3
 script = ExtResource("1_2wtxj")
 name = "basalt_pavement"
 model = "res://assets/models/rocks.glb"
-meshes = PackedStringArray("basalt_b_lod0")
-lod_distances = PackedFloat32Array()
+meshes = PackedStringArray("basalt_b_lod0", "basalt_b_lod1")
+lod_distances = PackedFloat32Array(80)
 cell_size = 192.0
 max_distance = 500.0
 fade_length = 60.0
@@ -186,16 +186,72 @@ align_to_normal = 0.9
 sink = 0.02
 cast_shadows = false
 
+[sub_resource type="Resource" id="Resource_62456"]
+script = ExtResource("1_2wtxj")
+name = "scree"
+model = "res://assets/models/rocks.glb"
+meshes = PackedStringArray("scree_lod0", "scree_lod1")
+lod_distances = PackedFloat32Array(60)
+max_distance = 260.0
+grid_res = 6
+exact_height = true
+density = 0.02
+rules = {
+"slope": Vector3(0.06, 0.4, 0.06)
+}
+cluster_scale = 40.0
+cluster_threshold = -0.1
+seed = 215
+scale_range = Vector2(0.7, 1.5)
+align_to_normal = 0.85
+sink = 0.05
+shadow_distance = 80.0
+
+[sub_resource type="Resource" id="Resource_yw17d"]
+script = ExtResource("1_2wtxj")
+name = "sulfur"
+model = "res://assets/models/crystals.glb"
+meshes = PackedStringArray("crystal_cluster_a_lod0")
+lod_distances = PackedFloat32Array()
+cell_size = 96.0
+max_distance = 300.0
+grid_res = 6
+exact_height = true
+density = 0.02
+rules = {
+"lava": Vector3(0.05, 0.4, 0.06),
+"slope": Vector3(-1, 0.4, 0.1)
+}
+cluster_scale = 40.0
+cluster_threshold = 0.15
+seed = 217
+scale_range = Vector2(0.15, 0.4)
+max_tilt_deg = 25.0
+align_to_normal = 0.6
+sink = 0.05
+shadow_distance = 60.0
+material_overrides = {
+"crystal": {
+"color_body": Color(0.42, 0.37, 0.14, 1),
+"color_glow": Color(0.9, 0.75, 0.2, 1),
+"color_rim": Color(0.8, 0.7, 0.3, 1),
+"glow_energy": 0.06,
+"roughness": 0.6
+}
+}
+
 [resource]
 script = ExtResource("2_uqnqs")
-layers = Array[ExtResource("1_2wtxj")]([SubResource("Resource_dvewm"), SubResource("Resource_7u5vf"), SubResource("Resource_y76vd"), SubResource("Resource_cuciy"), SubResource("Resource_n2irh"), SubResource("Resource_uqwg3"), SubResource("Resource_7yrq1")])
+layers = Array[ExtResource("1_2wtxj")]([SubResource("Resource_dvewm"), SubResource("Resource_7u5vf"), SubResource("Resource_y76vd"), SubResource("Resource_cuciy"), SubResource("Resource_n2irh"), SubResource("Resource_uqwg3"), SubResource("Resource_7yrq1"), SubResource("Resource_62456"), SubResource("Resource_yw17d")])
 material_params = {
 "basalt": {
-"color_a": Color(0.24, 0.21, 0.2, 1),
-"color_b": Color(0.11, 0.1, 0.1, 1),
+"color_a": Color(0.3, 0.27, 0.25, 1),
+"color_b": Color(0.15, 0.14, 0.13, 1),
 "color_cover": Color(0.35, 0.18, 0.1, 1),
 "cover_amount": 0.35,
-"snow_amount": 0.0
+"snow_amount": 0.0,
+"top_amount": 0.5,
+"top_color": Color(0.42, 0.36, 0.31, 1)
 },
 "crystal": {
 "color_body": Color(0.3, 0.04, 0.06, 1),

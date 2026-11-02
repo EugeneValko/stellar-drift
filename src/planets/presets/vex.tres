@@ -61,3 +61,6 @@ color_lava = Color(1, 0.38, 0.06, 1)
 lava_intensity = 6.0
 strata_strength = 0.2
 macro_variation = 0.6
+surface_style = 2
+color_accent = Color(0.95, 0.85, 0.3, 1)
+stone_amount = 0.5
