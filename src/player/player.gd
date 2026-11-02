@@ -19,6 +19,8 @@ extends CharacterBody3D
 
 signal camera_mode_changed(third_person: bool)
 signal landed(fall_speed: float)
+## Each footfall (audio): surface kind from GroundInfo ("sand", "grass", "rock", "snow", "water").
+signal footstep(surface: String, sprint: bool)
 
 const MODEL_LAYER := 1 << 19   # visual layer 20: own body, hidden from the first-person camera
 
@@ -446,7 +448,16 @@ func _update_feedback(dt: float, grounded: bool) -> void:
 		_step_side = 1 - _step_side
 		var d := _dust[_step_side]
 		d.global_transform = Transform3D(global_basis, global_position + global_basis.x * (0.14 if _step_side == 1 else -0.14))
+		var gi := GroundInfo.sample(Universe.get_dominant_body(global_position), global_position)
+		var gc: Color = gi["color"]
+		# puffs of the local loose material (none on snow/grass: just a faint kick)
+		var pa := 0.22 if gi["kind"] in ["sand", "rock"] else 0.1
+		var grad := d.color_ramp
+		if grad:
+			grad.set_color(0, Color(gc.r, gc.g, gc.b, pa))
+			grad.set_color(1, Color(gc.r, gc.g, gc.b, 0.0))
 		d.restart()
+		footstep.emit(String(gi["kind"]), hs > walk_speed + 0.5)
 
 
 func _build_dust() -> void:

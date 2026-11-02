@@ -13,10 +13,20 @@ extends Node3D
 ##     ignis_orbit, glacia_orbit, selene_orbit, vex_orbit)
 ## Extra args: --fov=<deg>, --exposure=<x> (manual), --no_shadows, --quality=0..2,
 ##   --start=<preset> (gameplay start in another state, e.g. --start=orbit_chase),
-##   --no_game (system only, free camera), --bench=<frames>.
+##   --no_game (system only, free camera), --bench=<frames>,
+##   --demo=takeoff|landing (scripted flight for tools/movie.sh; synchronous load, no intro),
+##   --sync_load (skip the loading screen).
+## Wave 4 gameplay presets: takeoff_dust, reentry_game, landing_selene, warp_game, warp_dropout,
+##   cockpit_view, orbit_idle, pause_menu, loading_screen, intro (add --hud for the HUD).
+##
+## Session flow (game): LoadingScreen (progress per stage: sky, landing site, terrain per body,
+## vegetation, sound) while the world streams in over frames -> fade-in -> IntroCard
+## ("Terra Nova · система Helios") -> F1 hint. Esc -> PauseMenu. GameAudio synthesizes the sound
+## bank on a worker thread meanwhile.
 
 const GAME_PRESETS: Array[String] = ["start", "takeoff", "orbit_chase", "selene_landed_onfoot",
-	"warp_to_aurelion", "aurelion_arrival"]
+	"warp_to_aurelion", "aurelion_arrival", "takeoff_dust", "reentry_game", "landing_selene", "warp_game",
+	"warp_dropout", "cockpit_view", "orbit_idle", "pause_menu", "loading_screen", "intro"]
 
 @onready var world: Node3D = $World
 @onready var system: SolarSystem = $World/SolarSystem
@@ -34,13 +44,31 @@ var load_ms := 0
 ## Start site on Terra Nova (planet-local unit normal) and ship heading, chosen once.
 var start_site := Vector3.ZERO
 var start_heading := Vector3.ZERO
+var audio: GameAudio
+var pause: PauseMenu
+var loading: LoadingScreen
+var intro: IntroCard
+var _t0 := 0
 
 
 func _ready() -> void:
 	var t0 := Time.get_ticks_msec()
+	_t0 = t0
 	add_to_group("capture_target")
 	Universe.set_world_root(world)
 	system.set_environment(backdrop.environment)
+	pause = PauseMenu.new()
+	pause.name = "PauseMenu"
+	pause.enabled = false
+	add_child(pause)
+	intro = IntroCard.new()
+	intro.name = "IntroCard"
+	add_child(intro)
+	if not Capture.active or Capture.args.has("audio"):
+		audio = GameAudio.new()
+		audio.name = "Audio"
+		add_child(audio)
+		audio.setup(ship, game)
 	if Capture.args.has("no_shadows"):
 		system.shadows_enabled = false
 	if Capture.args.has("quality"):
@@ -61,9 +89,14 @@ func _ready() -> void:
 			apply_capture_preset(Capture.get_preset() if Capture.get_preset() != "" else "terra_orbit")
 		return
 	# gameplay session
-	_start_session(String(Capture.args.get("start", "start")) if not capture_drives else "")
-	load_ms = Time.get_ticks_msec() - t0
-	print("[main] session ready in %d ms" % load_ms)
+	if capture_drives or Capture.args.has("demo") or Capture.args.has("sync_load") or Capture.args.has("start"):
+		_start_session(String(Capture.args.get("start", "start")) if not capture_drives else "")
+		load_ms = Time.get_ticks_msec() - t0
+		print("[main] session ready in %d ms" % load_ms)
+		if Capture.args.has("demo"):
+			_run_demo.call_deferred(String(Capture.args["demo"]))
+	else:
+		_start_session_async()
 
 
 ## Bare-system mode (benchmarks, system capture presets): free camera, no ship/player.
@@ -727,11 +760,157 @@ func _start_session(then_preset: String) -> void:
 	if then_preset != "" and then_preset != "start":
 		await _game_preset(then_preset)
 	session_started.emit()
+	if audio:
+		audio.fade_target = 1.0
 	if Capture.active:
 		hud.fade_to(0.0, 0.0)
 	else:
+		pause.enabled = true
 		await get_tree().process_frame
 		hud.fade_to(0.0, 0.8)
+
+
+func _frames(n: int) -> void:
+	for i in n:
+		await get_tree().process_frame
+
+
+## Game start with the loading screen: the world is built over frames (workers keep running while
+## the screen animates), progress per stage; then fade-in, intro caption, F1 hint.
+func _start_session_async() -> void:
+	loading = LoadingScreen.new()
+	loading.name = "Loading"
+	add_child(loading)
+	hud.fade_to(1.0, 0.0)
+	hud.set_shown(false)
+	help.show_hint_on_start = false
+	help._hint.visible = false
+	loading.set_progress(0.02, "Звёзды и небо системы Helios")
+	(ship.camera_rig as ShipCameraRig).idle_orbit = false
+	await _frames(3)
+	loading.set_progress(0.05, "Место посадки · Terra Nova")
+	await _frames(1)
+	_place_start()
+	system.gameplay_body = ship
+	game.ensure_started()
+	_sync_ship_camera()
+	await _frames(1)
+	await _build_world_async(system.camera, func(p: float, txt: String) -> void:
+		loading.set_progress(0.07 + 0.86 * p, txt))
+	if audio:
+		var tw := Time.get_ticks_msec()
+		while not audio.is_ready() and Time.get_ticks_msec() - tw < 20000:
+			loading.set_progress(0.95, "Звук: синтез")
+			await get_tree().process_frame
+	loading.set_progress(1.0, "Готово")
+	started = true
+	_clear_start_weather.call_deferred()
+	await _frames(2)
+	load_ms = Time.get_ticks_msec() - _t0
+	print("[main] session ready in %d ms (loading screen)" % load_ms)
+	pause.enabled = true
+	session_started.emit()
+	(ship.camera_rig as ShipCameraRig).idle_time = 0.0
+	(ship.camera_rig as ShipCameraRig).idle_orbit = true
+	await loading.finish(0.7)
+	loading = null
+	hud.set_shown(true)
+	pause.enabled = true
+	if audio:
+		audio.fade_target = 1.0
+	await hud.fade_to(0.0, 1.8)
+	await intro.play("Terra Nova · система Helios", "STELLAR DRIFT")
+	help.show_hint(7.0)
+
+
+## Asynchronous version of SolarSystem.build_terrain_now(): every planet's LOD (focus last) and the
+## focus vegetation are refined level by level while frames keep rendering (the worker threads
+## build chunks between frames). Uses the terrain/scatter internals of build_until_stable() and
+## falls back to the blocking call if they ever change. on_progress(0..1, stage text).
+func _build_world_async(cam: Camera3D, on_progress: Callable) -> void:
+	system.process_frame(cam)
+	var recs: Array = []
+	for r in system.bodies:
+		if r.planet and r != system.focus:
+			recs.append(r)
+	if system.focus and system.focus.planet:
+		recs.append(system.focus)
+	var n := float(recs.size())
+	var i := 0.0
+	# the focus planet dominates the cost: 60 % of the bar, the others share 15 %
+	for r in recs:
+		var is_focus: bool = r == system.focus
+		var p0 := 0.15 * i / maxf(n - 1.0, 1.0) if not is_focus else 0.15
+		var span := 0.15 / maxf(n - 1.0, 1.0) if not is_focus else 0.6
+		var txt := "Рельеф · %s" % r.name
+		var tb := Time.get_ticks_msec()
+		var fb := Engine.get_process_frames()
+		await _terrain_async(r.planet.terrain, 60.0 if is_focus else 20.0, func(f: float) -> void:
+			on_progress.call(p0 + span * f, txt))
+		print("[load] terrain %s: %d ms, %d frames" % [r.name, Time.get_ticks_msec() - tb, Engine.get_process_frames() - fb])
+		i += 1.0
+	system.process_frame(cam)   # enables the focus vegetation
+	if system.focus and system.focus.scatter:
+		var tb := Time.get_ticks_msec()
+		var fb := Engine.get_process_frames()
+		await _scatter_async(system.focus.scatter, func(f: float) -> void:
+			on_progress.call(0.75 + 0.25 * f, "Растительность · %s" % system.focus.name))
+		print("[load] vegetation: %d ms, %d frames" % [Time.get_ticks_msec() - tb, Engine.get_process_frames() - fb])
+	on_progress.call(1.0, "Последние штрихи")
+	system.build_terrain_now(cam)   # everything idle by now: instant; snaps exposure / ambient
+
+
+func _terrain_async(t: PlanetTerrain, max_s: float, prog: Callable) -> void:
+	if not ("_jobs" in t and t.has_method("_update_tree") and t.has_method("_dispatch") and t.has_method("_collect")):
+		t.build_until_stable(max_s)
+		prog.call(1.0)
+		return
+	var t0 := Time.get_ticks_msec()
+	var built0: int = t.get("_built_total")
+	var est := 1.0
+	while true:
+		t.call("_update_tree", true)
+		t.call("_dispatch", true)
+		var jobs: Array = t.get("_jobs")
+		est = maxf(est, float(t.get("_built_total") - built0) + jobs.size() * 1.6 + 1.0)
+		while not jobs.is_empty():
+			t.call("_collect", 1 << 30, 70.0, true)
+			prog.call(clampf(float(t.get("_built_total") - built0) / est, 0.0, 0.98))
+			await get_tree().process_frame
+			jobs = t.get("_jobs")
+			if Time.get_ticks_msec() - t0 > max_s * 1000.0:
+				break
+		t.call("_update_tree", true)
+		if t.is_idle() or Time.get_ticks_msec() - t0 > max_s * 1000.0:
+			break
+	t.build_until_stable(5.0)   # finishes anything left (bodies, edge flags); instant when idle
+	prog.call(1.0)
+
+
+func _scatter_async(sc: PlanetScatter, prog: Callable) -> void:
+	if not ("_jobs" in sc and "_queue" in sc and sc.has_method("_dispatch") and sc.has_method("_collect") \
+			and sc.has_method("_scan") and sc.has_method("_update_focus")):
+		sc.build_until_stable(60.0)
+		prog.call(1.0)
+		return
+	if not bool(sc.get("_ready_to_run")):
+		prog.call(1.0)
+		return
+	var t0 := Time.get_ticks_msec()
+	sc.call("_update_focus")
+	sc.call("_scan", true)
+	var total := float((sc.get("_queue") as Array).size()) + 1.0
+	while not (sc.get("_queue") as Array).is_empty() or not (sc.get("_jobs") as Array).is_empty():
+		sc.call("_dispatch", maxi(sc.max_jobs, OS.get_processor_count() - 1))
+		sc.call("_collect", 1 << 30, 70.0, true)
+		var left := float((sc.get("_queue") as Array).size() + (sc.get("_jobs") as Array).size())
+		total = maxf(total, left)
+		prog.call(clampf(1.0 - left / total, 0.0, 0.98))
+		await get_tree().process_frame
+		if Time.get_ticks_msec() - t0 > 60000:
+			break
+	sc.build_until_stable(5.0)
+	prog.call(1.0)
 
 
 func _on_state_changed(_st: int) -> void:
@@ -900,11 +1079,25 @@ func _game_preset(preset: String) -> void:
 	fx.force_warp = -1.0
 	fx.force_thrust = -1.0
 	fx.force_dust = -1.0
+	fx.force_vortex = -1.0
+	fx.force_haze = -1.0
+	fx.force_ground = ""
+	fx.clear_dropout()
 	ship.thrust_norm = Vector3.ZERO   # frozen stills keep the last preset's engine glow otherwise
+	ship.visual_lean = Vector3.ZERO
+	ship.heat = 0.0
+	ship.vapor = 0.0
 	help._hint.visible = false        # the F1 hint belongs to the start frame only
 	ship.target = null
+	if pause.is_open:
+		pause.set_open(false, true)
+	intro.freeze_at = -1.0
+	if loading and preset != "loading_screen":
+		loading.queue_free()
+		loading = null
 	var rig := ship.camera_rig as ShipCameraRig
 	rig.view_override = Callable()
+	rig.force_orbit = -1.0
 	rig.set_view(ShipCameraRig.View.CHASE)
 	ship.capture_hold = Capture.active
 	if game.state != GameMode.State.SHIP:
@@ -965,6 +1158,8 @@ func _game_preset(preset: String) -> void:
 			_ship_at(a, off, b, -b.z * 300.0, Ship.Mode.SPACE)
 			ship.target = a.node
 			rig.view_override = _rig_cam.bind(Vector3(-10.0, 5.0, 26.0), Vector3(0.0, -2.0, -30.0))
+		_:
+			await _wave4_preset(preset, fx, rig)
 	if game.state == GameMode.State.ON_FOOT:
 		game.player.get_camera().make_current()
 		system.camera = game.player.get_camera()
@@ -1024,3 +1219,189 @@ func _selene_onfoot() -> void:
 	pl.set_pitch_deg(9.0)
 	Universe.set_focus(pl)
 	ship.capture_hold = Capture.active
+
+
+# ---------------------------------------------------------------------------------------
+# Wave 4 presets (gameplay polish captures) and the movie demo
+# ---------------------------------------------------------------------------------------
+
+## Flat Selene spot with Terra Nova `terra_el` deg above the horizon and the sun at `sun_el`.
+func _selene_site(sun_el: float, terra_el: float) -> Vector3:
+	var r := _rec("Selene")
+	var s := system.sun_dir_from("Selene")
+	var dt := _dir_to("Selene", "Terra Nova")
+	var cands := _two_elev(s, dt, sun_el, terra_el)
+	var n0: Vector3 = cands[0] if not cands.is_empty() else -dt
+	var best := n0
+	var best_s := INF
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 11
+	for i in 160:
+		var nn := (n0 + Vector3(rng.randf_range(-1, 1), rng.randf_range(-1, 1), rng.randf_range(-1, 1)) * 0.03).normalized()
+		var f := _horizon_dir(nn, dt)
+		var sl := _slope(r, nn, 14.0)
+		var block := maxf(_max_ahead(r, nn, f, 2500.0, 6) - _h(r, nn), 0.0) * 0.004
+		if sl + block < best_s:
+			best_s = sl + block
+			best = nn
+	return best
+
+
+func _wave4_preset(preset: String, fx: ShipFX, rig: ShipCameraRig) -> void:
+	var t := _rec("Terra Nova")
+	match preset:
+		"takeoff_dust":
+			_place_start()
+			var b := ship.global_basis
+			var up := ship.up_dir
+			ship.landed = false
+			ship.teleport(Transform3D(b, ship.global_position + up * 6.5), up * 4.0, true)
+			ship.set_mode(Ship.Mode.HOVER, true)
+			ship.thrust_norm = Vector3(0.0, 0.85, -0.1)
+			ship.visual_lean = Vector3(deg_to_rad(3.0), 0.0, 0.0)
+			fx.force_thrust = 0.55
+			fx.force_dust = 1.0
+			rig.view_override = _rig_cam.bind(Vector3(-21.0, -1.2, -13.0), Vector3(0.0, -2.4, 1.0))
+			await _frames(2)
+			fx.prewarm_ground(3.5)
+		"reentry_game":
+			var s := system.sun_dir_from("Terra Nova")
+			var n := _search_sun_circle(t, s, 35.0, func(nn: Vector3) -> float:
+				return -absf(nn.y) - _cloud_cov(t, nn, nn) * 0.3)
+			var fwd := _horizon_dir(n, s.cross(n))
+			var off := n * (t.radius + 22000.0)
+			var dirv := fwd.rotated(fwd.cross(n).normalized(), deg_to_rad(-16.0))
+			var b := _nose_basis(dirv.rotated(fwd.cross(n).normalized(), deg_to_rad(8.0)), n)
+			_ship_at(t, off, b, dirv * 2300.0, Ship.Mode.SPACE)
+			fx.force_heat = 0.9
+			fx.force_thrust = 0.15
+			ship.heat = 0.9
+			rig.view_override = _rig_cam.bind(Vector3(-26.0, 9.0, 6.0), Vector3(0.0, -1.0, 7.0))
+		"landing_selene":
+			var r := _rec("Selene")
+			var n := _selene_site(18.0, 14.0)
+			var dt := _dir_to("Selene", "Terra Nova")
+			var fwd := _horizon_dir(n, dt).rotated(n, deg_to_rad(-25.0))
+			_land_ship(r, n, fwd)
+			var up := ship.up_dir
+			ship.landed = false
+			ship.gear_contacts = 0
+			ship.teleport(Transform3D(ship.global_basis, ship.global_position + up * 11.0), -up * 1.4, true)
+			ship.set_mode(Ship.Mode.HOVER, true)
+			ship.target = r.node
+			ship.thrust_norm = Vector3(0.0, 0.6, 0.0)
+			fx.force_thrust = 0.42
+			fx.force_dust = 0.9
+			rig.view_override = _rig_cam.bind(Vector3(-15.0, 3.0, 24.0), Vector3(0.0, -4.5, -6.0))
+			await _frames(2)
+			fx.prewarm_ground(3.0)
+		"warp_game", "warp_dropout":
+			var a := _rec("Aurelion")
+			var to_a := (a.pos - t.pos).normalized()
+			if preset == "warp_game":
+				var off := to_a * 2.6e6
+				var b := _nose_basis(to_a, Vector3.UP)
+				_ship_at(t, off, b, -b.z * 2.0e7, Ship.Mode.WARP)
+				fx.force_warp = 1.0
+				fx.force_thrust = 1.0
+			else:
+				# just dropped out of warp in front of Aurelion: flash + ripple frozen mid-way
+				var d := (t.pos - a.pos).normalized()
+				var nrm := SystemDef.aurelion_ring_normal()
+				var dd := (d + nrm * 0.12).normalized()
+				var off := dd * (a.radius + 900000.0)
+				var b := _nose_basis(-dd, nrm)
+				_ship_at(a, off, b, -b.z * 120000.0, Ship.Mode.CRUISE)
+				fx.force_warp = 0.25
+				fx.force_thrust = 0.8
+				fx.preview_dropout(0.32)
+			ship.target = a.node
+		"cockpit_view":
+			if start_site == Vector3.ZERO:
+				_place_start()
+			var n := start_site
+			var fwd := start_heading.rotated(n, deg_to_rad(-20.0))
+			var off := n * (_ground_r(t, n) + 420.0)
+			var b := _nose_basis(fwd.rotated(fwd.cross(n).normalized(), deg_to_rad(-7.0)), n)
+			_ship_at(t, off, b, -b.z * 150.0, Ship.Mode.ATMOSPHERE)
+			ship.set_gear(false, true)
+			fx.force_thrust = 0.45
+			rig.set_view(ShipCameraRig.View.COCKPIT)
+		"orbit_idle":
+			_place_start()
+			await _clear_start_weather()
+			rig.force_orbit = 1.0
+			rig.force_orbit_ang = 2.5
+		"pause_menu":
+			_place_start()
+			await _clear_start_weather()
+			pause.enabled = true
+			pause.set_open(true, true)
+			pause.show_section("sound")
+		"loading_screen":
+			if loading == null:
+				loading = LoadingScreen.new()
+				add_child(loading)
+			loading.set_progress(0.64, "Рельеф · Terra Nova")
+			loading.shown_progress = 0.64
+		"intro":
+			_place_start()
+			await _clear_start_weather()
+			intro.freeze_at = 2.6
+			help.show_hint(30.0)
+			help._hint.modulate.a = 1.0
+
+
+## Scripted flights for tools/movie.sh (the session loads synchronously before the first frame).
+##   --demo=takeoff: lift-off from the Terra Nova start site in a dust cloud, gear up, climb out.
+##   --demo=landing: hover-down onto the start meadow from 70 m.
+func _run_demo(kind: String) -> void:
+	if not started:
+		await session_started
+	help._hint.visible = false
+	help.show_hint_on_start = false
+	pause.enabled = false
+	ship.scripted = true
+	var rig := ship.camera_rig as ShipCameraRig
+	rig.idle_orbit = false
+	if kind == "landing":
+		var up := ship.up_dir
+		ship.landed = false
+		ship.teleport(Transform3D(ship.global_basis, ship.global_position + up * 70.0), -up * 6.0, false)
+		ship.set_mode(Ship.Mode.HOVER, true)
+		ship.set_gear(true, true)
+	var t := 0.0
+	print("[demo] %s start" % kind)
+	while t < 30.0:
+		await get_tree().physics_frame
+		var dt := get_physics_process_delta_time()
+		t += dt
+		ship.in_move = Vector3.ZERO
+		ship.steer_dir = Vector3.ZERO
+		var up := ship.up_dir
+		var fwd := -ship.global_basis.z
+		fwd = (fwd - up * fwd.dot(up)).normalized()
+		match kind:
+			"takeoff":
+				if t < 0.8:
+					pass
+				elif t < 4.6:
+					if ship.mode != Ship.Mode.HOVER:
+						ship.set_mode(Ship.Mode.HOVER, true)
+					ship.in_move.y = clampf((t - 0.8) / 1.2, 0.0, 1.0) * 0.6
+				else:
+					if ship.mode != Ship.Mode.ATMOSPHERE:
+						ship.set_mode(Ship.Mode.ATMOSPHERE, true)
+						ship.throttle = 0.0
+					ship.throttle = minf(ship.throttle + dt * 0.22, 0.6)
+					ship.in_move.y = clampf(1.0 - (t - 4.6) / 2.0, 0.0, 1.0) * 0.5
+					ship.steer_dir = (fwd + up * 0.3).normalized()
+					ship.steer_up = up
+			"landing":
+				ship.in_move.y = -1.0 if ship.altitude > 6.0 else (-0.25 if ship.altitude > 0.8 else 0.0)
+				ship.steer_dir = fwd
+				ship.steer_up = up
+		if int(t * 60.0) % 30 == 0:
+			print("[demo] t=%.1f alt=%.1f v=%.1f vs=%.1f mode=%s gear=%s landed=%s spool=%.2f" % [t, ship.altitude,
+				ship.vel.length(), ship.vel.dot(up), Ship.MODE_NAMES[ship.mode], ship.gear_down, ship.landed,
+				(ship.get_node("FX") as ShipFX).engine_spool])

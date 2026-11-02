@@ -23,6 +23,12 @@ signal gear_changed(down: bool)
 signal warp_engaged
 signal warp_dropped
 signal hud_message(text: String)
+## First gear contact after being airborne (vertical speed into the ground, m/s).
+signal touchdown(speed: float)
+## Crossed ~Mach 1 in thick air (vapor cone burst / boom).
+signal sonic_boom
+## Landing clamps released (lift-off).
+signal takeoff
 
 enum Mode { HOVER, ATMOSPHERE, SPACE, CRUISE, WARP }
 enum WarpState { IDLE, SPOOL, ACTIVE }
@@ -74,6 +80,18 @@ const HULL_PROBES: Array[Vector3] = [Vector3(0, -0.2, -10.2), Vector3(0, 0.2, 9.
 @export var auto_gear := true
 ## Pilot steps out this far to the ship's right of the ramp tip (clear of the belly).
 @export var exit_side_offset := 2.6
+@export_group("Landing assist")
+## FA descent limiter near the ground: v_down <= sqrt(2 a h) + touchdown_speed, with the braking
+## decel a = clamp(descent_g_factor * local g, descent_a_min, descent_a_max) — gentle on moons.
+@export var touchdown_speed := 0.75
+@export var descent_g_factor := 0.62
+@export var descent_a_min := 1.3
+@export var descent_a_max := 6.0
+## Auto-flare: below this pad height (HOVER, gear down, no strafe input) the drift is bled off.
+@export var flare_alt := 12.0
+## Cosmetic lean of the visual with commanded acceleration (hover / slow flight), degrees.
+@export var lean_pitch_deg := 3.5
+@export var lean_roll_deg := 5.0
 @export_group("Physics")
 @export var drag_k := 1.6e-5
 @export var lift_k := 1.4
@@ -130,6 +148,13 @@ var accel_world := Vector3.ZERO   # actual acceleration (for camera lag)
 var gear_contacts := 0
 var impact := 0.0                 # recent impact strength (camera shake), decays
 var boost_t := 0.0
+var pad_alt := INF                # lowest gear-pad height above the ground (near the surface)
+var ground_tilt := 0.0            # deg: slope of the ground plane under the pads (near the surface)
+var last_touchdown := 0.0         # vertical speed of the last touchdown (telemetry)
+var since_takeoff := 1.0e9        # s since the clamps were released
+var boom_t := 0.0                 # 1 at a sonic boom, decays (FX / camera)
+## Visual-only attitude offset (pitch, yaw, roll radians) applied by the camera rig to ShipVisual.
+var visual_lean := Vector3.ZERO
 
 var visual: ShipVisual
 var camera_rig: Node3D
@@ -148,6 +173,8 @@ var _mode_suggest := -1
 var _pending_xf := Transform3D()
 var _has_pending_xf := false
 var _pressure_warn_t := 0.0
+var _prev_contacts := 0
+var _prev_speed := 0.0
 ## Bodies without a solid surface (gas giant, star): [warning altitude, hard floor altitude]
 ## above get_body_radius(). Below the warning altitude the hull is pushed back out.
 const GAS_GIANT_FLOOR := Vector2(22000.0, 4000.0)
@@ -366,6 +393,14 @@ func get_hud_data() -> Dictionary:
 		"gear_suggest": not gear_down and altitude < 150.0 and vel.length() < 40.0,
 		"can_exit": can_exit(),
 		"message": _message if _message_t > 0.0 else "",
+		"velocity": vel,
+		"target_position": target.global_position if tname != "" else null,
+		"target_radius": target.get_body_radius() if tname != "" else 0.0,
+		"target_safe_alt": safe_orbit_altitude(target) if tname != "" else 0.0,
+		"pad_alt": pad_alt if body and _is_solid(body) else -1.0,
+		"solid_ground": body != null and _is_solid(body),
+		"ground_tilt": ground_tilt,
+		"descent_limit": descent_limit(maxf(minf(altitude, pad_alt), 0.0), Universe.get_gravity(global_position).length()) if body else 0.0,
 	}
 
 
@@ -626,6 +661,12 @@ func _update_environment() -> void:
 			altitude = p.distance_to(bp) - body.get_body_radius()
 		var ah: float = body.get_atmosphere_height()
 		in_atmosphere = ah > 0.0 and p.distance_to(bp) - body.get_body_radius() < ah
+		if capture_hold or freeze:
+			# frozen (stills / clamps): _integrate_forces does not run, keep the pad height current
+			pad_alt = altitude
+			if altitude < 40.0 and _is_solid(body):
+				for f in FEET:
+					pad_alt = minf(pad_alt, _ground_alt(body, global_transform * f))
 	else:
 		up_dir = Vector3.UP
 		altitude = INF
@@ -731,9 +772,14 @@ func _update_landing(dt: float) -> void:
 			_takeoff()
 		return
 	var s := vel.length()
+	# resting on an obstacle (a boulder / the hull on a ridge): pads just above the ground, not moving
+	var resting := gear_down and gear_contacts < 3 and pad_alt < 0.7 and s < 0.6 \
+		and angular_velocity.length() < 0.16 and body != null and _is_solid(body) and global_basis.y.dot(up_dir) > 0.9
 	if gear_contacts >= 3 and s < 0.8 and angular_velocity.length() < 0.15 and in_move.y <= 0.05 \
 			and in_move.z <= 0.05:
 		_land_timer += dt
+	elif resting and in_move.y <= 0.05 and in_move.z <= 0.05 and absf(in_move.x) <= 0.05:
+		_land_timer += dt * 0.2      # ~2.5 s of rest -> clamps
 	else:
 		_land_timer = 0.0
 	if _land_timer > 0.5:
@@ -748,8 +794,10 @@ func _update_landing(dt: float) -> void:
 			set_mode(Mode.HOVER, true)
 		landed_changed.emit(true)
 		_msg("LANDED · CLAMPS ENGAGED")
-	# auto gear retract once flying fast
-	if auto_gear and gear_down and gear_contacts == 0 and s > 140.0 \
+	# auto gear retract once flying fast, or climbing away after a take-off
+	since_takeoff += dt
+	var climbing_out := since_takeoff < 40.0 and altitude > 32.0 and vel.dot(up_dir) > 1.0
+	if auto_gear and gear_down and gear_contacts == 0 and (s > 140.0 or climbing_out) \
 			and (is_piloted or scripted) and visual and not visual.is_gear_moving():
 		set_gear(false)
 		_msg("GEAR UP")
@@ -764,10 +812,12 @@ func _takeoff() -> void:
 	landed = false
 	freeze = false
 	_land_timer = 0.0
-	var v0 := up_dir * 2.5
+	since_takeoff = 0.0
+	var v0 := up_dir * 1.6
 	linear_velocity = v0
 	vel = v0
 	landed_changed.emit(false)
+	takeoff.emit()
 	_msg("CLAMPS RELEASED")
 
 
@@ -775,12 +825,36 @@ func _update_heat(dt: float) -> void:
 	var s := vel.length()
 	var target_heat := clampf(sqrt(density) * pow(s / 1500.0, 2.0) * 0.8 - 0.1, 0.0, 1.0)
 	heat = lerpf(heat, target_heat, 1.0 - exp(-dt * (1.2 if target_heat > heat else 0.45)))
-	var target_vapor := clampf((s - 180.0) / 220.0, 0.0, 1.0) * clampf((density - 0.2) / 0.4, 0.0, 1.0) \
-		* clampf((900.0 - s) / 200.0, 0.0, 1.0)
-	vapor = lerpf(vapor, target_vapor, 1.0 - exp(-dt * 3.0))
+	# condensation: strongest in the transonic band (Prandtl-Glauert cone), thinner up to ~900 m/s
+	var wet := clampf((density - 0.15) / 0.35, 0.0, 1.0)
+	var transonic := exp(-pow((s - 335.0) / 75.0, 2.0))
+	var target_vapor := maxf(transonic, 0.35 * clampf((s - 200.0) / 200.0, 0.0, 1.0) * clampf((900.0 - s) / 200.0, 0.0, 1.0)) * wet
+	# sonic boom when crossing Mach 1 (~340 m/s) in thick air
+	if wet > 0.2 and _prev_speed < 340.0 and s >= 340.0 and not capture_hold:
+		boom_t = 1.0
+		sonic_boom.emit()
+	_prev_speed = s
+	boom_t = maxf(boom_t - dt * 0.8, 0.0)
+	target_vapor = maxf(target_vapor, boom_t * wet)
+	vapor = lerpf(vapor, target_vapor, 1.0 - exp(-dt * (8.0 if target_vapor > vapor else 2.5)))
+	_update_lean(dt)
 
 
-func _update_autopilot(_dt: float) -> void:
+## Visual lean (cosmetic): nose up while lifting off in hover, dips with forward thrust, banks
+## into strafes. Only near hover speeds and off the ground.
+func _update_lean(dt: float) -> void:
+	var tgt := Vector3.ZERO
+	var s := vel.length()
+	if not landed and gear_contacts == 0 and not _teleport and (mode == Mode.HOVER or (mode == Mode.ATMOSPHERE and s < 120.0)):
+		var k := 1.0 - smoothstep(60.0, 120.0, s)
+		var lift := clampf(thrust_norm.y, 0.0, 1.0) * (1.0 - smoothstep(4.0, 14.0, since_takeoff))
+		var pitch := deg_to_rad(lean_pitch_deg) * (lift * 1.1 + clampf(thrust_norm.z, -1.0, 1.0) * 0.7)
+		var roll := -deg_to_rad(lean_roll_deg) * clampf(thrust_norm.x, -1.0, 1.0)
+		tgt = Vector3(pitch, 0.0, roll) * k
+	visual_lean = visual_lean.lerp(tgt, 1.0 - exp(-dt * 2.2))
+
+
+func _update_autopilot(dt: float) -> void:
 	if target == null or not is_instance_valid(target):
 		autopilot = false
 		return
@@ -802,18 +876,18 @@ func _update_autopilot(_dt: float) -> void:
 		return
 	var fwd := -global_basis.z
 	var ang := rad_to_deg(fwd.angle_to(aim))
-	var s := vel.length()
-	if ang < 4.0:
-		throttle = 1.0
-		if mode != Mode.WARP and not _warp_locked() and dsurf - orbit > 2.0 * WARP_LOCK_DIST:
+	# throttle eases with the heading error instead of bang-bang (the curved go-around path
+	# keeps the aim a few degrees off the nose): full within 6 deg, none beyond 55 deg,
+	# rate-limited so the speed never saw-tooths
+	var thr_t := 1.0 - smoothstep(6.0, 55.0, ang)
+	throttle = move_toward(throttle, thr_t, dt * (0.5 if thr_t > throttle else 0.9))
+	if ang < 10.0:
+		if mode != Mode.WARP and not _warp_locked() and dsurf - orbit > 2.0 * WARP_LOCK_DIST and ang < 4.0:
 			set_mode(Mode.WARP, true)
 		elif mode < Mode.CRUISE and _cruise_allowed() and dsurf - orbit > 40000.0:
 			set_mode(Mode.CRUISE, true)
 		elif mode < Mode.SPACE:
 			set_mode(Mode.SPACE, true)
-	else:
-		# turn first; bleed speed if we would fly off course
-		throttle = clampf(1.0 - ang / 30.0, 0.0, 1.0) if s < 2000.0 else 0.0
 
 
 # =====================================================================================
@@ -863,6 +937,11 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		if mode >= Mode.CRUISE:
 			vt.x = 0.0
 			vt.y = 0.0
+		# touchdown assist: hovering just above the ground with the gear down and no vertical input,
+		# the ship settles the last few decimetres by itself (no hovering 20 cm over the pads)
+		if gear_down and mode == Mode.HOVER and pad_alt < 0.9 and pad_alt > -0.3 and absf(in_move.y) < 0.05 \
+				and not landed and body and _is_solid(body) and (v - up_dir * v.dot(up_dir)).length() < 2.0:
+			vt += Bt * (-up_dir * 0.6)
 		var comp := -g - a_aero
 		if wow and in_move.y <= 0.05 and throttle <= 0.05:
 			comp = Vector3.ZERO   # weight on wheels: let the gear carry the ship
@@ -879,12 +958,32 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	thrust_norm = Vector3(a_loc.x / lat_lim, a_loc.y / lat_lim, a_loc.z / (acc_f if a_loc.z < 0.0 else back))
 	v += (B * a_loc + g + a_aero) * dt
 
-	# --- ground proximity limiter (assist): never descend faster than we can stop
+	# --- ground proximity limiter (assist): never descend faster than we can stop; the braking
+	# decel scales with local gravity (soft lunar touchdowns), pad height on uneven ground
+	pad_alt = altitude
+	ground_tilt = 0.0
+	if body and altitude < 40.0 and _is_solid(body):
+		for f in FEET:
+			pad_alt = minf(pad_alt, _ground_alt(body, pos + B * f))
+		var ng := _ground_plane_normal(pos, B)
+		if ng != Vector3.ZERO:
+			ground_tilt = rad_to_deg(ng.angle_to(up_dir))
 	if assist and body and altitude < 3000.0 and not _teleport and _is_solid(body):
+		var h := minf(altitude, pad_alt)
 		var vdown := -v.dot(up_dir)
-		var allowed := sqrt(2.0 * 6.0 * maxf(altitude - 0.3, 0.0)) + 1.2
+		var allowed := descent_limit(h, g.length())
 		if vdown > allowed:
-			v += up_dir * (vdown - allowed) * minf(1.0, dt * 6.0)
+			v += up_dir * (vdown - allowed) * minf(1.0, dt * (6.0 if h > flare_alt else 12.0))
+		# auto-flare: just above the ground with the gear down and no strafe/throttle input,
+		# bleed the horizontal drift so the pads meet the ground almost vertically
+		if gear_down and h < flare_alt and mode == Mode.HOVER and vdown > -0.5 \
+				and absf(in_move.x) + absf(in_move.z) + absf(throttle) < 0.05:
+			var kf := 1.0 - h / flare_alt
+			var vh := v - up_dir * v.dot(up_dir)
+			var lim := lerpf(5.0, 0.4, kf)
+			var vhl := vh.length()
+			if vhl > lim:
+				v -= vh * (1.0 - lim / vhl) * minf(1.0, dt * 4.0)
 
 	# --- speed cap
 	speed = v.length()
@@ -904,18 +1003,30 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		var err := Bt * B.y.cross(up_dir)
 		wt.x += err.x * 2.2 * (1.0 - absf(st.y))
 		wt.z += err.z * 2.2 * (1.0 - absf(in_roll))
+	var settling := false
+	if assist and wow and not landed and gear_contacts < 3 and body and _is_solid(body) and speed < 2.5 \
+			and in_move.y <= 0.05 and steer_dir == Vector3.ZERO:
+		# settle onto uneven ground: some pads touch, one hangs over a dip — rotate the hull onto the
+		# plane through the three ground points under the pads (gentle, like the gear rocking over)
+		var ng := _ground_plane_normal(pos, B)
+		if ng != Vector3.ZERO and ng.angle_to(up_dir) < deg_to_rad(28.0):
+			var e := Bt * B.y.cross(ng)
+			wt.x = e.x * 1.6
+			wt.z = e.z * 1.6
+			settling = true
 	var w := Bt * state.angular_velocity
 	var alpha := rate * 4.0
 	var dw := wt - w
 	dw = Vector3(clampf(dw.x, -alpha.x * dt, alpha.x * dt), clampf(dw.y, -alpha.y * dt, alpha.y * dt),
 		clampf(dw.z, -alpha.z * dt, alpha.z * dt))
 	if wow:
-		dw.x *= 0.1
-		dw.z *= 0.1
+		var k := 0.5 if settling else 0.1
+		dw.x *= k
+		dw.z *= k
 		dw.y *= 0.4
 	ang_accel_local = dw / dt
 	w += dw
-	if wow:
+	if wow and not settling:
 		w.x *= exp(-3.0 * dt)
 		w.z *= exp(-3.0 * dt)
 	state.angular_velocity = B * w
@@ -933,11 +1044,40 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	if body and not _is_solid(body):
 		_pressure_floor(state, dt)
 	elif gear_down and body and altitude < 4.0 and visual and not visual.is_gear_moving():
+		var v_in := -state.linear_velocity.dot(up_dir)
 		_suspension(state, B, pos, dt)
+		if gear_contacts > 0 and _prev_contacts == 0 and not landed and v_in > 0.25:
+			last_touchdown = maxf(v_in, 0.0)
+			_emit_touchdown.call_deferred(last_touchdown)
+	_prev_contacts = gear_contacts
 	# --- last-resort hull clamp (terrain collision chunk missing / water)
 	if body and altitude < 25.0 and _is_solid(body):
 		_hull_clamp(state, B)
 	_finish_velocity(state.linear_velocity, dt)
+
+
+## Normal of the plane through the ground points under the three gear pads (ZERO if unknown).
+func _ground_plane_normal(pos: Vector3, B: Basis) -> Vector3:
+	var g: Array[Vector3] = []
+	for f in FEET:
+		var p := pos + B * f
+		var u := (p - body.global_position).normalized()
+		g.append(p - u * _ground_alt(body, p))
+	var n := (g[1] - g[0]).cross(g[2] - g[0])
+	if n.length_squared() < 1e-6:
+		return Vector3.ZERO
+	n = n.normalized()
+	return n if n.dot(up_dir) > 0.0 else -n
+
+
+func _emit_touchdown(sp: float) -> void:
+	touchdown.emit(sp)
+
+
+## Max FA descent rate at pad height h with local gravity g (see touchdown_speed).
+func descent_limit(h: float, g: float) -> float:
+	var a := clampf(descent_g_factor * g, descent_a_min, descent_a_max)
+	return sqrt(2.0 * a * maxf(h - 0.15, 0.0)) + touchdown_speed
 
 
 func _finish_velocity(v: Vector3, dt: float) -> void:
