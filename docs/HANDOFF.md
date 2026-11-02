@@ -54,7 +54,7 @@ Glacia, газовый гигант Aurelion с кольцами + луны Vex 
 terra_limb_sunrise, terra_entry, terra_low, terra_ground, terra_sunset_ground, terra_night_ground, selene_orbit,
 selene_surface_terra_rise, selene_landed_onfoot, landing_selene, ignis_low, ignis_orbit, glacia_low, glacia_orbit, vex_orbit,
 vex_aurelion, aurelion_rings, aurelion_arrival, star_from_ignis, system_overview, warp_to_aurelion, warp_game, warp_dropout,
-reentry_game, pause_menu, loading_screen` (часть — только в ветке `wave4-gameplay`). `--hud` показывает HUD на кадре.
+reentry_game, landing_selene, warp_dropout, orbit_idle, pause_menu, loading_screen, intro`. `--hud` показывает HUD на кадре.
 
 Производительность на RTX 3060 (1080p, до волны 4): космос ~220 FPS, орбита 94, у земли 70, лес 50 — см. `docs/reports/perf_gpu.md`.
 
@@ -74,8 +74,8 @@ src/planets/              planet.gd, planet_config.gd + presets/*.tres, planet_t
 src/planets/atmosphere/   атмосфера, облака, океан, газ-гигант, кольца (компоненты Planet)
 src/planets/scatter/      флора и камни (PlanetScatter, ScatterBiome = CPU-копия биомов шейдера рельефа)
 src/ship/                 ship.gd (полёт), ship_visual.gd (модель/материалы), ship_fx.gd, ship_camera.gd
-src/player/, src/ui/      персонаж, HUD, F1 (+ в wave4-gameplay: пауза, загрузка)
-src/audio/                (только в wave4-gameplay) процедурный звук: synth, game_audio, music_pad
+src/player/, src/ui/      персонаж, HUD, F1, меню паузы, экран загрузки, интро
+src/audio/                процедурный звук: synth, game_audio, music_pad
 shaders/                  все шейдеры (+ include/)
 tools/                    скрипты окружения/съёмки/сборки, blender/, dev/ (playtest, бенчи), textures/
 assets/models/            GLB из Blender-скриптов (ship.glb, флора, камни, кристаллы); assets/textures/ — оффлайн-текстуры земли
@@ -86,8 +86,8 @@ docs/screenshots/         s0…s6 по этапам, local/ — рендеры �
 ```
 
 Отчёты (что внутри и где API): `stage1_space`, `stage2_terrain`, `stage2_atmosphere`, `stage3_ship_model`, `wave2_system`,
-`wave2_ship_flight`, `wave2_player_ui`, `wave2_flora`, `wave3_integration`, `perf_gpu`, `wave4_ground` (+ в ветках: `wave4_ship_v2`,
-`wave4_sky`, `wave4_gameplay`).
+`wave2_ship_flight`, `wave2_player_ui`, `wave2_flora`, `wave3_integration`, `perf_gpu`, `wave4_ground`, `wave4_ship_v2`,
+`wave4_sky`, `wave4_gameplay`.
 
 ---
 

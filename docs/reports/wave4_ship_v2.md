@@ -97,6 +97,10 @@ tools/shot.sh scenes/test/ship_test.tscn --shots=ship_hero,ship_chase,ship_night
 `ship_night_chase`, `ship_cockpit`, `ship_gear`, `ship_front`, `ship_belly`, `ship_sunset`;
 аргументы `--gear=0..1`, `--hatch=0|1`, `--canopy=0|1`.
 
-PLAYTEST_PLACEHOLDER
+## Плейтест
+Ветка агента прервана лимитом до финального прогона. На объединённой версии (`wave4-combined` → `main`, 2026-11-02):
+`playtest.gd -- all seed=7` — **20/20 PASS** (касание Selene 1,43 м/с, Terra 0,84 м/с; новые `FEET`/`HULL_PROBES` работают).
 
-SHOTS_PLACEHOLDER
+## Скриншоты (`docs/screenshots/s6/ship/`, 1920×1080)
+`ship_hero`, `ship_rear` (вид погони сзади), `ship_landed`, `ship_night` (прожекторы/палубные огни), `ship_belly`,
+`ship_cockpit`, `start`, `takeoff`, `selene_landed_onfoot`.

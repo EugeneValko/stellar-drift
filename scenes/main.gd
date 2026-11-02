@@ -81,7 +81,10 @@ func _ready() -> void:
 	var shots: PackedStringArray = String(Capture.args.get("shots", "")).split(",", false)
 	var first := preset if preset != "" else (shots[0] if not shots.is_empty() else "")
 	var capture_drives := Capture.active and first != ""
-	if Capture.args.has("bench") or Capture.args.has("no_game") or (capture_drives and not first in GAME_PRESETS):
+	# --cam=<system preset> without a capture (tools/dev/gpu_bench.gd): the system view, not the game
+	var cam_only := not Capture.active and preset != "" and not preset in GAME_PRESETS
+	if Capture.args.has("bench") or Capture.args.has("no_game") or cam_only \
+			or (capture_drives and not first in GAME_PRESETS):
 		_system_only()
 		if Capture.args.has("bench"):
 			_bench.call_deferred()
@@ -95,6 +98,9 @@ func _ready() -> void:
 		print("[main] session ready in %d ms" % load_ms)
 		if Capture.args.has("demo"):
 			_run_demo.call_deferred(String(Capture.args["demo"]))
+	elif preset != "":
+		# --cam=<game preset> without a capture (benchmarks): synchronous start, then the preset
+		_start_session(preset)
 	else:
 		_start_session_async()
 
