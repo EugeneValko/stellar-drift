@@ -586,7 +586,12 @@ def station_ys():
 def build_hull():
     bm = bmesh.new()
     rings = [hull_ring(y) for y in station_ys()]
-    loft(bm, rings, HULL, cap0=True, pole1=Vector((0, NOSE_Y + 0.05, ZC(NOSE_Y))), cap_mats=(HULL, HULL))
+    # flat rear bulkhead built from concentric rings (good vertex density for the baked AO, no fan streaks)
+    r0 = rings[0]
+    zs = [p.z for p in r0]
+    c = Vector((0, TAIL_Y, (min(zs) + max(zs)) * 0.5))
+    inner = [[c + (p - c) * k for p in r0] for k in (0.12, 0.3, 0.5, 0.7, 0.86, 0.95)]
+    loft(bm, inner + rings, HULL, pole0=c, pole1=Vector((0, NOSE_Y + 0.05, ZC(NOSE_Y))), cap_mats=(HULL, HULL))
     return obj_from_bm("HullBody", bm)
 
 
