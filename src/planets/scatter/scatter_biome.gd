@@ -101,8 +101,13 @@ func tex(u: float, v: float, ch: int) -> float:
 	return (lerpf(lerpf(a, b, tx), lerpf(c, d, tx), ty)) / 255.0
 
 
+## SYNC: tri_w in planet_terrain.gdshader (planes below TRI_CUT dropped and renormalized).
+const TRI_CUT := 0.05
+
+
 static func tri_w(n: Vector3) -> Vector3:
 	var w := Vector3(pow(absf(n.x), 8.0), pow(absf(n.y), 8.0), pow(absf(n.z), 8.0))
+	w = (w / (w.x + w.y + w.z) - Vector3(TRI_CUT, TRI_CUT, TRI_CUT)).max(Vector3.ZERO)
 	return w / (w.x + w.y + w.z)
 
 

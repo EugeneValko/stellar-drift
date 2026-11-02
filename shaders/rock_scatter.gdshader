@@ -50,10 +50,16 @@ vec4 tri(sampler2D t, vec3 p, vec3 w) {
 	return texture(t, p.zy) * w.x + texture(t, p.xz) * w.y + texture(t, p.xy) * w.z;
 }
 
+// z rebuilt from xy: TerrainTextures normal maps are RG-only (BC5 / RGTC)
+vec3 nrm_rg(vec4 t) {
+	vec2 xy = t.xy * 2.0 - 1.0;
+	return vec3(xy, sqrt(clamp(1.0 - dot(xy, xy), 0.0, 1.0)));
+}
+
 vec3 tri_nrm(sampler2D t, vec3 p, vec3 n, vec3 w, float s) {
-	vec3 tx = texture(t, p.zy).xyz * 2.0 - 1.0;
-	vec3 ty = texture(t, p.xz).xyz * 2.0 - 1.0;
-	vec3 tz = texture(t, p.xy).xyz * 2.0 - 1.0;
+	vec3 tx = nrm_rg(texture(t, p.zy));
+	vec3 ty = nrm_rg(texture(t, p.xz));
+	vec3 tz = nrm_rg(texture(t, p.xy));
 	tx.xy *= s; ty.xy *= s; tz.xy *= s;
 	vec3 nx = vec3(tx.xy + n.zy, abs(tx.z) * n.x);
 	vec3 ny = vec3(ty.xy + n.xz, abs(ty.z) * n.y);

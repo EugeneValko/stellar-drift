@@ -3,8 +3,10 @@ extends RefCounted
 ## Procedural, seamless detail textures for the terrain shader (generated once, cached).
 ##
 ##   noise  (RGBA8): r = fbm, g = cellular F1 (pebbles/cracks), b = ridged fbm, a = fine fbm
-##   normal (RGBA8): normal map of a soft fbm (soil, snow, sand)
-##   rock   (RGBA8): normal map of ridged+cellular (rock, cliffs)
+##   normal (RG, BC5): normal map of a soft fbm (soil, snow, sand)
+##   rock   (RG, BC5): normal map of ridged+cellular (rock, cliffs)
+## The normal maps are block-compressed (RGTC, two independent channels; shaders rebuild z
+## from xy): a quarter of the texture bandwidth in the terrain shader (docs/reports/perf_wave5.md).
 ## All tiles are seamless; the shader samples them at power-of-two tile sizes so they repeat
 ## exactly inside TerrainGenerator.DETAIL_PERIOD (precision-safe detail coordinates).
 
@@ -94,4 +96,5 @@ static func _normal_map(h: PackedFloat32Array, strength: float) -> Image:
 			data[q + 3] = 255
 	var img := Image.create_from_data(SIZE, SIZE, false, Image.FORMAT_RGBA8, data)
 	img.generate_mipmaps()
+	img.compress(Image.COMPRESS_S3TC, Image.COMPRESS_SOURCE_NORMAL)   # -> RGTC (BC5)
 	return img

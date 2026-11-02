@@ -128,8 +128,14 @@ void vertex() {
 	}
 }
 
+// Triplanar weights. Planes below TRI_CUT are dropped continuously (weight - cut, renormalized):
+// most pixels then read one or two planes instead of three (fewer fetches on slopes), with no seam.
+// SYNC: ScatterBiome.tri_w.
+const float TRI_CUT = 0.05;
+
 vec3 tri_w(vec3 n) {
 	vec3 w = pow(abs(n), vec3(8.0));
+	w = max(w / (w.x + w.y + w.z) - TRI_CUT, 0.0);
 	return w / (w.x + w.y + w.z);
 }
 
