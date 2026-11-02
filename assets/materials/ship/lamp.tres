@@ -1,0 +1,9 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://shaders/ship_emissive_lamp.gdshader" id="1"]
+
+[resource]
+resource_name = "ShipLamp"
+shader = ExtResource("1")
+shader_parameter/energy = 6.0
+shader_parameter/lit = 1.0

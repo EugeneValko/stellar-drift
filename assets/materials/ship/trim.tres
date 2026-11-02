@@ -5,11 +5,12 @@
 [resource]
 resource_name = "ShipTrim"
 shader = ExtResource("1")
-shader_parameter/base_color = Color(0.62, 0.62, 0.64, 1)
-shader_parameter/base_color_alt = Color(0.56, 0.565, 0.58, 1)
+shader_parameter/base_color = Color(0.64, 0.64, 0.66, 1)
+shader_parameter/base_color_alt = Color(0.58, 0.585, 0.6, 1)
 shader_parameter/alt_panel_ratio = 0.2
+shader_parameter/panel_tone_var = 0.05
 shader_parameter/metallic = 1.0
-shader_parameter/roughness = 0.34
+shader_parameter/roughness = 0.32
 shader_parameter/roughness_var = 0.06
 shader_parameter/specular = 0.5
 shader_parameter/panel_scale = 0.6
@@ -19,7 +20,7 @@ shader_parameter/rivet_amount = 0.0
 shader_parameter/edge_wear = 0.2
 shader_parameter/wear_color = Color(0.8, 0.8, 0.82, 1)
 shader_parameter/edge_highlight = 0.06
-shader_parameter/grime = 0.4
+shader_parameter/grime = 0.35
 shader_parameter/soot = 0.0
 shader_parameter/markings = 0.0
 shader_parameter/brushed = 1.0
