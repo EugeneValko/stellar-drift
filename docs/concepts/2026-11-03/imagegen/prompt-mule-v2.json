@@ -1,0 +1,10 @@
+{
+  "generatedWith": "built-in image_gen",
+  "intent": "edit",
+  "inputPath": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\imagegen\\02-mule-salvage.png",
+  "originalPath": "C:\\Users\\admin\\.codex\\generated_images\\01a1a263-9f02-7620-91e3-cce3dff097ac\\exec-ff066dd6-167b-4e57-ac0c-e642e214bb5e.png",
+  "outputPath": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\imagegen\\02-mule-salvage-v2.png",
+  "prompt": "Use case: precise-object-edit. Input image 1 is the edit target and identity reference. Make only one change: widen the camera framing / zoom out by about 20 percent so the ENTIRE MULE salvage shuttle has comfortable visible background margin around its left and right outer hull ends, all landing feet and the complete dorsal mast. Preserve the exact vehicle identity, broad twin-keel shape, proportions, central cargo cassette, cockpit, folded manipulator arms, deployed landing gear, ivory/graphite/orange materials, lunar shipyard backdrop, human scale reference, lighting and small rear-view inset. Keep the same original ship, not a redesign. Keep the entire main vehicle unclipped within the frame. Photorealistic AAA production concept art, landscape, no new objects or text, no watermark.",
+  "change": "Wider framing only",
+  "createdDate": "2026-11-03"
+}

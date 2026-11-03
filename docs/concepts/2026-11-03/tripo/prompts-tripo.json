@@ -1,0 +1,161 @@
+{
+  "project": "Stellar Drift",
+  "date_local": "2026-11-03",
+  "scope": "Original image-only visual development. No 3D model generation.",
+  "initial_free_image_usage": 0,
+  "batches": [
+    {
+      "id": "H04_AXIOM",
+      "model": "GPT Image 2.5",
+      "count": 4,
+      "aspect": "16:9",
+      "resolution": "4K",
+      "prompt": "STELLAR DRIFT H04 AXIOM — original human expedition shuttle concept. Photorealistic AAA science-fiction production design for a space exploration and survival game, extraordinary premium visual quality, believable engineering, original silhouette, no existing franchise designs. A 22 metre atmosphere-capable two-person expedition shuttle carried inside humanity's damaged interstellar ark after Earth was destroyed. Design a compact blunt chisel lifting-body with broad elevated shoulders, a protected walk-in cabin behind an angled panoramic cockpit, two powerful articulated rear propulsion pods, a short clearly usable cargo ramp between the engines, a ventral detachable resource capsule, three sturdy landing legs, flush RCS nozzles and retractable survey instruments. An elegant capable explorer and salvage vehicle, not a fighter jet or a giant battleship. Carefully balanced large quiet ceramic hull surfaces, structural titanium ribs and restrained functional detail. Warm ivory ceramic and graphite, weathered orange rescue panels, tiny cyan instrument lights; subtle evidence of field repairs on one shoulder, beautiful without looking derelict. Show the entire craft large in frame on a sparse neutral shipyard landing pad, front three-quarter view from human eye height, one small suited expedition technician beside the open ramp for scale. A small separate rear three-quarter study can sit in the upper-right margin, showing a memorable readable rear silhouette and engine arrangement. Strong daylight key with soft cool fill, realistic material breakup, clear functional volumes, premium cinematic concept illustration suitable for an art director's selection. No titles, labels, UI, watermark, logos, massive guns, decorative wings, or unnecessary greeble noise.",
+      "outputs": [
+        {
+          "file": "tripo/H04-axiom-01.jpg",
+          "width": 4096,
+          "height": 2336
+        },
+        {
+          "file": "tripo/H04-axiom-02.jpg",
+          "width": 4096,
+          "height": 2336
+        },
+        {
+          "file": "tripo/H04-axiom-03.jpg",
+          "width": 4096,
+          "height": 2336
+        },
+        {
+          "file": "tripo/H04-axiom-04.jpg",
+          "width": 4096,
+          "height": 2336
+        }
+      ]
+    },
+    {
+      "id": "A01_LACUNA",
+      "model": "Nano Banana Pro",
+      "count": 4,
+      "aspect": "16:9",
+      "resolution": "4K",
+      "prompt": "STELLAR DRIFT A01 LACUNA — alien interdiction craft visual development. Create one extraordinary photorealistic AAA science fiction concept illustration, original intellectual property, controlled elegant detail, credible three-dimensional design. These are the technologically superior beings who attacked a human jump ark and destroyed Earth because a new human transit technology appeared to threaten their own spatial infrastructure. Depict one 90 metre ALIEN INTERDICTOR completely unlike a human jet, spaceship wedge, insect, tentacle creature or flying gun. Dominant silhouette: a thick asymmetric OPEN RECTANGULAR BRACKET holding a deliberate empty central volume, two unequal monolithic crescent jaws supported by a short layered spine, precisely arranged thin inner field lamellae and floating-looking but visibly field-supported stone-like components. Much of the silhouette is meaningful negative space. No human cockpit, wings, rocket nozzles or portholes. Mature alien engineering rather than magical fantasy: stratified black metallic ceramic, dense warm-white contact surfaces, subtle satin mineral grain, small amber lattice emitters facing the empty aperture. A tiny difficult-to-see lensing distortion within the empty space suggests its technology, not a giant glowing portal. Ominous, precise, impersonal; it should be memorable as a black silhouette at a distance. Show the whole craft in a clear dramatic three-quarter view against a restrained blue-gray space background, soft cold star key, bright rim and adequate fill so the structure is readable. A very small ordinary human shuttle in the lower distance gives scale without competing. Composition has generous breathing room and a premium industrial design finish. No text, labels, watermarks, logos, skulls, purple neon outlining every edge, human windows, spikes everywhere, or famous franchise silhouettes.",
+      "outputs": [
+        {
+          "file": "tripo/A01-lacuna-01.jpg",
+          "width": 4096,
+          "height": 2272
+        },
+        {
+          "file": "tripo/A01-lacuna-02.jpg",
+          "width": 4096,
+          "height": 2272
+        },
+        {
+          "file": "tripo/A01-lacuna-03.jpg",
+          "width": 4096,
+          "height": 2272
+        },
+        {
+          "file": "tripo/A01-lacuna-04.jpg",
+          "width": 4096,
+          "height": 2272
+        }
+      ]
+    },
+    {
+      "id": "S02_BROKEN_BRIDGE",
+      "model": "Nano Banana Pro",
+      "count": 2,
+      "aspect": "16:9",
+      "resolution": "native",
+      "prompt": "STELLAR DRIFT S02 BROKEN BRIDGE — HUMAN ARK STATION CONCEPT. A wide LANDSCAPE 16:9 cinematic science-fiction production-design illustration, original AAA game concept art, astonishing scale and clean readable engineering. Humanity's last orbital-built interstellar carrier and habitat has survived an alien attack and emergency jump to an unknown planetary system. This is the player's damaged but living home base, not a derelict and not a generic circular space station. Entire 1.4 kilometre structure fully visible with breathing room. Design a massive rectangular OPEN SHIPYARD SPINE with a raised shielded command-and-habitat citadel at its front, large tank clusters, modular workshops and folded radiator banks; a spectacular four-cornered transit-frame at its rear is missing ONE CORNER from battle damage. Four permanent structural pylons connect habitable industrial modules around a long protected void used as an internal shuttle repair dock. One side is visibly torn open with exposed decks and temporary orange pressure membranes, while most of the ark remains solid, powered and structurally coherent. A few working construction gantries and repair lights show ongoing survival. Materials are warm ivory composite shielding, graphite titanium, orange maintenance structures; warm little windows and restrained cyan guidance lights. One compact 22-metre human expedition shuttle approaches a brightly lit hangar, tiny relative to the ark. Full three-quarter view above the limb of a beautiful blue-green alien planet and soft sunlit cloud layers; neutral star field, one directional sun, physically convincing shadows and excellent readable fill. Emphasize an instantly recognizable monumental silhouette, functional docking, believable scale hierarchy, restrained industrial microdetail, and emotional contrast between the immense wound and inhabited warm interior. No text, logos, UI, watermark, enormous decorative guns, a complete torus, Earth exploding, or a copied franchise vessel.",
+      "outputs": [
+        {
+          "file": "tripo/S02-broken-bridge-01.png",
+          "width": 1376,
+          "height": 768
+        },
+        {
+          "file": "tripo/S02-broken-bridge-02.png",
+          "width": 1376,
+          "height": 768
+        }
+      ]
+    },
+    {
+      "id": "S03_LACUNA_CITADEL",
+      "model": "Nano Banana Pro",
+      "count": 2,
+      "aspect": "16:9",
+      "resolution": "native",
+      "prompt": "STELLAR DRIFT S03 LACUNA CITADEL — ALIEN STATION. Make a breathtaking original photorealistic AAA science-fiction concept image in WIDE LANDSCAPE 16:9 composition. Show a complete alien megastructure in its entirety, clear silhouette and 15 percent breathing room, a physically coherent 6 kilometre orbital infrastructure. It belongs to an ancient intelligent civilization whose ships use open brackets surrounding controlled empty volumes. Design three gigantic unequal BLACK MINERAL CERAMIC RECTANGULAR ARCS arranged in offset perpendicular layers around a visibly empty central region. Each arc has precise thick structural masses at its ends, thin nested inner lamellae, and pale ivory contact surfaces along its inner face. Not three full rings, not an ordinary human torus station, no human buildings, cockpit windows, rockets or random antenna farms. Narrow amber field interfaces embedded inside the brackets, minute distortions and thin bands of refracted starlight inside the void suggest a spatial machine rather than a bright fantasy portal. This station is both inhabited alien architecture and threatening transit-control infrastructure, with deliberately unusual access apertures and deep protected cavities that could later become explorable game environments. Mature civilization, severe elegance, meaningful empty space, radically nonhuman construction logic and restrained advanced technology. Materials must remain richly tactile: dark satin ceramic, mineral layers, pale dense stone-metal, polished inner shear planes, fine engineering edges. A lone very small white-and-orange human survey shuttle near the bottom foreground observes it, tiny beside the immense structure. Place the entire structure against the softly lit ochre limb and pale atmosphere of an alien gas giant; hard sun rim from one side plus good cool fill so all volumes read. Cinematic industrial concept art, awe and unease, beautiful composition and production design. No captions, text, typography, logos, UI, watermark, glowing neon outlines, purple everything, tentacles, skulls, fantasy castle towers or recognizable franchise ships.",
+      "outputs": [
+        {
+          "file": "tripo/S03-lacuna-citadel-01.png",
+          "width": 1376,
+          "height": 768
+        },
+        {
+          "file": "tripo/S03-lacuna-citadel-02.png",
+          "width": 1376,
+          "height": 768
+        }
+      ]
+    },
+    {
+      "id": "A02_LAMINA",
+      "model": "Midjourney v8.2",
+      "count": 4,
+      "aspect": "model default; landscape requested in prompt",
+      "resolution": "native",
+      "prompt": "STELLAR DRIFT A02 LAMINA. Original AAA science-fiction vehicle design, cinematic photoreal concept art, landscape composition, a complete striking nonhuman alien spacecraft with generous empty border. An unnervingly beautiful 120-metre spatial interdiction vessel made from three thin, tall, unequal blade-like mineral-metal slabs held in a precise staggered configuration by a compact dense central core. Not a human jet, not a flying triangle or ordinary battleship, no tentacles or eyes. From the side its silhouette is three towering vertical curved shear planes and negative space; from the front it nearly disappears into three thin edges. Their lower edges have a tiny step pattern and physically precise laminated structure; one deep diagonal seam shows a dim amber refractive interior. Smooth pale heavy ceramic faces with dark graphite undersides and tiny embedded field apertures; extremely restrained surface seams, sculptural scale hierarchy, advanced engineering with no visible rocket exhaust. Functional weapon effect is compression of the empty space between the slabs, shown only as a subtle lensing line, not bright magic lightning. Show the craft at a dramatic three-quarter angle over a dark blue ocean planet and its fine pale atmospheric rim; a single distant white-orange human research shuttle gives scale. Warm low star rim, realistic cool bounce light, the entire vessel is clearly visible and richly modeled. Quiet immense menace, sophisticated original industrial design, large confident forms balanced with minute technical material detail, cinematic production artwork that could guide later modeling. Do not print any words, titles, numbers, letters, watermarks, logos or interface; no famous franchise design, fighter wings, medieval ornament or random greebles.",
+      "outputs": [
+        {
+          "file": "tripo/A02-lamina-01.png",
+          "width": 2048,
+          "height": 2048
+        },
+        {
+          "file": "tripo/A02-lamina-02.png",
+          "width": 2048,
+          "height": 2048
+        },
+        {
+          "file": "tripo/A02-lamina-03.png",
+          "width": 2048,
+          "height": 2048
+        },
+        {
+          "file": "tripo/A02-lamina-04.png",
+          "width": 2048,
+          "height": 2048
+        }
+      ]
+    },
+    {
+      "id": "H05_COCOON",
+      "model": "GPT Image 2.5",
+      "count": 2,
+      "aspect": "16:9",
+      "resolution": "4K",
+      "prompt": "Create an original premium photorealistic AAA science-fiction spacecraft concept illustration. Image must contain NO TYPOGRAPHY, NO TITLES, NO WRITING, NO LABELS, NO LOGOS. Wide 16:9 landscape, one complete spacecraft with generous empty space on all sides. A highly distinctive compact human exploration shuttle for a survival game: the last survivors of Earth live on a damaged interstellar ark and use this craft to gather resources and explore alien planets. Explore a rounded but strongly engineered 19-metre COCOON lifting-body with an angular deep forward window belt, no jet fighter nose, no conventional wings, thick protected ventral heat shield and FOUR LARGE ARTICULATED ARMOR PETALS that tuck flush into the upper body for atmospheric entry. Show two of the upper petals opened slightly in a clearly mechanical service configuration, revealing recessed radiator panels and compact field-repair tools, while the primary hull remains a solid habitable pressure vessel. Three shrouded engines live deep inside the rear body rather than external airline nacelles; four protected downward maneuvering thrusters; sturdy three-point landing gear with broad pads and a short rear ramp. A small detachable sample-and-resource pod sits beneath the centerline. A believable two-person walk-in cabin and compact sleeping/lab volume, no transparent aquarium bubble. Human visual language: warm ivory ceramic skin, graphite titanium underside and restrained weathered orange service patches; very limited functional cyan lights. Large clean forms, beautiful proportion, precise structural seams, excellent material detail and intentional functional machinery instead of random greebles. Front three-quarter hero view of the whole craft on a barren coastal alien landing pad in beautiful low morning sunlight, one 1.8-metre technician at a safe distance gives scale. Include a small rear three-quarter view of the SAME craft in a clean corner inset to explain its unique engine arrangement. Reads as an expensive yet repairable expedition vehicle that can survive atmospheric entry, not a bug, not an organic seed, not an armored tank, no heavy weapons. Imaginative ambitious industrial design beyond generic spacecraft. Again: no lettering or captions anywhere in the image, no interface, watermark or franchise insignia.",
+      "outputs": [
+        {
+          "file": "tripo/H05-cocoon-01.jpg",
+          "width": 4096,
+          "height": 2336
+        },
+        {
+          "file": "tripo/H05-cocoon-02.jpg",
+          "width": 4096,
+          "height": 2336
+        }
+      ]
+    }
+  ],
+  "final_free_image_usage": 18,
+  "studio_credits_spent": 0,
+  "image_outputs": 18
+}

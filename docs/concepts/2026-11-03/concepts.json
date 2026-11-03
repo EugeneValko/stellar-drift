@@ -1,0 +1,291 @@
+{
+  "date": "2026-11-03",
+  "title": "Stellar Drift — арт-разведка",
+  "status": "Эскизы, не канон",
+  "items": [
+    {
+      "filename": "imagegen/01-kestrel-expedition.png",
+      "id": "H01",
+      "category": "shuttles",
+      "title": "Kestrel · экспедиционный шаттл",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Компактный исследователь с грузовым отсеком и защищенным днищем.",
+      "tags": []
+    },
+    {
+      "filename": "imagegen/02-mule-salvage-v2.png",
+      "id": "H02 · v2",
+      "category": "shuttles",
+      "title": "Mule · сборщик и спасатель",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Двухкорпусный рабочий шаттл с центральной грузовой кассетой.",
+      "tags": []
+    },
+    {
+      "filename": "imagegen/03-petrel-deep-survey.png",
+      "id": "H03",
+      "category": "shuttles",
+      "title": "Petrel · дальняя разведка",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Вытянутый исследовательский корпус, лаборатория и походное оборудование.",
+      "tags": []
+    },
+    {
+      "filename": "tripo/H04-axiom-01.jpg",
+      "id": "H04-01",
+      "category": "shuttles",
+      "title": "Axiom · человеческий шаттл",
+      "source": "Tripo Studio",
+      "model": "GPT Image 2.5 · 4K",
+      "notes": "Дополнительные варианты человеческой экспедиционной техники.",
+      "tags": []
+    },
+    {
+      "filename": "tripo/H04-axiom-02.jpg",
+      "id": "H04-02",
+      "category": "shuttles",
+      "title": "Axiom · человеческий шаттл",
+      "source": "Tripo Studio",
+      "model": "GPT Image 2.5 · 4K",
+      "notes": "Дополнительные варианты человеческой экспедиционной техники.",
+      "tags": []
+    },
+    {
+      "filename": "tripo/H04-axiom-03.jpg",
+      "id": "H04-03",
+      "category": "shuttles",
+      "title": "Axiom · человеческий шаттл",
+      "source": "Tripo Studio",
+      "model": "GPT Image 2.5 · 4K",
+      "notes": "Дополнительные варианты человеческой экспедиционной техники.",
+      "tags": []
+    },
+    {
+      "filename": "tripo/H04-axiom-04.jpg",
+      "id": "H04-04",
+      "category": "shuttles",
+      "title": "Axiom · человеческий шаттл",
+      "source": "Tripo Studio",
+      "model": "GPT Image 2.5 · 4K",
+      "notes": "Дополнительные варианты человеческой экспедиционной техники.",
+      "tags": []
+    },
+    {
+      "filename": "tripo/H05-cocoon-01.jpg",
+      "id": "H05-01",
+      "category": "shuttles",
+      "title": "Cocoon · защищенный посадочник",
+      "source": "Tripo Studio",
+      "model": "GPT Image 2.5 · 4K",
+      "notes": "Компактная компоновка и раскрывающиеся защитные панели.",
+      "tags": []
+    },
+    {
+      "filename": "tripo/H05-cocoon-02.jpg",
+      "id": "H05-02",
+      "category": "shuttles",
+      "title": "Cocoon · защищенный посадочник",
+      "source": "Tripo Studio",
+      "model": "GPT Image 2.5 · 4K",
+      "notes": "Компактная компоновка и раскрывающиеся защитные панели.",
+      "tags": []
+    },
+    {
+      "filename": "imagegen/04-palisade-wounded-ark.png",
+      "id": "S01",
+      "category": "stations",
+      "title": "Palisade · поврежденный ковчег",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Последний человеческий дом: жилые модули, ангар и аварийный сектор.",
+      "tags": []
+    },
+    {
+      "filename": "tripo/S02-broken-bridge-01.png",
+      "id": "S02-01",
+      "category": "stations",
+      "title": "Broken Bridge · человеческий ковчег",
+      "source": "Tripo Studio",
+      "model": "Nano Banana Pro · native",
+      "notes": "Поврежденная корабль-станция: крупный силуэт и обитаемые рабочие сектора.",
+      "tags": []
+    },
+    {
+      "filename": "tripo/S02-broken-bridge-02.png",
+      "id": "S02-02",
+      "category": "stations",
+      "title": "Broken Bridge · человеческий ковчег",
+      "source": "Tripo Studio",
+      "model": "Nano Banana Pro · native",
+      "notes": "Поврежденная корабль-станция: крупный силуэт и обитаемые рабочие сектора.",
+      "tags": []
+    },
+    {
+      "filename": "tripo/S03-lacuna-citadel-01.png",
+      "id": "S03-01",
+      "category": "stations",
+      "title": "Lacuna Citadel · станция чужих",
+      "source": "Tripo Studio",
+      "model": "Nano Banana Pro · native",
+      "notes": "Орбитальная структура, построенная по нечеловеческой пространственной логике.",
+      "tags": [
+        "aliens"
+      ]
+    },
+    {
+      "filename": "tripo/S03-lacuna-citadel-02.png",
+      "id": "S03-02",
+      "category": "stations",
+      "title": "Lacuna Citadel · станция чужих",
+      "source": "Tripo Studio",
+      "model": "Nano Banana Pro · native",
+      "notes": "Орбитальная структура, построенная по нечеловеческой пространственной логике.",
+      "tags": [
+        "aliens"
+      ]
+    },
+    {
+      "filename": "tripo/A01-lacuna-01.jpg",
+      "id": "A01-01",
+      "category": "aliens",
+      "title": "Lacuna · корабль чужих",
+      "source": "Tripo Studio",
+      "model": "Nano Banana Pro · 4K",
+      "notes": "Поиск силуэта, пространственной структуры и материалов чужой технологии.",
+      "tags": [
+        "aliens"
+      ]
+    },
+    {
+      "filename": "tripo/A01-lacuna-02.jpg",
+      "id": "A01-02",
+      "category": "aliens",
+      "title": "Lacuna · корабль чужих",
+      "source": "Tripo Studio",
+      "model": "Nano Banana Pro · 4K",
+      "notes": "Поиск силуэта, пространственной структуры и материалов чужой технологии.",
+      "tags": [
+        "aliens"
+      ]
+    },
+    {
+      "filename": "tripo/A01-lacuna-03.jpg",
+      "id": "A01-03",
+      "category": "aliens",
+      "title": "Lacuna · корабль чужих",
+      "source": "Tripo Studio",
+      "model": "Nano Banana Pro · 4K",
+      "notes": "Поиск силуэта, пространственной структуры и материалов чужой технологии.",
+      "tags": [
+        "aliens"
+      ]
+    },
+    {
+      "filename": "tripo/A01-lacuna-04.jpg",
+      "id": "A01-04",
+      "category": "aliens",
+      "title": "Lacuna · корабль чужих",
+      "source": "Tripo Studio",
+      "model": "Nano Banana Pro · 4K",
+      "notes": "Поиск силуэта, пространственной структуры и материалов чужой технологии.",
+      "tags": [
+        "aliens"
+      ]
+    },
+    {
+      "filename": "tripo/A02-lamina-01.png",
+      "id": "A02-01",
+      "category": "aliens",
+      "title": "Lamina · корабль чужих",
+      "source": "Tripo Studio",
+      "model": "Midjourney v8.2",
+      "notes": "Альтернативное направление пластинчатой чужой архитектуры.",
+      "tags": [
+        "aliens"
+      ]
+    },
+    {
+      "filename": "tripo/A02-lamina-02.png",
+      "id": "A02-02",
+      "category": "aliens",
+      "title": "Lamina · корабль чужих",
+      "source": "Tripo Studio",
+      "model": "Midjourney v8.2",
+      "notes": "Альтернативное направление пластинчатой чужой архитектуры.",
+      "tags": [
+        "aliens"
+      ]
+    },
+    {
+      "filename": "tripo/A02-lamina-03.png",
+      "id": "A02-03",
+      "category": "aliens",
+      "title": "Lamina · корабль чужих",
+      "source": "Tripo Studio",
+      "model": "Midjourney v8.2",
+      "notes": "Альтернативное направление пластинчатой чужой архитектуры.",
+      "tags": [
+        "aliens"
+      ]
+    },
+    {
+      "filename": "tripo/A02-lamina-04.png",
+      "id": "A02-04",
+      "category": "aliens",
+      "title": "Lamina · корабль чужих",
+      "source": "Tripo Studio",
+      "model": "Midjourney v8.2",
+      "notes": "Альтернативное направление пластинчатой чужой архитектуры.",
+      "tags": [
+        "aliens"
+      ]
+    },
+    {
+      "filename": "imagegen/08-lacuna-interdictor.png",
+      "id": "A03",
+      "category": "aliens",
+      "title": "Lacuna · перехватчик пространства",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Объемная вариация с открытым центром, массивными рукавами и полевыми ламелями.",
+      "tags": [
+        "aliens"
+      ]
+    },
+    {
+      "filename": "imagegen/05_human_survivors.png",
+      "id": "C01",
+      "category": "characters",
+      "title": "Люди · экипаж выживших",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Пилот-исследователь, ремонтный инженер и специалист по спасательным работам.",
+      "tags": []
+    },
+    {
+      "filename": "imagegen/06_alien_operators.png",
+      "id": "C02",
+      "category": "characters",
+      "title": "Lacuna · разумные операторы",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Два варианта нечеловеческой анатомии и функционального оснащения.",
+      "tags": [
+        "aliens"
+      ]
+    },
+    {
+      "filename": "imagegen/07_field_kit_v2.png",
+      "id": "E01 · v2",
+      "category": "gear",
+      "title": "Полевой комплект · исследование и ремонт",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Сканер, наручный модуль, наземный прибор, мультитул и ресурсный маяк. Уточненная эргономика ручного сканера.",
+      "tags": []
+    }
+  ]
+}
