@@ -8,6 +8,7 @@
 <style>
 :root{--bg:#101318;--panel:#191e25;--edge:#303845;--text:#f0eee8;--muted:#a3adba;--accent:#e8a46b;--max:1680px}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "Segoe UI",system-ui,sans-serif}button,a{font:inherit}button{cursor:pointer}button,a{touch-action:manipulation}button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:4px}button{color:inherit}a{color:inherit}.shell{max-width:var(--max);margin:auto;padding:40px 32px 100px}.eyebrow{color:var(--accent);font-size:11px;font-weight:650;letter-spacing:.19em;text-transform:uppercase}.heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-top:12px}h1{margin:0;font-size:clamp(30px,4vw,56px);font-weight:550;letter-spacing:-.045em;line-height:1.1}.intro{color:var(--muted);max-width:720px;margin:18px 0 0;font-size:16px}.stats{color:var(--muted);text-align:right;font-size:12px;white-space:nowrap}.stats strong{display:block;color:var(--text);font-size:28px;font-weight:450;line-height:1.2}.navwrap{position:sticky;top:0;z-index:2;background:rgba(16,19,24,.95);backdrop-filter:blur(16px);border-bottom:1px solid var(--edge);margin:30px 0 26px;padding:16px 0;display:flex;gap:16px;align-items:center;justify-content:space-between}.filters{display:flex;gap:7px;flex-wrap:wrap}.filter{border:1px solid transparent;border-radius:24px;background:transparent;padding:8px 13px;color:var(--muted);white-space:nowrap}.filter:hover{background:#232a34;color:var(--text)}.filter[aria-pressed=true]{background:#e3ded3;color:#171a1d}.count{font-size:11px;opacity:.65;margin-left:7px}.hint{font-size:11px;color:var(--muted);text-align:right;max-width:220px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}.card{background:var(--panel);border:1px solid var(--edge);border-radius:12px;overflow:hidden;transition:border-color .18s,transform .18s}.card:hover{border-color:#687482}.card.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}.picture{display:block;width:100%;aspect-ratio:16/10;border:0;padding:12px;background:#0d1014;overflow:hidden}.picture img{width:100%;height:100%;object-fit:contain;display:block;transition:transform .25s}.picture:hover img{transform:scale(1.012)}.cardinfo{padding:17px 20px 18px}.cardtop{display:flex;gap:14px;justify-content:space-between;align-items:center}.conceptid{font:11px/1.3 ui-monospace,Consolas,monospace;letter-spacing:.06em;color:var(--accent)}.source{font-size:11px;color:var(--muted)}.card h2{font-size:18px;font-weight:550;margin:8px 0 6px;line-height:1.35}.note{font-size:13px;color:var(--muted);margin:0;min-height:38px}.cardbottom{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;border-top:1px solid var(--edge);padding-top:12px}.model{font-size:11px;color:var(--muted)}.select{font-size:12px;display:flex;align-items:center;gap:7px;white-space:nowrap;cursor:pointer}.select input{accent-color:var(--accent);width:15px;height:15px;margin:0}.empty{padding:80px 0;color:var(--muted);text-align:center;grid-column:1/-1}.foot{margin-top:36px;padding-top:18px;border-top:1px solid var(--edge);display:flex;gap:18px;justify-content:space-between;color:var(--muted);font-size:12px}.foot a{text-decoration:none;border-bottom:1px solid #657080}.comparebar{position:fixed;z-index:4;bottom:20px;left:50%;transform:translateX(-50%);width:min(680px,calc(100% - 32px));padding:12px 16px;border:1px solid #655343;border-radius:12px;background:#20252d;box-shadow:0 12px 60px #0009;display:flex;align-items:center;gap:14px}.comparebar[hidden]{display:none}.comparebar .selectiontext{flex:1;font-size:12px}.action{border:1px solid #647080;background:transparent;border-radius:7px;padding:8px 12px;font-size:12px}.primary{background:#e3ded3;border-color:#e3ded3;color:#171a1d}.action:disabled{opacity:.35;cursor:default}.tiny{color:var(--muted);font-size:12px;background:none;border:none;padding:6px}.lightbox{padding:0;max-width:none;max-height:none;width:calc(100vw - 32px);height:calc(100vh - 32px);margin:auto;border:1px solid #47525f;border-radius:12px;background:#101318;color:var(--text);overflow:hidden}.lightbox::backdrop{background:#000d;backdrop-filter:blur(8px)}.lightboxinner{height:100%;display:flex;flex-direction:column}.lbhead{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:15px 20px;border-bottom:1px solid var(--edge);flex-shrink:0}.lbtitle{font-size:15px;font-weight:550;margin:0}.lbsub{color:var(--muted);font-size:11px;margin-top:3px}.lbcontrols{display:flex;align-items:center;gap:9px;white-space:nowrap}.original{font-size:12px;color:var(--muted);text-decoration:none;margin-right:12px}.original:hover{color:var(--text)}.iconbutton{background:#222a34;border:1px solid #3b4654;border-radius:6px;font-size:22px;width:38px;height:36px;line-height:1}.lbmedia{flex:1;min-height:0;display:flex;align-items:stretch;justify-content:center;padding:16px;gap:16px}.lbmedia figure{margin:0;min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center}.lbmedia img{display:block;min-height:0;flex:1;width:100%;object-fit:contain}.lbmedia figcaption{font-size:12px;color:var(--muted);padding:10px 0 0;text-align:center}.lbmedia figcaption a{margin-left:12px;color:var(--text)}.lbnote{padding:10px 20px 16px;color:var(--muted);font-size:12px;flex-shrink:0}.lbmedia.comparing{background:#0b0e12}.live{position:absolute;overflow:hidden;clip-path:inset(50%);width:1px;height:1px}
+.direction{display:inline-block;margin:12px 0 0;padding:3px 7px;border:1px solid #66513e;border-radius:4px;color:var(--accent);font-size:10px;letter-spacing:.05em}.direction+.cardtitle{margin-top:7px}
 @media(min-width:1400px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:800px){.shell{padding:26px 16px 110px}.heading{align-items:flex-start}.stats{padding-top:4px}.intro{font-size:14px}.navwrap{margin-top:24px;padding:12px 0;display:block}.hint{display:none}.filter{padding:7px 11px;font-size:13px}.grid{grid-template-columns:1fr;gap:20px}.cardinfo{padding:14px 16px}.card h2{font-size:17px}.note{min-height:0}.foot{flex-direction:column;gap:8px}.lightbox{width:100vw;height:100dvh;border-radius:0;border:0}.lbhead{padding:12px;gap:8px}.lbtitle{font-size:13px}.lbsub{font-size:10px}.lbcontrols{gap:5px}.original{display:none}.iconbutton{width:32px;height:32px}.lbmedia{padding:8px;gap:8px}.lbmedia.comparing{flex-direction:column}.lbmedia.comparing figure{min-height:0}.lbnote{padding:8px 12px;font-size:11px}.comparebar{gap:9px}.comparebar .selectiontext{font-size:11px}.comparebar .action{padding:8px;font-size:11px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 </style>
@@ -16,7 +17,7 @@
 <main class="shell">
   <div class="eyebrow">Stellar Drift / Art exploration / 03.11.2026</div>
   <div class="heading"><h1>Силуэты нового мира</h1><div class="stats"><strong id="total">0</strong>концептов</div></div>
-  <p class="intro">Эскизы, не канон. Шаттлы, корабли-станции, чужие и полевое оснащение для истории о последнем человеческом доме.</p>
+  <p class="intro">Актуальное направление — четкий силуэт, крупные спокойные поверхности и минимум мелких деталей. Эскизы, не канон.</p>
   <div class="navwrap"><nav class="filters" aria-label="Категории концептов" id="filters"></nav><div class="hint">Нажмите на изображение, чтобы рассмотреть.<br>Отметьте два эскиза для сравнения.</div></div>
   <section class="grid" id="grid" aria-label="Концепты"></section>
   <footer class="foot"><span>Поисковые изображения. Конструкции, пропорции и детали могут меняться.</span><span><a href="brief.txt">Короткий бриф</a> · <a href="concepts.json">Каталог</a></span></footer>
@@ -29,6 +30,79 @@
   "title": "Stellar Drift — арт-разведка",
   "status": "Эскизы, не канон",
   "items": [
+    {
+      "filename": "imagegen/09-vela-clean.png",
+      "id": "H06",
+      "category": "shuttles",
+      "title": "Vela · компактный цельный клин",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Гладкие крупные поверхности и минималистичный силуэт компактного экспедиционного шаттла.",
+      "tags": [
+        "clean"
+      ]
+    },
+    {
+      "filename": "imagegen/10-swift-clean.png",
+      "id": "H07",
+      "category": "shuttles",
+      "title": "Swift · вытянутый шаттл",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Гладкий минималистичный корпус, вытянутые пропорции и ясная основная форма.",
+      "tags": [
+        "clean"
+      ]
+    },
+    {
+      "filename": "imagegen/11-manta-clean-v2.png",
+      "id": "H08 · v2",
+      "category": "shuttles",
+      "title": "Manta · широкий несущий корпус",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Угловатый баланс крупных панелей и функциональных деталей в широкой низкой компоновке.",
+      "tags": [
+        "clean"
+      ]
+    },
+    {
+      "filename": "imagegen/12-human-clean.png",
+      "id": "C03",
+      "category": "characters",
+      "title": "Люди · чистая форма",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Крупные цельные элементы скафандра, ясная функция и минимум навесного оборудования.",
+      "tags": [
+        "clean"
+      ]
+    },
+    {
+      "filename": "imagegen/13-alien-clean.png",
+      "id": "C04",
+      "category": "characters",
+      "title": "Lacuna · чистый силуэт",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Узнаваемая нечеловеческая анатомия, крупные формы и сдержанные функциональные детали.",
+      "tags": [
+        "clean",
+        "aliens"
+      ]
+    },
+    {
+      "filename": "imagegen/14-tools-clean.png",
+      "id": "E02",
+      "category": "gear",
+      "title": "Полевой комплект · чистые формы",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Понятные исследовательские инструменты, спокойные корпуса и продуманная эргономика.",
+      "tags": [
+        "clean"
+      ]
+    },
     {
       "filename": "imagegen/01-kestrel-expedition.png",
       "id": "H01",
@@ -318,15 +392,35 @@
 <script>
 'use strict';
 const DATA=JSON.parse(document.getElementById('concept-data').textContent),items=DATA.items;
-const labels={all:'Все',shuttles:'Шаттлы',stations:'Станции',aliens:'Чужие',characters:'Персонажи',gear:'Снаряжение'};
+const labels={clean:'Чистые формы',all:'Все',shuttles:'Шаттлы',stations:'Станции',aliens:'Чужие',characters:'Персонажи',gear:'Снаряжение'};
 const byId=id=>document.getElementById(id),grid=byId('grid'),dialog=byId('lightbox');
-let category='all',visible=[],selected=[],current=-1,mode='single';
+let category=items.filter(item=>(item.tags||[]).includes('clean')).length>=3?'clean':'all',visible=[],selected=[],current=-1,mode='single';
 function node(tag,attrs={},text){const el=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==='class')el.className=v;else el.setAttribute(k,v);}if(text!==undefined)el.textContent=text;return el;}
 function matches(item,filter){return filter==='all'||item.category===filter||(item.tags||[]).includes(filter);}
 function imagePath(item){return item.filename.split('/').map(encodeURIComponent).join('/');}
 function announce(text){byId('status').textContent=text;}
 function renderFilters(){const nav=byId('filters');nav.replaceChildren();for(const[key,label]of Object.entries(labels)){const count=items.filter(item=>matches(item,key)).length;const b=node('button',{class:'filter','aria-pressed':String(category===key)},label);b.append(node('span',{class:'count'},String(count)));b.addEventListener('click',()=>{category=key;renderFilters();renderGrid();});nav.append(b);}}
-function renderGrid(){visible=items.map((item,index)=>({item,index})).filter(({item})=>matches(item,category)).map(x=>x.index);grid.replaceChildren();for(const index of visible){const item=items[index],card=node('article',{class:'card'+(selected.includes(index)?' selected':'')});const open=node('button',{class:'picture','aria-label':'Рассмотреть: '+item.title});open.append(node('img',{src:imagePath(item),alt:item.title+' — '+item.notes,loading:'lazy',decoding:'async'}));open.addEventListener('click',()=>showSingle(index));const info=node('div',{class:'cardinfo'}),top=node('div',{class:'cardtop'});top.append(node('span',{class:'conceptid'},item.id),node('span',{class:'source'},item.source));info.append(top,node('h2',{},item.title),node('p',{class:'note'},item.notes));const bottom=node('div',{class:'cardbottom'}),label=node('label',{class:'select'}),check=node('input',{type:'checkbox','aria-label':'Выбрать для сравнения: '+item.id});check.checked=selected.includes(index);check.addEventListener('change',()=>toggleSelection(index));label.append(check,document.createTextNode('Сравнить'));bottom.append(node('span',{class:'model'},item.model),label);info.append(bottom);card.append(open,info);grid.append(card);}if(!visible.length)grid.append(node('p',{class:'empty'},'В этой категории пока нет изображений.'));byId('total').textContent=String(items.length);}
+function renderGrid(){
+  visible=items.map((item,index)=>({item,index})).filter(({item})=>matches(item,category)).map(x=>x.index);
+  grid.replaceChildren();
+  for(const index of visible){
+    const item=items[index],card=node('article',{class:'card'+(selected.includes(index)?' selected':'')});
+    const open=node('button',{class:'picture','aria-label':'Рассмотреть: '+item.title});
+    open.append(node('img',{src:imagePath(item),alt:item.title+' — '+item.notes,loading:'lazy',decoding:'async'}));
+    open.addEventListener('click',()=>showSingle(index));
+    const info=node('div',{class:'cardinfo'}),top=node('div',{class:'cardtop'});
+    top.append(node('span',{class:'conceptid'},item.id),node('span',{class:'source'},item.source));
+    info.append(top);
+    if((item.tags||[]).includes('clean'))info.append(node('span',{class:'direction'},'Актуальное направление · Чистые формы'));
+    info.append(node('h2',{class:'cardtitle'},item.title),node('p',{class:'note'},item.notes));
+    const bottom=node('div',{class:'cardbottom'}),label=node('label',{class:'select'}),check=node('input',{type:'checkbox','aria-label':'Выбрать для сравнения: '+item.id});
+    check.checked=selected.includes(index);check.addEventListener('change',()=>toggleSelection(index));
+    label.append(check,document.createTextNode('Сравнить'));bottom.append(node('span',{class:'model'},item.model),label);
+    info.append(bottom);card.append(open,info);grid.append(card);
+  }
+  if(!visible.length)grid.append(node('p',{class:'empty'},'В этой категории пока нет изображений.'));
+  byId('total').textContent=String(visible.length);
+}
 function toggleSelection(index){if(selected.includes(index))selected=selected.filter(x=>x!==index);else{if(selected.length===2)selected.shift();selected.push(index);}updateSelection();renderGrid();}
 function updateSelection(){byId('comparebar').hidden=selected.length===0;byId('compare').disabled=selected.length!==2;byId('selectiontext').textContent=selected.map(index=>items[index].id).join('  +  ')+(selected.length===1?' · выберите второй эскиз':'');announce('Выбрано для сравнения: '+selected.length);}
 function figure(item,caption){const f=node('figure'),img=node('img',{src:imagePath(item),alt:item.title});f.append(img);if(caption){const c=node('figcaption',{},item.id+' · '+item.title),a=node('a',{href:imagePath(item),target:'_blank',rel:'noopener'},'Оригинал ↗');c.append(a);f.append(c);}return f;}

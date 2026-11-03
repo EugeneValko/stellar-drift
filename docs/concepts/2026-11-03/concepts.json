@@ -4,6 +4,79 @@
   "status": "Эскизы, не канон",
   "items": [
     {
+      "filename": "imagegen/09-vela-clean.png",
+      "id": "H06",
+      "category": "shuttles",
+      "title": "Vela · компактный цельный клин",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Гладкие крупные поверхности и минималистичный силуэт компактного экспедиционного шаттла.",
+      "tags": [
+        "clean"
+      ]
+    },
+    {
+      "filename": "imagegen/10-swift-clean.png",
+      "id": "H07",
+      "category": "shuttles",
+      "title": "Swift · вытянутый шаттл",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Гладкий минималистичный корпус, вытянутые пропорции и ясная основная форма.",
+      "tags": [
+        "clean"
+      ]
+    },
+    {
+      "filename": "imagegen/11-manta-clean-v2.png",
+      "id": "H08 · v2",
+      "category": "shuttles",
+      "title": "Manta · широкий несущий корпус",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Угловатый баланс крупных панелей и функциональных деталей в широкой низкой компоновке.",
+      "tags": [
+        "clean"
+      ]
+    },
+    {
+      "filename": "imagegen/12-human-clean.png",
+      "id": "C03",
+      "category": "characters",
+      "title": "Люди · чистая форма",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Крупные цельные элементы скафандра, ясная функция и минимум навесного оборудования.",
+      "tags": [
+        "clean"
+      ]
+    },
+    {
+      "filename": "imagegen/13-alien-clean.png",
+      "id": "C04",
+      "category": "characters",
+      "title": "Lacuna · чистый силуэт",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Узнаваемая нечеловеческая анатомия, крупные формы и сдержанные функциональные детали.",
+      "tags": [
+        "clean",
+        "aliens"
+      ]
+    },
+    {
+      "filename": "imagegen/14-tools-clean.png",
+      "id": "E02",
+      "category": "gear",
+      "title": "Полевой комплект · чистые формы",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Понятные исследовательские инструменты, спокойные корпуса и продуманная эргономика.",
+      "tags": [
+        "clean"
+      ]
+    },
+    {
       "filename": "imagegen/01-kestrel-expedition.png",
       "id": "H01",
       "category": "shuttles",
