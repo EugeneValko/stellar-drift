@@ -1,0 +1,20 @@
+STELLAR DRIFT - ISOLATED GODOT GLB IMPORT CHECK
+2026-11-03T18:33:18Z
+Godot 4.7.2-stable (official)
+QA project: C:/Users/admin/.codex/visualizations/2026/11/03/01a1a23c-dd9b-7a11-8ed8-86d5a0707fd7/model-qa/
+Scope: engine import and generated-scene mesh/material/triangle presence only.
+No FPS, gameplay, render quality, rigging, collision, physical scale or LOD-transition certification.
+
+ID | Status | Error code | Mesh instances | Surfaces | Materials | Triangles | Source unchanged
+AL01 | imported | 0 | 1 | 1 | 1 | 18124 | true
+CH01 | imported | 0 | 1 | 1 | 1 | 18694 | true
+CH02 | imported | 0 | 1 | 1 | 1 | 18262 | true
+SH01 | imported | 0 | 1 | 1 | 1 | 19211 | true
+SH02 | imported | 0 | 1 | 1 | 1 | 18840 | true
+BP01 | imported | 0 | 1 | 1 | 1 | 2870 | true
+BP02 | imported | 0 | 1 | 1 | 1 | 2922 | true
+TL01 | imported | 0 | 1 | 1 | 1 | 2039 | true
+TL02 | imported | 0 | 1 | 1 | 1 | 1936 | true
+TL03 | imported | 0 | 1 | 1 | 1 | 1832 | true
+
+Imported 10/10; failed 0; source hashes changed 0.

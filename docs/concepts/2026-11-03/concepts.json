@@ -2,7 +2,186 @@
   "date": "2026-11-03",
   "title": "Stellar Drift — арт-разведка",
   "status": "Эскизы, не канон",
+  "family_schools": 6,
+  "family_ship_concepts": 24,
   "items": [
+    {
+      "filename": "families/HF01-meridian.png",
+      "id": "HF01",
+      "category": "shuttles",
+      "title": "Меридиан",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Экспедиционная школа: широкие низкие клиновидные несущие корпуса, интегрированные движители, тёплый белый и графит с небольшим оранжевым акцентом.",
+      "tags": [
+        "families",
+        "clean"
+      ],
+      "side": "human",
+      "school": "Meridian",
+      "roles4": [
+        "Лёгкий разведчик",
+        "Экспедиционный шаттл",
+        "Грузовой / рабочий корабль",
+        "Корвет дальних миссий"
+      ],
+      "positions": [
+        "TL",
+        "TR",
+        "BL",
+        "BR"
+      ],
+      "status": "Поисковая школа, не канон; корабли на листе показаны не в общем масштабе.",
+      "prompt_file": "families/HF01-meridian.prompt.txt"
+    },
+    {
+      "filename": "families/HF02-bastion.png",
+      "id": "HF02",
+      "category": "shuttles",
+      "title": "Бастион",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Промышленная школа: простые замкнутые прямоугольные и П-образные модульные массы, закрытые сменные грузовые блоки, каменный серый и petrol blue со сдержанным жёлтым.",
+      "tags": [
+        "families",
+        "clean"
+      ],
+      "side": "human",
+      "school": "Bastion",
+      "roles4": [
+        "Лёгкий разведчик",
+        "Экспедиционный шаттл",
+        "Грузовой / рабочий корабль",
+        "Корвет дальних миссий"
+      ],
+      "positions": [
+        "TL",
+        "TR",
+        "BL",
+        "BR"
+      ],
+      "status": "Поисковая школа, не канон; корабли на листе показаны не в общем масштабе.",
+      "prompt_file": "families/HF02-bastion.prompt.txt"
+    },
+    {
+      "filename": "families/HF03-vesper.png",
+      "id": "HF03",
+      "category": "shuttles",
+      "title": "Веспер",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Скоростная школа: тонкие диагональные клинья, контролируемая асимметрия, смещённая кабина и центральный силовой хребет, холодный титан и графит с приглушённым красным.",
+      "tags": [
+        "families",
+        "clean"
+      ],
+      "side": "human",
+      "school": "Vesper",
+      "roles4": [
+        "Лёгкий разведчик",
+        "Экспедиционный шаттл",
+        "Грузовой / рабочий корабль",
+        "Корвет дальних миссий"
+      ],
+      "positions": [
+        "TL",
+        "TR",
+        "BL",
+        "BR"
+      ],
+      "status": "Поисковая школа, не канон; корабли на листе показаны не в общем масштабе.",
+      "prompt_file": "families/HF03-vesper.prompt.txt"
+    },
+    {
+      "filename": "families/AF01-lacuna.png",
+      "id": "AF01",
+      "category": "aliens",
+      "title": "Lacuna — охваты поля",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Связанные асимметричные охваты и значимая пустота; тёмная минеральная керамика, внутренние поверхности слоновой кости, янтарные полевые интерфейсы.",
+      "tags": [
+        "families",
+        "clean",
+        "aliens"
+      ],
+      "side": "alien",
+      "school": "Lacuna",
+      "roles4": [
+        "Зонд / разведчик",
+        "Патрульный корабль",
+        "Рабочий / сборщик",
+        "Командный / тяжёлый корабль"
+      ],
+      "positions": [
+        "TL",
+        "TR",
+        "BL",
+        "BR"
+      ],
+      "status": "Поисковая школа, не канон; корабли на листе показаны не в общем масштабе.",
+      "prompt_file": "families/AF01-lacuna.prompt.txt"
+    },
+    {
+      "filename": "families/AF02-lamina.png",
+      "id": "AF02",
+      "category": "aliens",
+      "title": "Lamina — сдвиговые плоскости",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Разнесённые вертикальные и наклонные плоскости, смещённые слои и веерные сборки; матовый приглушённый нефрит, графитовые связи, сдержанный ледяной свет.",
+      "tags": [
+        "families",
+        "clean",
+        "aliens"
+      ],
+      "side": "alien",
+      "school": "Lamina",
+      "roles4": [
+        "Зонд / разведчик",
+        "Патрульный корабль",
+        "Рабочий / сборщик",
+        "Командный / тяжёлый корабль"
+      ],
+      "positions": [
+        "TL",
+        "TR",
+        "BL",
+        "BR"
+      ],
+      "status": "Поисковая школа, не канон; корабли на листе показаны не в общем масштабе.",
+      "prompt_file": "families/AF02-lamina.prompt.txt"
+    },
+    {
+      "filename": "families/AF03-nacre.png",
+      "id": "AF03",
+      "category": "aliens",
+      "title": "Nacre — вложенные оболочки",
+      "source": "OpenAI image_gen",
+      "model": "image_gen · точная модель не указана",
+      "notes": "Асимметричные линзовые и спирально вложенные твёрдые оболочки; перламутровая каменная керамика, глубокий бордовый внутренний корпус, редкий тёплый свет.",
+      "tags": [
+        "families",
+        "clean",
+        "aliens"
+      ],
+      "side": "alien",
+      "school": "Nacre",
+      "roles4": [
+        "Зонд / разведчик",
+        "Патрульный корабль",
+        "Рабочий / сборщик",
+        "Командный / тяжёлый корабль"
+      ],
+      "positions": [
+        "TL",
+        "TR",
+        "BL",
+        "BR"
+      ],
+      "status": "Поисковая школа, не канон; корабли на листе показаны не в общем масштабе.",
+      "prompt_file": "families/AF03-nacre.prompt.txt"
+    },
     {
       "filename": "imagegen/09-vela-clean.png",
       "id": "H06",

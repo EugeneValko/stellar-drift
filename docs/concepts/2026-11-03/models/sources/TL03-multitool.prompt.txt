@@ -1,0 +1,6 @@
+Use case: precise-object-edit.
+Asset type: isolated single-object image-to-3D modeling reference.
+Input image: edit target. Isolate ONLY the SHORT MULTITOOL at the BOTTOM RIGHT. Remove the large C-shaped scanner and wrist device entirely.
+Preserve the original compact oblong ivory housing, large dark graphite side grip panel and top inset, very thin orange parting line, dark front collar and the SHORT projecting metal hexagonal tool tip. Keep that tip short and mechanically credible, with no extension, blade, gun barrel or redesign. Preserve the reference's simple contemporary instrument proportions and materials; do not add buttons, screws, cables or new greeble.
+Show one complete tool alone in a clean three-quarter product view matching the original angle, so the rounded body's depth and the short tip are both unambiguous. Entire object fully visible with clear margin.
+Backdrop: plain very light neutral gray, soft even product lighting, faint contact shadow. Single object only. No hand, no other tool, no loose bit, no diagram, inset, extra view, text, label, logo or watermark.

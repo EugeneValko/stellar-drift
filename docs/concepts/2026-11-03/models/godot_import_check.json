@@ -1,0 +1,245 @@
+{
+  "engine": {
+    "build": "official",
+    "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+    "hex": 263938,
+    "major": 4,
+    "minor": 7,
+    "patch": 2,
+    "status": "stable",
+    "string": "4.7.2-stable (official)",
+    "timestamp": 0
+  },
+  "generated_utc": "2026-11-03T18:33:18Z",
+  "jobs": [
+    {
+      "animation_players": 0,
+      "append_error": 0,
+      "append_error_name": "OK",
+      "id": "AL01",
+      "local_file": "downloads/AL01.glb",
+      "material_names": [
+        "tripo_mat_584395e3-d3bb-4614-800e-9c7e766b0f56"
+      ],
+      "materials": 1,
+      "mesh_instances": 1,
+      "mesh_resources": 1,
+      "nontriangle_surfaces": 0,
+      "skeletons": 0,
+      "source_sha256": "66047d1d77a9eb67efcfd596d02d2410d37402166067eadf5f890beea99b116d",
+      "source_unchanged": true,
+      "status": "imported",
+      "surfaces": 1,
+      "triangles": 18124,
+      "vertices": 16810
+    },
+    {
+      "animation_players": 0,
+      "append_error": 0,
+      "append_error_name": "OK",
+      "id": "CH01",
+      "local_file": "downloads/CH01.glb",
+      "material_names": [
+        "tripo_mat_bb8c2c2a-271c-46fd-8545-a400eb45eb47"
+      ],
+      "materials": 1,
+      "mesh_instances": 1,
+      "mesh_resources": 1,
+      "nontriangle_surfaces": 0,
+      "skeletons": 0,
+      "source_sha256": "c4bdd0af39953de811c6ba70aaced50cee74ac6663b43a18665b31c67ed15cf9",
+      "source_unchanged": true,
+      "status": "imported",
+      "surfaces": 1,
+      "triangles": 18694,
+      "vertices": 21947
+    },
+    {
+      "animation_players": 0,
+      "append_error": 0,
+      "append_error_name": "OK",
+      "id": "CH02",
+      "local_file": "downloads/CH02.glb",
+      "material_names": [
+        "tripo_mat_4be56452-e84f-4d05-9b6e-a0d3c97dc6ca"
+      ],
+      "materials": 1,
+      "mesh_instances": 1,
+      "mesh_resources": 1,
+      "nontriangle_surfaces": 0,
+      "skeletons": 0,
+      "source_sha256": "36a7de2e7559793c56279680dfc39e1d58d8b35ab2b00c016be920af0eceb1df",
+      "source_unchanged": true,
+      "status": "imported",
+      "surfaces": 1,
+      "triangles": 18262,
+      "vertices": 22059
+    },
+    {
+      "animation_players": 0,
+      "append_error": 0,
+      "append_error_name": "OK",
+      "id": "SH01",
+      "local_file": "downloads/SH01.glb",
+      "material_names": [
+        "tripo_mat_984acbb6-5f7d-4ae2-8674-1084868e77ef"
+      ],
+      "materials": 1,
+      "mesh_instances": 1,
+      "mesh_resources": 1,
+      "nontriangle_surfaces": 0,
+      "skeletons": 0,
+      "source_sha256": "70c0f3ab91b407107d19e39e7278c988cfd0aab963e41cdd2977f5cb7ffe9fa4",
+      "source_unchanged": true,
+      "status": "imported",
+      "surfaces": 1,
+      "triangles": 19211,
+      "vertices": 20520
+    },
+    {
+      "animation_players": 0,
+      "append_error": 0,
+      "append_error_name": "OK",
+      "id": "SH02",
+      "local_file": "downloads/SH02.glb",
+      "material_names": [
+        "tripo_mat_c1e805cc-a217-48ee-a645-a7a941f4d08d"
+      ],
+      "materials": 1,
+      "mesh_instances": 1,
+      "mesh_resources": 1,
+      "nontriangle_surfaces": 0,
+      "skeletons": 0,
+      "source_sha256": "dcb030bab9d445bf376ba6e3aae395e2ca85552c8fd6d06fd28beaf672868030",
+      "source_unchanged": true,
+      "status": "imported",
+      "surfaces": 1,
+      "triangles": 18840,
+      "vertices": 22829
+    },
+    {
+      "animation_players": 0,
+      "append_error": 0,
+      "append_error_name": "OK",
+      "id": "BP01",
+      "local_file": "downloads/BP01.glb",
+      "material_names": [
+        "tripo_mat_cef24b0c-e318-4f79-bcd8-3c24e99bee3a"
+      ],
+      "materials": 1,
+      "mesh_instances": 1,
+      "mesh_resources": 1,
+      "nontriangle_surfaces": 0,
+      "skeletons": 0,
+      "source_sha256": "eeea7cb42bd841d93aa192da2e82922b62580acf23e4707e8dd627e53ae1990a",
+      "source_unchanged": true,
+      "status": "imported",
+      "surfaces": 1,
+      "triangles": 2870,
+      "vertices": 2936
+    },
+    {
+      "animation_players": 0,
+      "append_error": 0,
+      "append_error_name": "OK",
+      "id": "BP02",
+      "local_file": "downloads/BP02.glb",
+      "material_names": [
+        "tripo_mat_a5b20c51-f634-4596-937d-4bf353f80333"
+      ],
+      "materials": 1,
+      "mesh_instances": 1,
+      "mesh_resources": 1,
+      "nontriangle_surfaces": 0,
+      "skeletons": 0,
+      "source_sha256": "db891e46d72b05555a26a3de4ad44130460813c5ac322e29af33d99b19a043ac",
+      "source_unchanged": true,
+      "status": "imported",
+      "surfaces": 1,
+      "triangles": 2922,
+      "vertices": 3574
+    },
+    {
+      "animation_players": 0,
+      "append_error": 0,
+      "append_error_name": "OK",
+      "id": "TL01",
+      "local_file": "downloads/TL01.glb",
+      "material_names": [
+        "tripo_mat_eed3b2ed-38ac-469d-9fab-2f99b04b7a4d"
+      ],
+      "materials": 1,
+      "mesh_instances": 1,
+      "mesh_resources": 1,
+      "nontriangle_surfaces": 0,
+      "skeletons": 0,
+      "source_sha256": "19f923c8833c0af1bb2beb15de934a40fe06d989539ef2feb839a7d1a797ca29",
+      "source_unchanged": true,
+      "status": "imported",
+      "surfaces": 1,
+      "triangles": 2039,
+      "vertices": 2536
+    },
+    {
+      "animation_players": 0,
+      "append_error": 0,
+      "append_error_name": "OK",
+      "id": "TL02",
+      "local_file": "downloads/TL02.glb",
+      "material_names": [
+        "tripo_mat_b810ccca-29e7-4c27-ab35-357a0e5776b4"
+      ],
+      "materials": 1,
+      "mesh_instances": 1,
+      "mesh_resources": 1,
+      "nontriangle_surfaces": 0,
+      "skeletons": 0,
+      "source_sha256": "6a89c0f4b411c4f8c8dab0f4a422c02296a25b8e8610f92609cd8f4aa434dec7",
+      "source_unchanged": true,
+      "status": "imported",
+      "surfaces": 1,
+      "triangles": 1936,
+      "vertices": 2028
+    },
+    {
+      "animation_players": 0,
+      "append_error": 0,
+      "append_error_name": "OK",
+      "id": "TL03",
+      "local_file": "downloads/TL03.glb",
+      "material_names": [
+        "tripo_mat_8f4a50dc-189a-43cc-9795-20f80a20c454"
+      ],
+      "materials": 1,
+      "mesh_instances": 1,
+      "mesh_resources": 1,
+      "nontriangle_surfaces": 0,
+      "skeletons": 0,
+      "source_sha256": "0689cf06454d6b2d488fa51498695d89441adb8f45c0dcc1843e3f122feda5fb",
+      "source_unchanged": true,
+      "status": "imported",
+      "surfaces": 1,
+      "triangles": 1832,
+      "vertices": 1911
+    }
+  ],
+  "main_game_project_touched": false,
+  "not_tested": [
+    "rendering/material appearance",
+    "FPS/runtime performance",
+    "gameplay",
+    "rig deformation",
+    "physical scale/pivot/axis",
+    "collision",
+    "LOD transitions"
+  ],
+  "qa_project": "C:/Users/admin/.codex/visualizations/2026/11/03/01a1a23c-dd9b-7a11-8ed8-86d5a0707fd7/model-qa/",
+  "scope": "Godot headless GLTFDocument append_from_file + generate_scene and MeshInstance3D/material/triangle enumeration only",
+  "source_manifest": "D:/UnityProjects/stellar-drift/docs/concepts/2026-11-03/models/jobs.json",
+  "summary": {
+    "failed": 0,
+    "imported": 10,
+    "jobs": 10,
+    "source_changed": 0
+  }
+}

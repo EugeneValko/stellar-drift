@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Stellar Drift — пробные 3D-модели</title>
+<style>
+:root{--bg:#11151a;--panel:#1b222a;--edge:#333e49;--text:#eeeae1;--muted:#a6b1bc;--accent:#e6a976;--green:#a0ccb1;--blue:#9bc8e9;--red:#e9a4a4}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "Segoe UI",system-ui,sans-serif}a{color:inherit}button{font:inherit;cursor:pointer}a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:4px}.shell{max-width:1560px;padding:30px 30px 60px;margin:auto}.back{color:var(--muted);font-size:12px;text-decoration:none}.back:hover{color:var(--text)}.eyebrow{color:var(--accent);font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;margin:25px 0 10px}h1{font-size:clamp(29px,3.8vw,48px);font-weight:550;letter-spacing:-.035em;line-height:1.15;margin:0}.intro{color:var(--muted);font-size:15px;max-width:780px;margin:16px 0}.meta{display:flex;gap:8px;flex-wrap:wrap;margin:19px 0 24px}.pill{font-size:12px;color:var(--muted);padding:5px 10px;border:1px solid var(--edge);border-radius:20px}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:26px}.stat{padding:14px 17px;border:1px solid var(--edge);border-radius:8px;background:var(--panel);font-size:12px;color:var(--muted)}.stat strong{display:block;color:var(--text);font-size:27px;font-weight:500;line-height:1.3}.filters{display:flex;flex-wrap:wrap;gap:7px;position:sticky;top:0;padding:14px 0;background:rgba(17,21,26,.96);backdrop-filter:blur(12px);z-index:2;border-bottom:1px solid var(--edge);margin-bottom:28px}.filter{padding:7px 13px;border:1px solid transparent;background:none;color:var(--muted);border-radius:20px;font-size:13px}.filter:hover{background:#252e37;color:var(--text)}.filter[aria-pressed=true]{background:var(--text);color:var(--bg)}.filter span{font-size:11px;opacity:.65;margin-left:7px}.section{margin-bottom:34px}.sectionhead{display:flex;align-items:baseline;justify-content:space-between;gap:20px;margin-bottom:14px}.section h2{font-size:22px;font-weight:500;letter-spacing:-.02em;margin:0}.sectiondesc{color:var(--muted);font-size:12px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}.card{border:1px solid var(--edge);border-radius:10px;overflow:hidden;background:var(--panel)}.preview{display:block;position:relative;width:100%;aspect-ratio:16/10;background:#111519;padding:10px;text-decoration:none}.preview img{display:block;object-fit:contain;width:100%;height:100%}.previewbadge{position:absolute;left:16px;top:14px;font-size:10px;letter-spacing:.04em;background:#161b24de;color:#d5dce3;padding:3px 7px;border:1px solid #46505c;border-radius:4px}.missing{height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px}.info{padding:15px 17px 17px}.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.id{font:11px ui-monospace,Consolas,monospace;color:var(--accent);letter-spacing:.06em}.status{font-size:10px;padding:3px 7px;border-radius:4px;border:1px solid #49525f;color:var(--muted)}.status.generating{color:var(--accent);border-color:#71573c}.status.completed{color:var(--green);border-color:#476553}.status.downloaded{color:var(--blue);border-color:#405f78}.status.failed{color:var(--red);border-color:#775050}.info h3{font-size:18px;font-weight:550;margin:10px 0 8px;line-height:1.35}.source-note{font-size:12px;color:var(--muted);min-height:36px;margin:0 0 14px}.links{display:flex;gap:8px;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--edge)}.link{font-size:12px;text-decoration:none;padding:7px 10px;border:1px solid #586574;border-radius:6px;display:inline-block}.link:hover{border-color:var(--text);color:#fff}.link.glb{border-color:#69859b;color:#c0dcf0}.link.unavailable{border-color:#35404b;color:#737f8a}.qa{padding:12px 0 0;color:var(--muted);font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}.qa:empty{display:none}.foot{border-top:1px solid var(--edge);padding-top:18px;display:flex;gap:20px;justify-content:space-between;color:var(--muted);font-size:12px}.foot a{text-decoration:none}.foot a:hover{color:var(--text)}.empty{padding:60px 0;text-align:center;color:var(--muted)}
+.model-label{font-size:11px;color:var(--green);margin-bottom:7px}.metrics{display:flex;flex-wrap:wrap;gap:10px 20px;margin:0 0 16px;padding:10px 0;border-top:1px solid var(--edge)}.metrics div{min-width:70px}.metrics dt{font-size:10px;color:var(--muted)}.metrics dd{font-size:13px;font-weight:550;margin:2px 0 0;font-variant-numeric:tabular-nums}
+@media(max-width:1100px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:680px){.shell{padding:22px 16px 40px}.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stat{padding:12px}.sectionhead{display:block}.sectiondesc{margin-top:5px}.filters{margin-bottom:24px}.filter{font-size:12px;padding:7px 10px}.foot{flex-direction:column;gap:7px}.source-note{min-height:0}}
+</style>
+</head>
+<body>
+<main class="shell">
+  <a href="../index.html" class="back">← Галерея концептов</a>
+  <div class="eyebrow">Stellar Drift / Пробная 3D-генерация</div>
+  <h1>Оптимизированные пробные модели</h1>
+  <p class="intro">Превью с меткой «Рендер GLB» показывают сохранённую модель; исходные референсы доступны отдельно. Генерации остаются эскизами. Риг/анимация и физический масштаб ещё не настроены.</p>
+  <div class="meta" id="meta"></div>
+  <div class="stats" id="stats"></div>
+  <nav class="filters" id="filters" aria-label="Категории моделей"></nav>
+  <div id="sections"></div>
+  <footer class="foot"><span>Опубликованные LOD — только для дальнего плана. Статусы и ссылки обновляются при пересборке.</span><span><a href="README.txt">Как пользоваться</a> · <a href="jobs.json">Задания и результаты</a></span></footer>
+</main>
+<script id="jobs-data" type="application/json">{
+  "date": "2026-11-03",
+  "provider": "Tripo Studio",
+  "model": "H3.1",
+  "texture": "Экспорт 2K/1K",
+  "credits_per_job": 65,
+  "jobs": [
+    {
+      "id": "AL01",
+      "title": "Lacuna · инопланетянин",
+      "category": "characters",
+      "input": "../imagegen/13-alien-clean.png",
+      "url": "https://studio.tripo3d.ai/workspace/retopology/d6454892-5dec-4f71-b15b-4f6737357efa",
+      "status": "downloaded",
+      "local_file": "downloads/AL01.glb",
+      "qa": null,
+      "raw_url": "https://studio.tripo3d.ai/workspace/generate/d6454892-5dec-4f71-b15b-4f6737357efa",
+      "optimization": {
+        "topology": "Quad",
+        "polygon_target": 10000,
+        "estimated_triangle_budget": 20000,
+        "credits": 40,
+        "status": "completed",
+        "url": "https://studio.tripo3d.ai/workspace/retopology/d6454892-5dec-4f71-b15b-4f6737357efa"
+      },
+      "export_texture": "2K",
+      "source_url": "https://studio.tripo3d.ai/workspace/generate/d6454892-5dec-4f71-b15b-4f6737357efa",
+      "input_href": "../imagegen/13-alien-clean.png",
+      "input_available": true,
+      "local_href": "downloads/AL01.glb",
+      "local_available": true,
+      "preview_href": "previews/AL01.png",
+      "preview_available": true,
+      "preview_kind": "Рендер GLB",
+      "rear_href": null,
+      "lods": [],
+      "metrics": {
+        "triangles": 18124,
+        "materials": 1,
+        "texture_max_edge": 2048
+      },
+      "source_note": "Один объект на исходном изображении"
+    },
+    {
+      "id": "CH01",
+      "title": "Пилот · T-поза без рюкзака",
+      "category": "characters",
+      "input": "sources/CH01-pilot-tpose.png",
+      "url": "https://studio.tripo3d.ai/workspace/retopology/78fbe8e0-4086-4a56-8f27-2b35c011910c",
+      "status": "downloaded",
+      "local_file": "downloads/CH01.glb",
+      "qa": null,
+      "raw_url": "https://studio.tripo3d.ai/workspace/generate/78fbe8e0-4086-4a56-8f27-2b35c011910c",
+      "optimization": {
+        "topology": "Quad",
+        "polygon_target": 10000,
+        "estimated_triangle_budget": 20000,
+        "credits": 40,
+        "status": "completed",
+        "url": "https://studio.tripo3d.ai/workspace/retopology/78fbe8e0-4086-4a56-8f27-2b35c011910c",
+        "observed_ui_faces": 10035
+      },
+      "export_texture": "2K",
+      "source_url": "https://studio.tripo3d.ai/workspace/generate/78fbe8e0-4086-4a56-8f27-2b35c011910c",
+      "pose": "T",
+      "backpack": false,
+      "rear_checked": true,
+      "input_href": "sources/CH01-pilot-tpose.png",
+      "input_available": true,
+      "local_href": "downloads/CH01.glb",
+      "local_available": true,
+      "preview_href": "previews/CH01.png",
+      "preview_available": true,
+      "preview_kind": "Рендер GLB",
+      "rear_href": "previews/CH01-rear.png",
+      "lods": [],
+      "metrics": {
+        "triangles": 18694,
+        "materials": 1,
+        "texture_max_edge": 2048
+      },
+      "source_note": "T-поза · без рюкзака · рюкзак отдельным объектом"
+    },
+    {
+      "id": "CH02",
+      "title": "Инженер · T-поза без рюкзака",
+      "category": "characters",
+      "input": "sources/CH02-engineer-tpose.png",
+      "url": "https://studio.tripo3d.ai/workspace/retopology/7fb1cbbe-f18b-4b3b-a368-7712c54c6658",
+      "status": "downloaded",
+      "local_file": "downloads/CH02.glb",
+      "qa": null,
+      "raw_url": "https://studio.tripo3d.ai/workspace/generate/7fb1cbbe-f18b-4b3b-a368-7712c54c6658",
+      "optimization": {
+        "topology": "Quad",
+        "polygon_target": 10000,
+        "estimated_triangle_budget": 20000,
+        "credits": 40,
+        "status": "completed",
+        "url": "https://studio.tripo3d.ai/workspace/retopology/7fb1cbbe-f18b-4b3b-a368-7712c54c6658",
+        "observed_ui_faces": 9844
+      },
+      "export_texture": "2K",
+      "source_url": "https://studio.tripo3d.ai/workspace/generate/7fb1cbbe-f18b-4b3b-a368-7712c54c6658",
+      "pose": "T",
+      "backpack": false,
+      "rear_checked": true,
+      "input_href": "sources/CH02-engineer-tpose.png",
+      "input_available": true,
+      "local_href": "downloads/CH02.glb",
+      "local_available": true,
+      "preview_href": "previews/CH02.png",
+      "preview_available": true,
+      "preview_kind": "Рендер GLB",
+      "rear_href": "previews/CH02-rear.png",
+      "lods": [],
+      "metrics": {
+        "triangles": 18262,
+        "materials": 1,
+        "texture_max_edge": 2048
+      },
+      "source_note": "T-поза · без рюкзака · рюкзак отдельным объектом"
+    },
+    {
+      "id": "SH01",
+      "title": "Manta v2 · экспедиционный шаттл",
+      "category": "ships",
+      "input": "sources/SH01-manta.png",
+      "url": "https://studio.tripo3d.ai/workspace/retopology/8fbb25a7-abc7-432a-a02d-69814cff909c",
+      "status": "downloaded",
+      "local_file": "downloads/SH01.glb",
+      "qa": null,
+      "raw_url": "https://studio.tripo3d.ai/workspace/generate/8fbb25a7-abc7-432a-a02d-69814cff909c",
+      "optimization": {
+        "topology": "Triangle",
+        "polygon_target": 20000,
+        "estimated_triangle_budget": 20000,
+        "credits": 35,
+        "status": "completed",
+        "url": "https://studio.tripo3d.ai/workspace/retopology/8fbb25a7-abc7-432a-a02d-69814cff909c",
+        "observed_ui_faces": 19211
+      },
+      "export_texture": "2K",
+      "source_url": "https://studio.tripo3d.ai/workspace/generate/8fbb25a7-abc7-432a-a02d-69814cff909c",
+      "input_href": "sources/SH01-manta.png",
+      "input_available": true,
+      "local_href": "downloads/SH01.glb",
+      "local_available": true,
+      "preview_href": "previews/SH01.png",
+      "preview_available": true,
+      "preview_kind": "Рендер GLB",
+      "rear_href": null,
+      "lods": [
+        {
+          "level": 1,
+          "href": "lods/SH01_LOD1.glb",
+          "note": "Только для дальнего плана"
+        }
+      ],
+      "metrics": {
+        "triangles": 19211,
+        "materials": 1,
+        "texture_max_edge": 2048
+      },
+      "source_note": "Один объект на исходном изображении"
+    },
+    {
+      "id": "SH02",
+      "title": "Lacuna · корабль чужих",
+      "category": "ships",
+      "input": "sources/SH02-lacuna.png",
+      "url": "https://studio.tripo3d.ai/workspace/retopology/084208e5-7e06-4e83-887f-92e1ad804dbb",
+      "status": "downloaded",
+      "local_file": "downloads/SH02.glb",
+      "qa": null,
+      "raw_url": "https://studio.tripo3d.ai/workspace/generate/084208e5-7e06-4e83-887f-92e1ad804dbb",
+      "optimization": {
+        "topology": "Triangle",
+        "polygon_target": 20000,
+        "estimated_triangle_budget": 20000,
+        "credits": 35,
+        "status": "completed",
+        "url": "https://studio.tripo3d.ai/workspace/retopology/084208e5-7e06-4e83-887f-92e1ad804dbb",
+        "observed_ui_faces": 18840
+      },
+      "export_texture": "2K",
+      "source_url": "https://studio.tripo3d.ai/workspace/generate/084208e5-7e06-4e83-887f-92e1ad804dbb",
+      "input_href": "sources/SH02-lacuna.png",
+      "input_available": true,
+      "local_href": "downloads/SH02.glb",
+      "local_available": true,
+      "preview_href": "previews/SH02.png",
+      "preview_available": true,
+      "preview_kind": "Рендер GLB",
+      "rear_href": null,
+      "lods": [
+        {
+          "level": 1,
+          "href": "lods/SH02_LOD1.glb",
+          "note": "Только для дальнего плана"
+        }
+      ],
+      "metrics": {
+        "triangles": 18840,
+        "materials": 1,
+        "texture_max_edge": 2048
+      },
+      "source_note": "Один объект на исходном изображении"
+    },
+    {
+      "id": "BP01",
+      "title": "Рюкзак пилота · отдельный объект",
+      "category": "backpacks",
+      "input": "sources/BP01-pilot-backpack.png",
+      "url": "https://studio.tripo3d.ai/workspace/retopology/031f954d-f832-4381-9d0b-a3c9f019de20",
+      "status": "downloaded",
+      "local_file": "downloads/BP01.glb",
+      "qa": null,
+      "raw_url": "https://studio.tripo3d.ai/workspace/generate/031f954d-f832-4381-9d0b-a3c9f019de20",
+      "optimization": {
+        "topology": "Triangle",
+        "polygon_target": 3000,
+        "estimated_triangle_budget": 3000,
+        "credits": 35,
+        "status": "completed",
+        "url": "https://studio.tripo3d.ai/workspace/retopology/031f954d-f832-4381-9d0b-a3c9f019de20",
+        "observed_ui_faces": 2870
+      },
+      "export_texture": "1K",
+      "source_url": "https://studio.tripo3d.ai/workspace/generate/031f954d-f832-4381-9d0b-a3c9f019de20",
+      "input_href": "sources/BP01-pilot-backpack.png",
+      "input_available": true,
+      "local_href": "downloads/BP01.glb",
+      "local_available": true,
+      "preview_href": "previews/BP01.png",
+      "preview_available": true,
+      "preview_kind": "Рендер GLB",
+      "rear_href": null,
+      "lods": [
+        {
+          "level": 1,
+          "href": "lods/BP01_LOD1.glb",
+          "note": "Только для дальнего плана"
+        }
+      ],
+      "metrics": {
+        "triangles": 2870,
+        "materials": 1,
+        "texture_max_edge": 1024
+      },
+      "source_note": "Отдельный модуль жизнеобеспечения"
+    },
+    {
+      "id": "BP02",
+      "title": "Рюкзак инженера · отдельный объект",
+      "category": "backpacks",
+      "input": "sources/BP02-engineer-backpack.png",
+      "url": "https://studio.tripo3d.ai/workspace/retopology/d4120f8b-d0eb-4900-956a-216f1ce478c4",
+      "status": "downloaded",
+      "local_file": "downloads/BP02.glb",
+      "qa": null,
+      "raw_url": "https://studio.tripo3d.ai/workspace/generate/d4120f8b-d0eb-4900-956a-216f1ce478c4",
+      "optimization": {
+        "topology": "Triangle",
+        "polygon_target": 3000,
+        "estimated_triangle_budget": 3000,
+        "credits": 35,
+        "status": "completed",
+        "url": "https://studio.tripo3d.ai/workspace/retopology/d4120f8b-d0eb-4900-956a-216f1ce478c4",
+        "observed_ui_faces": 2922
+      },
+      "export_texture": "1K",
+      "source_url": "https://studio.tripo3d.ai/workspace/generate/d4120f8b-d0eb-4900-956a-216f1ce478c4",
+      "input_href": "sources/BP02-engineer-backpack.png",
+      "input_available": true,
+      "local_href": "downloads/BP02.glb",
+      "local_available": true,
+      "preview_href": "previews/BP02.png",
+      "preview_available": true,
+      "preview_kind": "Рендер GLB",
+      "rear_href": null,
+      "lods": [
+        {
+          "level": 1,
+          "href": "lods/BP02_LOD1.glb",
+          "note": "Только для дальнего плана"
+        }
+      ],
+      "metrics": {
+        "triangles": 2922,
+        "materials": 1,
+        "texture_max_edge": 1024
+      },
+      "source_note": "Отдельный модуль жизнеобеспечения"
+    },
+    {
+      "id": "TL01",
+      "title": "Полевой C-сканер",
+      "category": "tools",
+      "input": "sources/TL01-scanner.png",
+      "url": "https://studio.tripo3d.ai/workspace/retopology/80bda1ae-46e2-4cf2-82d4-b4a79f9c5599",
+      "status": "downloaded",
+      "local_file": "downloads/TL01.glb",
+      "qa": null,
+      "raw_url": "https://studio.tripo3d.ai/workspace/generate/80bda1ae-46e2-4cf2-82d4-b4a79f9c5599",
+      "optimization": {
+        "topology": "Triangle",
+        "polygon_target": 2000,
+        "estimated_triangle_budget": 2000,
+        "credits": 35,
+        "status": "completed",
+        "url": "https://studio.tripo3d.ai/workspace/retopology/80bda1ae-46e2-4cf2-82d4-b4a79f9c5599",
+        "observed_ui_faces": 2039
+      },
+      "export_texture": "1K",
+      "source_url": "https://studio.tripo3d.ai/workspace/generate/80bda1ae-46e2-4cf2-82d4-b4a79f9c5599",
+      "input_href": "sources/TL01-scanner.png",
+      "input_available": true,
+      "local_href": "downloads/TL01.glb",
+      "local_available": true,
+      "preview_href": "previews/TL01.png",
+      "preview_available": true,
+      "preview_kind": "Рендер GLB",
+      "rear_href": null,
+      "lods": [],
+      "metrics": {
+        "triangles": 2039,
+        "materials": 1,
+        "texture_max_edge": 1024
+      },
+      "source_note": "Один объект на исходном изображении"
+    },
+    {
+      "id": "TL02",
+      "title": "Наручный сканер",
+      "category": "tools",
+      "input": "sources/TL02-wrist.png",
+      "url": "https://studio.tripo3d.ai/workspace/retopology/de45dcd0-b1e2-4a58-9a5c-a7d6471e832b",
+      "status": "downloaded",
+      "local_file": "downloads/TL02.glb",
+      "qa": null,
+      "raw_url": "https://studio.tripo3d.ai/workspace/generate/de45dcd0-b1e2-4a58-9a5c-a7d6471e832b",
+      "optimization": {
+        "topology": "Triangle",
+        "polygon_target": 2000,
+        "estimated_triangle_budget": 2000,
+        "credits": 35,
+        "status": "completed",
+        "url": "https://studio.tripo3d.ai/workspace/retopology/de45dcd0-b1e2-4a58-9a5c-a7d6471e832b",
+        "observed_ui_faces": 1936
+      },
+      "export_texture": "1K",
+      "source_url": "https://studio.tripo3d.ai/workspace/generate/de45dcd0-b1e2-4a58-9a5c-a7d6471e832b",
+      "input_href": "sources/TL02-wrist.png",
+      "input_available": true,
+      "local_href": "downloads/TL02.glb",
+      "local_available": true,
+      "preview_href": "previews/TL02.png",
+      "preview_available": true,
+      "preview_kind": "Рендер GLB",
+      "rear_href": null,
+      "lods": [],
+      "metrics": {
+        "triangles": 1936,
+        "materials": 1,
+        "texture_max_edge": 1024
+      },
+      "source_note": "Один объект на исходном изображении"
+    },
+    {
+      "id": "TL03",
+      "title": "Ремонтный мультитул",
+      "category": "tools",
+      "input": "sources/TL03-multitool.png",
+      "url": "https://studio.tripo3d.ai/workspace/retopology/fcf165e7-e952-44ae-9f6d-00e7de8a02d2",
+      "status": "downloaded",
+      "local_file": "downloads/TL03.glb",
+      "qa": null,
+      "raw_url": "https://studio.tripo3d.ai/workspace/generate/fcf165e7-e952-44ae-9f6d-00e7de8a02d2",
+      "optimization": {
+        "topology": "Triangle",
+        "polygon_target": 2000,
+        "estimated_triangle_budget": 2000,
+        "credits": 35,
+        "status": "completed",
+        "url": "https://studio.tripo3d.ai/workspace/retopology/fcf165e7-e952-44ae-9f6d-00e7de8a02d2",
+        "observed_ui_faces": 1832
+      },
+      "export_texture": "1K",
+      "source_url": "https://studio.tripo3d.ai/workspace/generate/fcf165e7-e952-44ae-9f6d-00e7de8a02d2",
+      "input_href": "sources/TL03-multitool.png",
+      "input_available": true,
+      "local_href": "downloads/TL03.glb",
+      "local_available": true,
+      "preview_href": "previews/TL03.png",
+      "preview_available": true,
+      "preview_kind": "Рендер GLB",
+      "rear_href": null,
+      "lods": [],
+      "metrics": {
+        "triangles": 1832,
+        "materials": 1,
+        "texture_max_edge": 1024
+      },
+      "source_note": "Один объект на исходном изображении"
+    }
+  ],
+  "raw_texture": "8K",
+  "credits_spent": 1015,
+  "physical_scale": "Normalized geometry; real-world size not assigned",
+  "rigging": "No skins or animations",
+  "validation_available": true,
+  "validation_generated_utc": "2026-11-03T18:34:52.920854+00:00"
+}</script>
+<script>
+'use strict';
+const data=JSON.parse(document.getElementById('jobs-data').textContent),jobs=data.jobs;
+const groups={characters:{title:'Персонажи',note:'Люди в T-позе без рюкзаков; инопланетянин отдельно.'},backpacks:{title:'Рюкзаки',note:'Самостоятельные модули жизнеобеспечения.'},ships:{title:'Корабли',note:'Проба объемной формы по выбранным изображениям.'},tools:{title:'Инструменты',note:'Каждый прибор — отдельный объект.'}};
+const statuses={queued:'В очереди',generating:'Генерируется',completed:'Готово в Tripo',downloaded:'GLB сохранен',failed:'Ошибка'};
+const el=id=>document.getElementById(id);
+let selected='all';
+function node(tag,attrs={},text){const n=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==='class')n.className=v;else n.setAttribute(k,v);}if(text!==undefined)n.textContent=text;return n;}
+function link(href,text,extra={}){return node('a',{href,class:'link',...extra},text);}
+function renderMeta(){const meta=el('meta'),exportTextures=[...new Set(jobs.map(j=>j.export_texture).filter(Boolean))].sort();let texture=data.texture;if(/^8\s*K$/i.test(texture||''))texture=exportTextures.length?'Экспорт: '+exportTextures.join(' / '):null;const totalCredits=data.totalcredits_spent??data.credits_spent,spent=totalCredits?totalCredits+' кредитов всего':data.credits_per_job?data.credits_per_job+' кредитов / генерация':null;for(const text of [data.provider,data.model,texture,spent,data.date])if(text)meta.append(node('span',{class:'pill'},text));const stats=[['Заданий',jobs.length],['Генерируется',jobs.filter(j=>j.status==='generating').length],['Готово в Tripo',jobs.filter(j=>['completed','downloaded'].includes(j.status)).length],['GLB сохранены',jobs.filter(j=>j.local_available).length]];for(const[label,count]of stats){const s=node('div',{class:'stat'});s.append(node('strong',{},String(count)),document.createTextNode(label));el('stats').append(s);}}
+function renderFilters(){const nav=el('filters');nav.replaceChildren();const options={all:'Все',...Object.fromEntries(Object.entries(groups).map(([key,value])=>[key,value.title]))};for(const[key,title]of Object.entries(options)){const count=key==='all'?jobs.length:jobs.filter(j=>j.category===key).length;const b=node('button',{class:'filter','aria-pressed':String(selected===key)},title);b.append(node('span',{},String(count)));b.addEventListener('click',()=>{selected=key;renderFilters();renderSections();});nav.append(b);}}
+function card(job){
+  const c=node('article',{class:'card'});let preview;
+  if(job.preview_available){preview=node('a',{class:'preview',href:job.preview_href,target:'_blank',rel:'noopener','aria-label':'Открыть '+job.preview_kind+': '+job.title});preview.append(node('img',{src:job.preview_href,alt:job.preview_kind+' '+job.id+' — '+job.title,loading:'lazy',decoding:'async'}));}
+  else{preview=node('div',{class:'preview'});preview.append(node('div',{class:'missing'},'Превью пока недоступно'));}
+  preview.append(node('span',{class:'previewbadge'},job.preview_kind));c.append(preview);
+  const info=node('div',{class:'info'}),row=node('div',{class:'row'});
+  row.append(node('span',{class:'id'},job.id||'—'),node('span',{class:'status '+(Object.hasOwn(statuses,job.status)?job.status:'queued')},statuses[job.status]||'Статус не указан'));
+  info.append(row,node('h3',{},job.title||job.id));
+  if(job.optimization?.status==='completed'&&job.local_available)info.append(node('div',{class:'model-label'},'Оптимизированная пробная модель'));
+  info.append(node('p',{class:'source-note'},job.source_note));
+  const metrics=job.metrics||{},facts=[];
+  if(Number.isInteger(metrics.triangles))facts.push(['Треугольники',metrics.triangles.toLocaleString('ru-RU')]);
+  if(Number.isInteger(metrics.materials))facts.push(['Материалы',String(metrics.materials)]);
+  if(Number.isInteger(metrics.texture_max_edge))facts.push(['Макс. сторона текстуры',metrics.texture_max_edge.toLocaleString('ru-RU')+' px']);
+  if(facts.length){const list=node('dl',{class:'metrics'});for(const[label,value]of facts){const item=node('div');item.append(node('dt',{},label),node('dd',{},value));list.append(item);}info.append(list);}
+  const links=node('div',{class:'links'});
+  if(job.url)links.append(link(job.url,'Открыть в Tripo ↗',{target:'_blank',rel:'noopener'}));
+  if(job.local_available)links.append(link(job.local_href,'Скачать GLB ↓',{class:'link glb',download:''}));else links.append(node('span',{class:'link unavailable','aria-disabled':'true'},'GLB пока не сохранен'));
+  if(job.input_available)links.append(link(job.input_href,'Исходный референс',{target:'_blank',rel:'noopener'}));else links.append(node('span',{class:'link unavailable','aria-disabled':'true'},'Исходный референс недоступен'));
+  if(job.rear_href)links.append(link(job.rear_href,'Вид сзади',{target:'_blank',rel:'noopener'}));
+  for(const lod of job.lods||[])links.append(link(lod.href,'LOD '+lod.level+' GLB ↓',{class:'link glb',download:'',title:lod.note}));
+  info.append(links);let qa='';if(typeof job.qa==='string')qa=job.qa;else if(job.qa)qa=JSON.stringify(job.qa,null,2);if(qa)info.append(node('div',{class:'qa'},qa));c.append(info);return c;
+}
+function renderSections(){const target=el('sections');target.replaceChildren();let count=0;for(const[key,group]of Object.entries(groups)){if(selected!=='all'&&selected!==key)continue;const entries=jobs.filter(j=>j.category===key);if(!entries.length)continue;count+=entries.length;const section=node('section',{class:'section'}),head=node('div',{class:'sectionhead'}),grid=node('div',{class:'grid'});head.append(node('h2',{},group.title),node('span',{class:'sectiondesc'},group.note));grid.append(...entries.map(card));section.append(head,grid);target.append(section);}const unknown=selected==='all'?jobs.filter(j=>!Object.hasOwn(groups,j.category)):[];if(unknown.length){count+=unknown.length;const section=node('section',{class:'section'}),grid=node('div',{class:'grid'});section.append(node('h2',{},'Другие задания'));grid.append(...unknown.map(card));section.append(grid);target.append(section);}if(!count)target.append(node('p',{class:'empty'},'В этой категории пока нет заданий.'));}
+renderMeta();renderFilters();renderSections();
+</script>
+</body>
+</html>

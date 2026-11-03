@@ -1,0 +1,5 @@
+Use case: precise-object-edit.
+Asset type: isolated single-object image-to-3D modeling reference.
+Input image: edit target. Isolate ONLY the WRIST DEVICE at the TOP RIGHT. Remove the large C-shaped scanner and short multitool completely.
+Preserve the same compact ivory rounded rectangular display housing, dark screen and simple cyan measurement curve, restrained thin orange accent and graphite broad band. Show this one device alone in a clean three-quarter view with the display on TOP and the wrist strap forming ONE CLEARLY CLOSED OVAL RING under it. The ring must be a coherent continuous loop with visible inner space, real band width and thickness; not a disconnected ribbon, not a flat rectangular plate, not two loose strap pieces. Preserve the design and quiet materials; no additional controls, extra gadgets or decorative detail.
+Backdrop: plain very light neutral gray studio background, soft even product illumination, faint contact shadow. One complete device fully visible and centered with margin. No wrist, hand, arm, person, second object, extra view, inset, text, labels or watermark.

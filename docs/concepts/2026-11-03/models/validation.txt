@@ -1,0 +1,171 @@
+STELLAR DRIFT - LOCAL GLB STRUCTURAL AUDIT
+2026-11-03T18:34:52.920854+00:00
+Game readiness: NOT ASSESSED. This is not a full Khronos glTF conformance check.
+Inspected 10/10 jobs; unique files 10; pending/missing 0.
+Structurally invalid: 0; incomplete: 0; substantial budget excess: 0; prototype budget warnings: 1.
+Blender CLI available: C:\Program Files\Blender Foundation\Blender 5.2\blender.exe; Blender geometric audit NOT RUN.
+
+[AL01] Lacuna · инопланетянин - inspected
+  File: downloads/AL01.glb (8575564 bytes)
+  Structure: no_errors_detected; budget: within
+  Stored mesh: 18124 triangles; 16810 primitive vertices; 1 meshes; 1 primitives.
+  Materials: 1 total / 1 used. Images: 3, max edge: 2048.
+  Skins: 0; animations: 0.
+  Scene AABB: {"min": [-0.398828387260437, 0.0, -0.37204957008361816], "max": [0.398797869682312, 0.9774268865585327, 0.37201905250549316], "size": [0.797626256942749, 0.9774268865585327, 0.7440686225891113]}
+  Image 0: 2048 x 2048 (JPEG), embedded=True
+  Image 1: 2048 x 2048 (JPEG), embedded=True
+  Image 2: 2048 x 2048 (PNG), embedded=True
+  Budget triangles: 18124 / 20000 - within
+  Budget materials: 1 / 2 - within
+  Budget texture_max_edge: 2048 / 2048 - within
+  NOTE: No glTF skin present: static mesh/T-pose only; rigging and deformation not validated.
+
+[CH01] Пилот · T-поза без рюкзака - inspected
+  File: downloads/CH01.glb (10229184 bytes)
+  Structure: no_errors_detected; budget: within
+  Stored mesh: 18694 triangles; 21947 primitive vertices; 1 meshes; 1 primitives.
+  Materials: 1 total / 1 used. Images: 3, max edge: 2048.
+  Skins: 0; animations: 0.
+  Scene AABB: {"min": [-0.49250568449497223, 0.0, -0.08771035820245743], "max": [0.49229203164577484, 0.9732345342636108, 0.08766458183526993], "size": [0.9847977161407471, 0.9732345342636108, 0.17537494003772736]}
+  Image 0: 2048 x 2048 (JPEG), embedded=True
+  Image 1: 2048 x 2048 (JPEG), embedded=True
+  Image 2: 2048 x 2048 (PNG), embedded=True
+  Budget triangles: 18694 / 20000 - within
+  Budget materials: 1 / 2 - within
+  Budget texture_max_edge: 2048 / 2048 - within
+  NOTE: No glTF skin present: static mesh/T-pose only; rigging and deformation not validated.
+
+[CH02] Инженер · T-поза без рюкзака - inspected
+  File: downloads/CH02.glb (10355684 bytes)
+  Structure: no_errors_detected; budget: within
+  Stored mesh: 18262 triangles; 22059 primitive vertices; 1 meshes; 1 primitives.
+  Materials: 1 total / 1 used. Images: 3, max edge: 2048.
+  Skins: 0; animations: 0.
+  Scene AABB: {"min": [-0.4890943318605423, 0.0, -0.10635093972086906], "max": [0.4889417141675949, 0.9321008920669556, 0.10609917715191841], "size": [0.9780360460281372, 0.9321008920669556, 0.21245011687278748]}
+  Image 0: 2048 x 2048 (JPEG), embedded=True
+  Image 1: 2048 x 2048 (JPEG), embedded=True
+  Image 2: 2048 x 2048 (PNG), embedded=True
+  Budget triangles: 18262 / 20000 - within
+  Budget materials: 1 / 2 - within
+  Budget texture_max_edge: 2048 / 2048 - within
+  NOTE: No glTF skin present: static mesh/T-pose only; rigging and deformation not validated.
+
+[SH01] Manta v2 · экспедиционный шаттл - inspected
+  File: downloads/SH01.glb (4999988 bytes)
+  Structure: no_errors_detected; budget: within
+  Stored mesh: 19211 triangles; 20520 primitive vertices; 1 meshes; 1 primitives.
+  Materials: 1 total / 1 used. Images: 3, max edge: 2048.
+  Skins: 0; animations: 0.
+  Scene AABB: {"min": [-0.4360351860523224, 0.0, -0.48925788700580597], "max": [0.43527230620384216, 0.2508392333984375, 0.4892883747816086], "size": [0.8713074922561646, 0.2508392333984375, 0.9785462617874146]}
+  Image 0: 2048 x 2048 (JPEG), embedded=True
+  Image 1: 2048 x 2048 (JPEG), embedded=True
+  Image 2: 2048 x 2048 (JPEG), embedded=True
+  Budget triangles: 19211 / 20000 - within
+  Budget materials: 1 / 3 - within
+  Budget texture_max_edge: 2048 / 2048 - within
+
+[SH02] Lacuna · корабль чужих - inspected
+  File: downloads/SH02.glb (5887452 bytes)
+  Structure: no_errors_detected; budget: within
+  Stored mesh: 18840 triangles; 22829 primitive vertices; 1 meshes; 1 primitives.
+  Materials: 1 total / 1 used. Images: 3, max edge: 2048.
+  Skins: 0; animations: 0.
+  Scene AABB: {"min": [-0.48959358036518097, 0.0, -0.1827697455883026], "max": [0.4887695759534836, 0.4537506103515625, 0.1829070746898651], "size": [0.9783631563186646, 0.4537506103515625, 0.3656768202781677]}
+  Image 0: 2048 x 2048 (JPEG), embedded=True
+  Image 1: 2048 x 2048 (JPEG), embedded=True
+  Image 2: 2048 x 2048 (JPEG), embedded=True
+  Budget triangles: 18840 / 20000 - within
+  Budget materials: 1 / 3 - within
+  Budget texture_max_edge: 2048 / 2048 - within
+
+[BP01] Рюкзак пилота · отдельный объект - inspected
+  File: downloads/BP01.glb (810816 bytes)
+  Structure: no_errors_detected; budget: within
+  Stored mesh: 2870 triangles; 2936 primitive vertices; 1 meshes; 1 primitives.
+  Materials: 1 total / 1 used. Images: 3, max edge: 1024.
+  Skins: 0; animations: 0.
+  Scene AABB: {"min": [-0.3326416611671448, 0.0, -0.2940979301929474], "max": [0.332061767578125, 0.9788818359375, 0.2939758598804474], "size": [0.6647034287452698, 0.9788818359375, 0.5880737900733948]}
+  Image 0: 1024 x 1024 (JPEG), embedded=True
+  Image 1: 1024 x 1024 (JPEG), embedded=True
+  Image 2: 1024 x 1024 (JPEG), embedded=True
+  Budget triangles: 2870 / 3000 - within
+  Budget materials: 1 / 1 - within
+  Budget texture_max_edge: 1024 / 1024 - within
+
+[BP02] Рюкзак инженера · отдельный объект - inspected
+  File: downloads/BP02.glb (1069800 bytes)
+  Structure: no_errors_detected; budget: within
+  Stored mesh: 2922 triangles; 3574 primitive vertices; 1 meshes; 1 primitives.
+  Materials: 1 total / 1 used. Images: 3, max edge: 1024.
+  Skins: 0; animations: 0.
+  Scene AABB: {"min": [-0.3875122666358948, 0.0, -0.3417053520679474], "max": [0.3876953721046448, 0.97808837890625, 0.3415832817554474], "size": [0.7752076387405396, 0.97808837890625, 0.6832886338233948]}
+  Image 0: 1024 x 1024 (JPEG), embedded=True
+  Image 1: 1024 x 1024 (JPEG), embedded=True
+  Image 2: 1024 x 1024 (JPEG), embedded=True
+  Budget triangles: 2922 / 3000 - within
+  Budget materials: 1 / 1 - within
+  Budget texture_max_edge: 1024 / 1024 - within
+
+[TL01] Полевой C-сканер - inspected
+  File: downloads/TL01.glb (1091944 bytes)
+  Structure: no_errors_detected; budget: warning
+  Stored mesh: 2039 triangles; 2536 primitive vertices; 1 meshes; 1 primitives.
+  Materials: 1 total / 1 used. Images: 3, max edge: 1024.
+  Skins: 0; animations: 0.
+  Scene AABB: {"min": [-0.4888001084327698, 0.0, -0.2057189792394638], "max": [0.4887085556983948, 0.499267578125, 0.20555122196674347], "size": [0.9775086641311646, 0.499267578125, 0.4112702012062073]}
+  Image 0: 1024 x 1024 (JPEG), embedded=True
+  Image 1: 1024 x 1024 (JPEG), embedded=True
+  Image 2: 1024 x 1024 (JPEG), embedded=True
+  Budget triangles: 2039 / 2000 - warning
+  Budget materials: 1 / 1 - within
+  Budget texture_max_edge: 1024 / 1024 - within
+
+[TL02] Наручный сканер - inspected
+  File: downloads/TL02.glb (884844 bytes)
+  Structure: no_errors_detected; budget: within
+  Stored mesh: 1936 triangles; 2028 primitive vertices; 1 meshes; 1 primitives.
+  Materials: 1 total / 1 used. Images: 3, max edge: 1024.
+  Skins: 0; animations: 0.
+  Scene AABB: {"min": [-0.4888916611671448, 0.0, -0.2169037163257599], "max": [0.4889221787452698, 0.88214111328125, 0.2174530327320099], "size": [0.9778138399124146, 0.88214111328125, 0.4343567490577698]}
+  Image 0: 1024 x 1024 (JPEG), embedded=True
+  Image 1: 1024 x 1024 (JPEG), embedded=True
+  Image 2: 1024 x 1024 (JPEG), embedded=True
+  Budget triangles: 1936 / 2000 - within
+  Budget materials: 1 / 1 - within
+  Budget texture_max_edge: 1024 / 1024 - within
+
+[TL03] Ремонтный мультитул - inspected
+  File: downloads/TL03.glb (913420 bytes)
+  Structure: no_errors_detected; budget: within
+  Stored mesh: 1832 triangles; 1911 primitive vertices; 1 meshes; 1 primitives.
+  Materials: 1 total / 1 used. Images: 3, max edge: 1024.
+  Skins: 0; animations: 0.
+  Scene AABB: {"min": [-0.4906616806983948, 0.0, -0.1717376559972763], "max": [0.4896851181983948, 0.3011932373046875, 0.17167668044567108], "size": [0.9803467988967896, 0.3011932373046875, 0.3434143364429474]}
+  Image 0: 1024 x 1024 (JPEG), embedded=True
+  Image 1: 1024 x 1024 (JPEG), embedded=True
+  Image 2: 1024 x 1024 (JPEG), embedded=True
+  Budget triangles: 1832 / 2000 - within
+  Budget materials: 1 / 1 - within
+  Budget texture_max_edge: 1024 / 1024 - within
+
+ACTUAL SCOPE
+  Checked: GLB header and chunk layout
+  Checked: selected glTF JSON references
+  Checked: buffer/view/accessor bounds and layouts including sparse accessors
+  Checked: uncompressed index ranges and finite POSITION values
+  Checked: stored mesh and active-scene triangle/vertex counts
+  Checked: embedded/local image header dimensions
+  Checked: node-transformed scene AABB
+  Checked: skin/animation presence and selected references
+  Checked: declared asset budgets
+  NOT checked: full Khronos schema/extension conformance
+  NOT checked: compressed mesh decoding
+  NOT checked: manifold/interior/duplicate/loose geometry inspection
+  NOT checked: normals orientation or shading quality
+  NOT checked: UV overlap/packing/texel density
+  NOT checked: visual silhouette or reference match
+  NOT checked: rig deformation and animation playback
+  NOT checked: collision/LOD construction or validation
+  NOT checked: real-world scale/pivot/forward-axis verification
+  NOT checked: engine import (reported separately in godot_import_check.*), material appearance or runtime performance
+Triangle totals count submitted topology, including degenerate triangles in strips/fans. No welded-vertex, deformation or runtime-performance conclusion is implied.

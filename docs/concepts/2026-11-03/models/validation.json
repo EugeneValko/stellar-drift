@@ -1,0 +1,2022 @@
+{
+  "generated_utc": "2026-11-03T18:34:52.920854+00:00",
+  "jobs_file": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\jobs.json",
+  "scope": {
+    "performed": [
+      "GLB header and chunk layout",
+      "selected glTF JSON references",
+      "buffer/view/accessor bounds and layouts including sparse accessors",
+      "uncompressed index ranges and finite POSITION values",
+      "stored mesh and active-scene triangle/vertex counts",
+      "embedded/local image header dimensions",
+      "node-transformed scene AABB",
+      "skin/animation presence and selected references",
+      "declared asset budgets"
+    ],
+    "not_performed": [
+      "full Khronos schema/extension conformance",
+      "compressed mesh decoding",
+      "manifold/interior/duplicate/loose geometry inspection",
+      "normals orientation or shading quality",
+      "UV overlap/packing/texel density",
+      "visual silhouette or reference match",
+      "rig deformation and animation playback",
+      "collision/LOD construction or validation",
+      "real-world scale/pivot/forward-axis verification",
+      "engine import (reported separately in godot_import_check.*), material appearance or runtime performance"
+    ]
+  },
+  "blender_cli": {
+    "available_path": "C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe",
+    "audit_performed": false
+  },
+  "budgets": {
+    "characters": {
+      "triangles": 20000,
+      "materials": 2,
+      "texture_max_edge": 2048
+    },
+    "ships": {
+      "triangles": 20000,
+      "materials": 3,
+      "texture_max_edge": 2048
+    },
+    "backpacks": {
+      "triangles": 3000,
+      "materials": 1,
+      "texture_max_edge": 1024
+    },
+    "tools": {
+      "triangles": 2000,
+      "materials": 1,
+      "texture_max_edge": 1024
+    }
+  },
+  "summary": {
+    "jobs": 10,
+    "inspected": 10,
+    "unique_files_inspected": 10,
+    "pending_or_missing": 0,
+    "invalid_jobs": 0,
+    "structurally_invalid": 0,
+    "structurally_incomplete": 0,
+    "over_budget": 0,
+    "budget_warnings": 1,
+    "game_ready": "not_assessed"
+  },
+  "jobs": [
+    {
+      "id": "AL01",
+      "title": "Lacuna · инопланетянин",
+      "category": "characters",
+      "job_status": "downloaded",
+      "local_file": "downloads/AL01.glb",
+      "game_ready": "not_assessed",
+      "status": "inspected",
+      "audit": {
+        "path": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\downloads\\AL01.glb",
+        "game_ready": "not_assessed",
+        "file_bytes": 8575564,
+        "container": {
+          "magic": "glTF",
+          "version": 2,
+          "declared_length": 8575564,
+          "chunks": [
+            {
+              "type": "JSON",
+              "bytes": 1968
+            },
+            {
+              "type": "BIN\u0000",
+              "bytes": 8573568
+            }
+          ]
+        },
+        "generator": "Tripo",
+        "extensions_used": [],
+        "extensions_required": [],
+        "scene": {
+          "active_scene_index": 0,
+          "active_nodes": 1,
+          "active_meshes": 1,
+          "triangles": 18124,
+          "vertices": 16810,
+          "render_primitive_instances": 1,
+          "bounds": {
+            "min": [
+              -0.398828387260437,
+              0.0,
+              -0.37204957008361816
+            ],
+            "max": [
+              0.398797869682312,
+              0.9774268865585327,
+              0.37201905250549316
+            ],
+            "size": [
+              0.797626256942749,
+              0.9774268865585327,
+              0.7440686225891113
+            ]
+          },
+          "bounds_note": "glTF coordinate units; static node transforms only; no animation/skin deformation or verified real-world scale"
+        },
+        "node_count": 1,
+        "skins": {
+          "count": 0,
+          "items": []
+        },
+        "animations": {
+          "count": 0,
+          "items": []
+        },
+        "materials": {
+          "count": 1,
+          "used_count": 1,
+          "unused_indices": [],
+          "names": [
+            "tripo_mat_584395e3-d3bb-4614-800e-9c7e766b0f56"
+          ]
+        },
+        "textures": {
+          "count": 3,
+          "image_count": 3,
+          "images": [
+            {
+              "index": 0,
+              "embedded": true,
+              "width": 2048,
+              "height": 2048,
+              "name": "tripo_image_584395e3-d3bb-4614-800e-9c7e766b0f56_0_3",
+              "mime_type": "image/jpeg",
+              "bytes": 1175165,
+              "format": "JPEG"
+            },
+            {
+              "index": 1,
+              "embedded": true,
+              "width": 2048,
+              "height": 2048,
+              "name": "tripo_image_584395e3-d3bb-4614-800e-9c7e766b0f56_0_0",
+              "mime_type": "image/jpeg",
+              "bytes": 1457819,
+              "format": "JPEG"
+            },
+            {
+              "index": 2,
+              "embedded": true,
+              "width": 2048,
+              "height": 2048,
+              "name": "AL01-lacuna-alien-optimized_metallic-AL01-lacuna-alien-optimized_roughness",
+              "mime_type": "image/png",
+              "bytes": 5293916,
+              "format": "PNG"
+            }
+          ],
+          "max_edge": 2048,
+          "verification": "Image headers/dimensions only; full pixel integrity/material appearance not assessed"
+        },
+        "geometry": {
+          "mesh_count": 1,
+          "triangles": 18124,
+          "vertices": 16810,
+          "unique_position_accessor_vertices": 16810,
+          "primitive_count": 1,
+          "meshes": [
+            {
+              "index": 0,
+              "name": "tripo_mesh_584395e3-d3bb-4614-800e-9c7e766b0f56",
+              "triangles": 18124,
+              "vertices": 16810,
+              "primitives": [
+                {
+                  "index": 0,
+                  "mode": 4,
+                  "triangles": 18124,
+                  "vertices": 16810,
+                  "attributes": [
+                    "NORMAL",
+                    "POSITION",
+                    "TEXCOORD_0"
+                  ],
+                  "material": 0,
+                  "morph_targets": 0
+                }
+              ],
+              "bounds_local": {
+                "min": [
+                  -0.3988131284713745,
+                  0.0,
+                  -0.37203431129455566
+                ],
+                "max": [
+                  0.3988131284713745,
+                  0.9774268865585327,
+                  0.37203431129455566
+                ],
+                "size": [
+                  0.797626256942749,
+                  0.9774268865585327,
+                  0.7440686225891113
+                ]
+              }
+            }
+          ],
+          "count_note": "Stored mesh totals, including unused meshes; vertices sum primitive POSITION counts, not welded unique vertices. Scene totals include node instances."
+        },
+        "structural_status": "no_errors_detected",
+        "errors": [],
+        "warnings": [],
+        "incomplete_checks": []
+      },
+      "budget": {
+        "status": "within",
+        "checks": [
+          {
+            "metric": "triangles",
+            "actual": 18124,
+            "limit": 20000,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          },
+          {
+            "metric": "materials",
+            "actual": 1,
+            "limit": 2,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          },
+          {
+            "metric": "texture_max_edge",
+            "actual": 2048,
+            "limit": 2048,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          }
+        ],
+        "note": "Proposed prototype budgets only; triangle excess up to 5% remains explicitly over the strict limit but is a warning, not a batch failure. Meeting budgets does not establish game readiness."
+      },
+      "character_note": "No glTF skin present: static mesh/T-pose only; rigging and deformation not validated."
+    },
+    {
+      "id": "CH01",
+      "title": "Пилот · T-поза без рюкзака",
+      "category": "characters",
+      "job_status": "downloaded",
+      "local_file": "downloads/CH01.glb",
+      "game_ready": "not_assessed",
+      "status": "inspected",
+      "audit": {
+        "path": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\downloads\\CH01.glb",
+        "game_ready": "not_assessed",
+        "file_bytes": 10229184,
+        "container": {
+          "magic": "glTF",
+          "version": 2,
+          "declared_length": 10229184,
+          "chunks": [
+            {
+              "type": "JSON",
+              "bytes": 1952
+            },
+            {
+              "type": "BIN\u0000",
+              "bytes": 10227204
+            }
+          ]
+        },
+        "generator": "Tripo",
+        "extensions_used": [],
+        "extensions_required": [],
+        "scene": {
+          "active_scene_index": 0,
+          "active_nodes": 1,
+          "active_meshes": 1,
+          "triangles": 18694,
+          "vertices": 21947,
+          "render_primitive_instances": 1,
+          "bounds": {
+            "min": [
+              -0.49250568449497223,
+              0.0,
+              -0.08771035820245743
+            ],
+            "max": [
+              0.49229203164577484,
+              0.9732345342636108,
+              0.08766458183526993
+            ],
+            "size": [
+              0.9847977161407471,
+              0.9732345342636108,
+              0.17537494003772736
+            ]
+          },
+          "bounds_note": "glTF coordinate units; static node transforms only; no animation/skin deformation or verified real-world scale"
+        },
+        "node_count": 1,
+        "skins": {
+          "count": 0,
+          "items": []
+        },
+        "animations": {
+          "count": 0,
+          "items": []
+        },
+        "materials": {
+          "count": 1,
+          "used_count": 1,
+          "unused_indices": [],
+          "names": [
+            "tripo_mat_bb8c2c2a-271c-46fd-8545-a400eb45eb47"
+          ]
+        },
+        "textures": {
+          "count": 3,
+          "image_count": 3,
+          "images": [
+            {
+              "index": 0,
+              "embedded": true,
+              "width": 2048,
+              "height": 2048,
+              "name": "tripo_image_bb8c2c2a-271c-46fd-8545-a400eb45eb47_0_3",
+              "mime_type": "image/jpeg",
+              "bytes": 1637623,
+              "format": "JPEG"
+            },
+            {
+              "index": 1,
+              "embedded": true,
+              "width": 2048,
+              "height": 2048,
+              "name": "tripo_image_bb8c2c2a-271c-46fd-8545-a400eb45eb47_0_0",
+              "mime_type": "image/jpeg",
+              "bytes": 2025550,
+              "format": "JPEG"
+            },
+            {
+              "index": 2,
+              "embedded": true,
+              "width": 2048,
+              "height": 2048,
+              "name": "CH01-optimized_metallic-CH01-optimized_roughness",
+              "mime_type": "image/png",
+              "bytes": 5749559,
+              "format": "PNG"
+            }
+          ],
+          "max_edge": 2048,
+          "verification": "Image headers/dimensions only; full pixel integrity/material appearance not assessed"
+        },
+        "geometry": {
+          "mesh_count": 1,
+          "triangles": 18694,
+          "vertices": 21947,
+          "unique_position_accessor_vertices": 21947,
+          "primitive_count": 1,
+          "meshes": [
+            {
+              "index": 0,
+              "name": "tripo_mesh_bb8c2c2a-271c-46fd-8545-a400eb45eb47",
+              "triangles": 18694,
+              "vertices": 21947,
+              "primitives": [
+                {
+                  "index": 0,
+                  "mode": 4,
+                  "triangles": 18694,
+                  "vertices": 21947,
+                  "attributes": [
+                    "NORMAL",
+                    "POSITION",
+                    "TEXCOORD_0"
+                  ],
+                  "material": 0,
+                  "morph_targets": 0
+                }
+              ],
+              "bounds_local": {
+                "min": [
+                  -0.49239885807037354,
+                  0.0,
+                  -0.08768747001886368
+                ],
+                "max": [
+                  0.49239885807037354,
+                  0.9732345342636108,
+                  0.08768747001886368
+                ],
+                "size": [
+                  0.9847977161407471,
+                  0.9732345342636108,
+                  0.17537494003772736
+                ]
+              }
+            }
+          ],
+          "count_note": "Stored mesh totals, including unused meshes; vertices sum primitive POSITION counts, not welded unique vertices. Scene totals include node instances."
+        },
+        "structural_status": "no_errors_detected",
+        "errors": [],
+        "warnings": [],
+        "incomplete_checks": []
+      },
+      "budget": {
+        "status": "within",
+        "checks": [
+          {
+            "metric": "triangles",
+            "actual": 18694,
+            "limit": 20000,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          },
+          {
+            "metric": "materials",
+            "actual": 1,
+            "limit": 2,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          },
+          {
+            "metric": "texture_max_edge",
+            "actual": 2048,
+            "limit": 2048,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          }
+        ],
+        "note": "Proposed prototype budgets only; triangle excess up to 5% remains explicitly over the strict limit but is a warning, not a batch failure. Meeting budgets does not establish game readiness."
+      },
+      "character_note": "No glTF skin present: static mesh/T-pose only; rigging and deformation not validated."
+    },
+    {
+      "id": "CH02",
+      "title": "Инженер · T-поза без рюкзака",
+      "category": "characters",
+      "job_status": "downloaded",
+      "local_file": "downloads/CH02.glb",
+      "game_ready": "not_assessed",
+      "status": "inspected",
+      "audit": {
+        "path": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\downloads\\CH02.glb",
+        "game_ready": "not_assessed",
+        "file_bytes": 10355684,
+        "container": {
+          "magic": "glTF",
+          "version": 2,
+          "declared_length": 10355684,
+          "chunks": [
+            {
+              "type": "JSON",
+              "bytes": 1952
+            },
+            {
+              "type": "BIN\u0000",
+              "bytes": 10353704
+            }
+          ]
+        },
+        "generator": "Tripo",
+        "extensions_used": [],
+        "extensions_required": [],
+        "scene": {
+          "active_scene_index": 0,
+          "active_nodes": 1,
+          "active_meshes": 1,
+          "triangles": 18262,
+          "vertices": 22059,
+          "render_primitive_instances": 1,
+          "bounds": {
+            "min": [
+              -0.4890943318605423,
+              0.0,
+              -0.10635093972086906
+            ],
+            "max": [
+              0.4889417141675949,
+              0.9321008920669556,
+              0.10609917715191841
+            ],
+            "size": [
+              0.9780360460281372,
+              0.9321008920669556,
+              0.21245011687278748
+            ]
+          },
+          "bounds_note": "glTF coordinate units; static node transforms only; no animation/skin deformation or verified real-world scale"
+        },
+        "node_count": 1,
+        "skins": {
+          "count": 0,
+          "items": []
+        },
+        "animations": {
+          "count": 0,
+          "items": []
+        },
+        "materials": {
+          "count": 1,
+          "used_count": 1,
+          "unused_indices": [],
+          "names": [
+            "tripo_mat_4be56452-e84f-4d05-9b6e-a0d3c97dc6ca"
+          ]
+        },
+        "textures": {
+          "count": 3,
+          "image_count": 3,
+          "images": [
+            {
+              "index": 0,
+              "embedded": true,
+              "width": 2048,
+              "height": 2048,
+              "name": "tripo_image_4be56452-e84f-4d05-9b6e-a0d3c97dc6ca_0_3",
+              "mime_type": "image/jpeg",
+              "bytes": 1695517,
+              "format": "JPEG"
+            },
+            {
+              "index": 1,
+              "embedded": true,
+              "width": 2048,
+              "height": 2048,
+              "name": "tripo_image_4be56452-e84f-4d05-9b6e-a0d3c97dc6ca_0_0",
+              "mime_type": "image/jpeg",
+              "bytes": 2107221,
+              "format": "JPEG"
+            },
+            {
+              "index": 2,
+              "embedded": true,
+              "width": 2048,
+              "height": 2048,
+              "name": "CH02-optimized_metallic-CH02-optimized_roughness",
+              "mime_type": "image/png",
+              "bytes": 5735497,
+              "format": "PNG"
+            }
+          ],
+          "max_edge": 2048,
+          "verification": "Image headers/dimensions only; full pixel integrity/material appearance not assessed"
+        },
+        "geometry": {
+          "mesh_count": 1,
+          "triangles": 18262,
+          "vertices": 22059,
+          "unique_position_accessor_vertices": 22059,
+          "primitive_count": 1,
+          "meshes": [
+            {
+              "index": 0,
+              "name": "tripo_mesh_4be56452-e84f-4d05-9b6e-a0d3c97dc6ca",
+              "triangles": 18262,
+              "vertices": 22059,
+              "primitives": [
+                {
+                  "index": 0,
+                  "mode": 4,
+                  "triangles": 18262,
+                  "vertices": 22059,
+                  "attributes": [
+                    "NORMAL",
+                    "POSITION",
+                    "TEXCOORD_0"
+                  ],
+                  "material": 0,
+                  "morph_targets": 0
+                }
+              ],
+              "bounds_local": {
+                "min": [
+                  -0.4890180230140686,
+                  0.0,
+                  -0.10622505843639374
+                ],
+                "max": [
+                  0.4890180230140686,
+                  0.9321008920669556,
+                  0.10622505843639374
+                ],
+                "size": [
+                  0.9780360460281372,
+                  0.9321008920669556,
+                  0.21245011687278748
+                ]
+              }
+            }
+          ],
+          "count_note": "Stored mesh totals, including unused meshes; vertices sum primitive POSITION counts, not welded unique vertices. Scene totals include node instances."
+        },
+        "structural_status": "no_errors_detected",
+        "errors": [],
+        "warnings": [],
+        "incomplete_checks": []
+      },
+      "budget": {
+        "status": "within",
+        "checks": [
+          {
+            "metric": "triangles",
+            "actual": 18262,
+            "limit": 20000,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          },
+          {
+            "metric": "materials",
+            "actual": 1,
+            "limit": 2,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          },
+          {
+            "metric": "texture_max_edge",
+            "actual": 2048,
+            "limit": 2048,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          }
+        ],
+        "note": "Proposed prototype budgets only; triangle excess up to 5% remains explicitly over the strict limit but is a warning, not a batch failure. Meeting budgets does not establish game readiness."
+      },
+      "character_note": "No glTF skin present: static mesh/T-pose only; rigging and deformation not validated."
+    },
+    {
+      "id": "SH01",
+      "title": "Manta v2 · экспедиционный шаттл",
+      "category": "ships",
+      "job_status": "downloaded",
+      "local_file": "downloads/SH01.glb",
+      "game_ready": "not_assessed",
+      "status": "inspected",
+      "audit": {
+        "path": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\downloads\\SH01.glb",
+        "game_ready": "not_assessed",
+        "file_bytes": 4999988,
+        "container": {
+          "magic": "glTF",
+          "version": 2,
+          "declared_length": 4999988,
+          "chunks": [
+            {
+              "type": "JSON",
+              "bytes": 1860
+            },
+            {
+              "type": "BIN\u0000",
+              "bytes": 4998100
+            }
+          ]
+        },
+        "generator": "Tripo",
+        "extensions_used": [],
+        "extensions_required": [],
+        "scene": {
+          "active_scene_index": 0,
+          "active_nodes": 1,
+          "active_meshes": 1,
+          "triangles": 19211,
+          "vertices": 20520,
+          "render_primitive_instances": 1,
+          "bounds": {
+            "min": [
+              -0.4360351860523224,
+              0.0,
+              -0.48925788700580597
+            ],
+            "max": [
+              0.43527230620384216,
+              0.2508392333984375,
+              0.4892883747816086
+            ],
+            "size": [
+              0.8713074922561646,
+              0.2508392333984375,
+              0.9785462617874146
+            ]
+          },
+          "bounds_note": "glTF coordinate units; static node transforms only; no animation/skin deformation or verified real-world scale"
+        },
+        "node_count": 1,
+        "skins": {
+          "count": 0,
+          "items": []
+        },
+        "animations": {
+          "count": 0,
+          "items": []
+        },
+        "materials": {
+          "count": 1,
+          "used_count": 1,
+          "unused_indices": [],
+          "names": [
+            "tripo_mat_984acbb6-5f7d-4ae2-8674-1084868e77ef"
+          ]
+        },
+        "textures": {
+          "count": 3,
+          "image_count": 3,
+          "images": [
+            {
+              "index": 0,
+              "embedded": true,
+              "width": 2048,
+              "height": 2048,
+              "name": "SH01-optimized_normal",
+              "mime_type": "image/jpeg",
+              "bytes": 1425071,
+              "format": "JPEG"
+            },
+            {
+              "index": 1,
+              "embedded": true,
+              "width": 2048,
+              "height": 2048,
+              "name": "SH01-optimized_basecolor",
+              "mime_type": "image/jpeg",
+              "bytes": 1500610,
+              "format": "JPEG"
+            },
+            {
+              "index": 2,
+              "embedded": true,
+              "width": 2048,
+              "height": 2048,
+              "name": "SH01-optimized_rm",
+              "mime_type": "image/jpeg",
+              "bytes": 1300505,
+              "format": "JPEG"
+            }
+          ],
+          "max_edge": 2048,
+          "verification": "Image headers/dimensions only; full pixel integrity/material appearance not assessed"
+        },
+        "geometry": {
+          "mesh_count": 1,
+          "triangles": 19211,
+          "vertices": 20520,
+          "unique_position_accessor_vertices": 20520,
+          "primitive_count": 1,
+          "meshes": [
+            {
+              "index": 0,
+              "name": "tripo_mesh_984acbb6-5f7d-4ae2-8674-1084868e77ef",
+              "triangles": 19211,
+              "vertices": 20520,
+              "primitives": [
+                {
+                  "index": 0,
+                  "mode": 4,
+                  "triangles": 19211,
+                  "vertices": 20520,
+                  "attributes": [
+                    "NORMAL",
+                    "POSITION",
+                    "TEXCOORD_0"
+                  ],
+                  "material": 0,
+                  "morph_targets": 0
+                }
+              ],
+              "bounds_local": {
+                "min": [
+                  -0.4356537461280823,
+                  0.0,
+                  -0.4892731308937073
+                ],
+                "max": [
+                  0.4356537461280823,
+                  0.2508392333984375,
+                  0.4892731308937073
+                ],
+                "size": [
+                  0.8713074922561646,
+                  0.2508392333984375,
+                  0.9785462617874146
+                ]
+              }
+            }
+          ],
+          "count_note": "Stored mesh totals, including unused meshes; vertices sum primitive POSITION counts, not welded unique vertices. Scene totals include node instances."
+        },
+        "structural_status": "no_errors_detected",
+        "errors": [],
+        "warnings": [],
+        "incomplete_checks": []
+      },
+      "budget": {
+        "status": "within",
+        "checks": [
+          {
+            "metric": "triangles",
+            "actual": 19211,
+            "limit": 20000,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          },
+          {
+            "metric": "materials",
+            "actual": 1,
+            "limit": 3,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          },
+          {
+            "metric": "texture_max_edge",
+            "actual": 2048,
+            "limit": 2048,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          }
+        ],
+        "note": "Proposed prototype budgets only; triangle excess up to 5% remains explicitly over the strict limit but is a warning, not a batch failure. Meeting budgets does not establish game readiness."
+      }
+    },
+    {
+      "id": "SH02",
+      "title": "Lacuna · корабль чужих",
+      "category": "ships",
+      "job_status": "downloaded",
+      "local_file": "downloads/SH02.glb",
+      "game_ready": "not_assessed",
+      "status": "inspected",
+      "audit": {
+        "path": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\downloads\\SH02.glb",
+        "game_ready": "not_assessed",
+        "file_bytes": 5887452,
+        "container": {
+          "magic": "glTF",
+          "version": 2,
+          "declared_length": 5887452,
+          "chunks": [
+            {
+              "type": "JSON",
+              "bytes": 1860
+            },
+            {
+              "type": "BIN\u0000",
+              "bytes": 5885564
+            }
+          ]
+        },
+        "generator": "Tripo",
+        "extensions_used": [],
+        "extensions_required": [],
+        "scene": {
+          "active_scene_index": 0,
+          "active_nodes": 1,
+          "active_meshes": 1,
+          "triangles": 18840,
+          "vertices": 22829,
+          "render_primitive_instances": 1,
+          "bounds": {
+            "min": [
+              -0.48959358036518097,
+              0.0,
+              -0.1827697455883026
+            ],
+            "max": [
+              0.4887695759534836,
+              0.4537506103515625,
+              0.1829070746898651
+            ],
+            "size": [
+              0.9783631563186646,
+              0.4537506103515625,
+              0.3656768202781677
+            ]
+          },
+          "bounds_note": "glTF coordinate units; static node transforms only; no animation/skin deformation or verified real-world scale"
+        },
+        "node_count": 1,
+        "skins": {
+          "count": 0,
+          "items": []
+        },
+        "animations": {
+          "count": 0,
+          "items": []
+        },
+        "materials": {
+          "count": 1,
+          "used_count": 1,
+          "unused_indices": [],
+          "names": [
+            "tripo_mat_c1e805cc-a217-48ee-a645-a7a941f4d08d"
+          ]
+        },
+        "textures": {
+          "count": 3,
+          "image_count": 3,
+          "images": [
+            {
+              "index": 0,
+              "embedded": true,
+              "width": 2048,
+              "height": 2048,
+              "name": "SH02-optimized_normal",
+              "mime_type": "image/jpeg",
+              "bytes": 1579688,
+              "format": "JPEG"
+            },
+            {
+              "index": 1,
+              "embedded": true,
+              "width": 2048,
+              "height": 2048,
+              "name": "SH02-optimized_basecolor",
+              "mime_type": "image/jpeg",
+              "bytes": 1613067,
+              "format": "JPEG"
+            },
+            {
+              "index": 2,
+              "embedded": true,
+              "width": 2048,
+              "height": 2048,
+              "name": "SH02-optimized_rm",
+              "mime_type": "image/jpeg",
+              "bytes": 1849237,
+              "format": "JPEG"
+            }
+          ],
+          "max_edge": 2048,
+          "verification": "Image headers/dimensions only; full pixel integrity/material appearance not assessed"
+        },
+        "geometry": {
+          "mesh_count": 1,
+          "triangles": 18840,
+          "vertices": 22829,
+          "unique_position_accessor_vertices": 22829,
+          "primitive_count": 1,
+          "meshes": [
+            {
+              "index": 0,
+              "name": "tripo_mesh_c1e805cc-a217-48ee-a645-a7a941f4d08d",
+              "triangles": 18840,
+              "vertices": 22829,
+              "primitives": [
+                {
+                  "index": 0,
+                  "mode": 4,
+                  "triangles": 18840,
+                  "vertices": 22829,
+                  "attributes": [
+                    "NORMAL",
+                    "POSITION",
+                    "TEXCOORD_0"
+                  ],
+                  "material": 0,
+                  "morph_targets": 0
+                }
+              ],
+              "bounds_local": {
+                "min": [
+                  -0.4891815781593323,
+                  0.0,
+                  -0.18283841013908386
+                ],
+                "max": [
+                  0.4891815781593323,
+                  0.4537506103515625,
+                  0.18283841013908386
+                ],
+                "size": [
+                  0.9783631563186646,
+                  0.4537506103515625,
+                  0.3656768202781677
+                ]
+              }
+            }
+          ],
+          "count_note": "Stored mesh totals, including unused meshes; vertices sum primitive POSITION counts, not welded unique vertices. Scene totals include node instances."
+        },
+        "structural_status": "no_errors_detected",
+        "errors": [],
+        "warnings": [],
+        "incomplete_checks": []
+      },
+      "budget": {
+        "status": "within",
+        "checks": [
+          {
+            "metric": "triangles",
+            "actual": 18840,
+            "limit": 20000,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          },
+          {
+            "metric": "materials",
+            "actual": 1,
+            "limit": 3,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          },
+          {
+            "metric": "texture_max_edge",
+            "actual": 2048,
+            "limit": 2048,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          }
+        ],
+        "note": "Proposed prototype budgets only; triangle excess up to 5% remains explicitly over the strict limit but is a warning, not a batch failure. Meeting budgets does not establish game readiness."
+      }
+    },
+    {
+      "id": "BP01",
+      "title": "Рюкзак пилота · отдельный объект",
+      "category": "backpacks",
+      "job_status": "downloaded",
+      "local_file": "downloads/BP01.glb",
+      "game_ready": "not_assessed",
+      "status": "inspected",
+      "audit": {
+        "path": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\downloads\\BP01.glb",
+        "game_ready": "not_assessed",
+        "file_bytes": 810816,
+        "container": {
+          "magic": "glTF",
+          "version": 2,
+          "declared_length": 810816,
+          "chunks": [
+            {
+              "type": "JSON",
+              "bytes": 1836
+            },
+            {
+              "type": "BIN\u0000",
+              "bytes": 808952
+            }
+          ]
+        },
+        "generator": "Tripo",
+        "extensions_used": [],
+        "extensions_required": [],
+        "scene": {
+          "active_scene_index": 0,
+          "active_nodes": 1,
+          "active_meshes": 1,
+          "triangles": 2870,
+          "vertices": 2936,
+          "render_primitive_instances": 1,
+          "bounds": {
+            "min": [
+              -0.3326416611671448,
+              0.0,
+              -0.2940979301929474
+            ],
+            "max": [
+              0.332061767578125,
+              0.9788818359375,
+              0.2939758598804474
+            ],
+            "size": [
+              0.6647034287452698,
+              0.9788818359375,
+              0.5880737900733948
+            ]
+          },
+          "bounds_note": "glTF coordinate units; static node transforms only; no animation/skin deformation or verified real-world scale"
+        },
+        "node_count": 1,
+        "skins": {
+          "count": 0,
+          "items": []
+        },
+        "animations": {
+          "count": 0,
+          "items": []
+        },
+        "materials": {
+          "count": 1,
+          "used_count": 1,
+          "unused_indices": [],
+          "names": [
+            "tripo_mat_cef24b0c-e318-4f79-bcd8-3c24e99bee3a"
+          ]
+        },
+        "textures": {
+          "count": 3,
+          "image_count": 3,
+          "images": [
+            {
+              "index": 0,
+              "embedded": true,
+              "width": 1024,
+              "height": 1024,
+              "name": "BP01-optimized_normal",
+              "mime_type": "image/jpeg",
+              "bytes": 228076,
+              "format": "JPEG"
+            },
+            {
+              "index": 1,
+              "embedded": true,
+              "width": 1024,
+              "height": 1024,
+              "name": "BP01-optimized_basecolor",
+              "mime_type": "image/jpeg",
+              "bytes": 251152,
+              "format": "JPEG"
+            },
+            {
+              "index": 2,
+              "embedded": true,
+              "width": 1024,
+              "height": 1024,
+              "name": "BP01-optimized_rm",
+              "mime_type": "image/jpeg",
+              "bytes": 218551,
+              "format": "JPEG"
+            }
+          ],
+          "max_edge": 1024,
+          "verification": "Image headers/dimensions only; full pixel integrity/material appearance not assessed"
+        },
+        "geometry": {
+          "mesh_count": 1,
+          "triangles": 2870,
+          "vertices": 2936,
+          "unique_position_accessor_vertices": 2936,
+          "primitive_count": 1,
+          "meshes": [
+            {
+              "index": 0,
+              "name": "tripo_mesh_cef24b0c-e318-4f79-bcd8-3c24e99bee3a",
+              "triangles": 2870,
+              "vertices": 2936,
+              "primitives": [
+                {
+                  "index": 0,
+                  "mode": 4,
+                  "triangles": 2870,
+                  "vertices": 2936,
+                  "attributes": [
+                    "NORMAL",
+                    "POSITION",
+                    "TEXCOORD_0"
+                  ],
+                  "material": 0,
+                  "morph_targets": 0
+                }
+              ],
+              "bounds_local": {
+                "min": [
+                  -0.3323517143726349,
+                  0.0,
+                  -0.2940368950366974
+                ],
+                "max": [
+                  0.3323517143726349,
+                  0.9788818359375,
+                  0.2940368950366974
+                ],
+                "size": [
+                  0.6647034287452698,
+                  0.9788818359375,
+                  0.5880737900733948
+                ]
+              }
+            }
+          ],
+          "count_note": "Stored mesh totals, including unused meshes; vertices sum primitive POSITION counts, not welded unique vertices. Scene totals include node instances."
+        },
+        "structural_status": "no_errors_detected",
+        "errors": [],
+        "warnings": [],
+        "incomplete_checks": []
+      },
+      "budget": {
+        "status": "within",
+        "checks": [
+          {
+            "metric": "triangles",
+            "actual": 2870,
+            "limit": 3000,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          },
+          {
+            "metric": "materials",
+            "actual": 1,
+            "limit": 1,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          },
+          {
+            "metric": "texture_max_edge",
+            "actual": 1024,
+            "limit": 1024,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          }
+        ],
+        "note": "Proposed prototype budgets only; triangle excess up to 5% remains explicitly over the strict limit but is a warning, not a batch failure. Meeting budgets does not establish game readiness."
+      }
+    },
+    {
+      "id": "BP02",
+      "title": "Рюкзак инженера · отдельный объект",
+      "category": "backpacks",
+      "job_status": "downloaded",
+      "local_file": "downloads/BP02.glb",
+      "game_ready": "not_assessed",
+      "status": "inspected",
+      "audit": {
+        "path": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\downloads\\BP02.glb",
+        "game_ready": "not_assessed",
+        "file_bytes": 1069800,
+        "container": {
+          "magic": "glTF",
+          "version": 2,
+          "declared_length": 1069800,
+          "chunks": [
+            {
+              "type": "JSON",
+              "bytes": 1832
+            },
+            {
+              "type": "BIN\u0000",
+              "bytes": 1067940
+            }
+          ]
+        },
+        "generator": "Tripo",
+        "extensions_used": [],
+        "extensions_required": [],
+        "scene": {
+          "active_scene_index": 0,
+          "active_nodes": 1,
+          "active_meshes": 1,
+          "triangles": 2922,
+          "vertices": 3574,
+          "render_primitive_instances": 1,
+          "bounds": {
+            "min": [
+              -0.3875122666358948,
+              0.0,
+              -0.3417053520679474
+            ],
+            "max": [
+              0.3876953721046448,
+              0.97808837890625,
+              0.3415832817554474
+            ],
+            "size": [
+              0.7752076387405396,
+              0.97808837890625,
+              0.6832886338233948
+            ]
+          },
+          "bounds_note": "glTF coordinate units; static node transforms only; no animation/skin deformation or verified real-world scale"
+        },
+        "node_count": 1,
+        "skins": {
+          "count": 0,
+          "items": []
+        },
+        "animations": {
+          "count": 0,
+          "items": []
+        },
+        "materials": {
+          "count": 1,
+          "used_count": 1,
+          "unused_indices": [],
+          "names": [
+            "tripo_mat_a5b20c51-f634-4596-937d-4bf353f80333"
+          ]
+        },
+        "textures": {
+          "count": 3,
+          "image_count": 3,
+          "images": [
+            {
+              "index": 0,
+              "embedded": true,
+              "width": 1024,
+              "height": 1024,
+              "name": "BP02-optimized_normal",
+              "mime_type": "image/jpeg",
+              "bytes": 300886,
+              "format": "JPEG"
+            },
+            {
+              "index": 1,
+              "embedded": true,
+              "width": 1024,
+              "height": 1024,
+              "name": "BP02-optimized_basecolor",
+              "mime_type": "image/jpeg",
+              "bytes": 347679,
+              "format": "JPEG"
+            },
+            {
+              "index": 2,
+              "embedded": true,
+              "width": 1024,
+              "height": 1024,
+              "name": "BP02-optimized_rm",
+              "mime_type": "image/jpeg",
+              "bytes": 287469,
+              "format": "JPEG"
+            }
+          ],
+          "max_edge": 1024,
+          "verification": "Image headers/dimensions only; full pixel integrity/material appearance not assessed"
+        },
+        "geometry": {
+          "mesh_count": 1,
+          "triangles": 2922,
+          "vertices": 3574,
+          "unique_position_accessor_vertices": 3574,
+          "primitive_count": 1,
+          "meshes": [
+            {
+              "index": 0,
+              "name": "tripo_mesh_a5b20c51-f634-4596-937d-4bf353f80333",
+              "triangles": 2922,
+              "vertices": 3574,
+              "primitives": [
+                {
+                  "index": 0,
+                  "mode": 4,
+                  "triangles": 2922,
+                  "vertices": 3574,
+                  "attributes": [
+                    "NORMAL",
+                    "POSITION",
+                    "TEXCOORD_0"
+                  ],
+                  "material": 0,
+                  "morph_targets": 0
+                }
+              ],
+              "bounds_local": {
+                "min": [
+                  -0.3876038193702698,
+                  0.0,
+                  -0.3416443169116974
+                ],
+                "max": [
+                  0.3876038193702698,
+                  0.97808837890625,
+                  0.3416443169116974
+                ],
+                "size": [
+                  0.7752076387405396,
+                  0.97808837890625,
+                  0.6832886338233948
+                ]
+              }
+            }
+          ],
+          "count_note": "Stored mesh totals, including unused meshes; vertices sum primitive POSITION counts, not welded unique vertices. Scene totals include node instances."
+        },
+        "structural_status": "no_errors_detected",
+        "errors": [],
+        "warnings": [],
+        "incomplete_checks": []
+      },
+      "budget": {
+        "status": "within",
+        "checks": [
+          {
+            "metric": "triangles",
+            "actual": 2922,
+            "limit": 3000,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          },
+          {
+            "metric": "materials",
+            "actual": 1,
+            "limit": 1,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          },
+          {
+            "metric": "texture_max_edge",
+            "actual": 1024,
+            "limit": 1024,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          }
+        ],
+        "note": "Proposed prototype budgets only; triangle excess up to 5% remains explicitly over the strict limit but is a warning, not a batch failure. Meeting budgets does not establish game readiness."
+      }
+    },
+    {
+      "id": "TL01",
+      "title": "Полевой C-сканер",
+      "category": "tools",
+      "job_status": "downloaded",
+      "local_file": "downloads/TL01.glb",
+      "game_ready": "not_assessed",
+      "status": "inspected",
+      "audit": {
+        "path": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\downloads\\TL01.glb",
+        "game_ready": "not_assessed",
+        "file_bytes": 1091944,
+        "container": {
+          "magic": "glTF",
+          "version": 2,
+          "declared_length": 1091944,
+          "chunks": [
+            {
+              "type": "JSON",
+              "bytes": 1836
+            },
+            {
+              "type": "BIN\u0000",
+              "bytes": 1090080
+            }
+          ]
+        },
+        "generator": "Tripo",
+        "extensions_used": [],
+        "extensions_required": [],
+        "scene": {
+          "active_scene_index": 0,
+          "active_nodes": 1,
+          "active_meshes": 1,
+          "triangles": 2039,
+          "vertices": 2536,
+          "render_primitive_instances": 1,
+          "bounds": {
+            "min": [
+              -0.4888001084327698,
+              0.0,
+              -0.2057189792394638
+            ],
+            "max": [
+              0.4887085556983948,
+              0.499267578125,
+              0.20555122196674347
+            ],
+            "size": [
+              0.9775086641311646,
+              0.499267578125,
+              0.4112702012062073
+            ]
+          },
+          "bounds_note": "glTF coordinate units; static node transforms only; no animation/skin deformation or verified real-world scale"
+        },
+        "node_count": 1,
+        "skins": {
+          "count": 0,
+          "items": []
+        },
+        "animations": {
+          "count": 0,
+          "items": []
+        },
+        "materials": {
+          "count": 1,
+          "used_count": 1,
+          "unused_indices": [],
+          "names": [
+            "tripo_mat_eed3b2ed-38ac-469d-9fab-2f99b04b7a4d"
+          ]
+        },
+        "textures": {
+          "count": 3,
+          "image_count": 3,
+          "images": [
+            {
+              "index": 0,
+              "embedded": true,
+              "width": 1024,
+              "height": 1024,
+              "name": "TL01-optimized_normal",
+              "mime_type": "image/jpeg",
+              "bytes": 324203,
+              "format": "JPEG"
+            },
+            {
+              "index": 1,
+              "embedded": true,
+              "width": 1024,
+              "height": 1024,
+              "name": "TL01-optimized_basecolor",
+              "mime_type": "image/jpeg",
+              "bytes": 374618,
+              "format": "JPEG"
+            },
+            {
+              "index": 2,
+              "embedded": true,
+              "width": 1024,
+              "height": 1024,
+              "name": "TL01-optimized_rm",
+              "mime_type": "image/jpeg",
+              "bytes": 297868,
+              "format": "JPEG"
+            }
+          ],
+          "max_edge": 1024,
+          "verification": "Image headers/dimensions only; full pixel integrity/material appearance not assessed"
+        },
+        "geometry": {
+          "mesh_count": 1,
+          "triangles": 2039,
+          "vertices": 2536,
+          "unique_position_accessor_vertices": 2536,
+          "primitive_count": 1,
+          "meshes": [
+            {
+              "index": 0,
+              "name": "tripo_mesh_eed3b2ed-38ac-469d-9fab-2f99b04b7a4d",
+              "triangles": 2039,
+              "vertices": 2536,
+              "primitives": [
+                {
+                  "index": 0,
+                  "mode": 4,
+                  "triangles": 2039,
+                  "vertices": 2536,
+                  "attributes": [
+                    "NORMAL",
+                    "POSITION",
+                    "TEXCOORD_0"
+                  ],
+                  "material": 0,
+                  "morph_targets": 0
+                }
+              ],
+              "bounds_local": {
+                "min": [
+                  -0.4887543320655823,
+                  0.0,
+                  -0.20563510060310364
+                ],
+                "max": [
+                  0.4887543320655823,
+                  0.499267578125,
+                  0.20563510060310364
+                ],
+                "size": [
+                  0.9775086641311646,
+                  0.499267578125,
+                  0.4112702012062073
+                ]
+              }
+            }
+          ],
+          "count_note": "Stored mesh totals, including unused meshes; vertices sum primitive POSITION counts, not welded unique vertices. Scene totals include node instances."
+        },
+        "structural_status": "no_errors_detected",
+        "errors": [],
+        "warnings": [],
+        "incomplete_checks": []
+      },
+      "budget": {
+        "status": "warning",
+        "checks": [
+          {
+            "metric": "triangles",
+            "actual": 2039,
+            "limit": 2000,
+            "status": "warning",
+            "strict_limit_exceeded": true,
+            "over_by": 39
+          },
+          {
+            "metric": "materials",
+            "actual": 1,
+            "limit": 1,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          },
+          {
+            "metric": "texture_max_edge",
+            "actual": 1024,
+            "limit": 1024,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          }
+        ],
+        "note": "Proposed prototype budgets only; triangle excess up to 5% remains explicitly over the strict limit but is a warning, not a batch failure. Meeting budgets does not establish game readiness."
+      }
+    },
+    {
+      "id": "TL02",
+      "title": "Наручный сканер",
+      "category": "tools",
+      "job_status": "downloaded",
+      "local_file": "downloads/TL02.glb",
+      "game_ready": "not_assessed",
+      "status": "inspected",
+      "audit": {
+        "path": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\downloads\\TL02.glb",
+        "game_ready": "not_assessed",
+        "file_bytes": 884844,
+        "container": {
+          "magic": "glTF",
+          "version": 2,
+          "declared_length": 884844,
+          "chunks": [
+            {
+              "type": "JSON",
+              "bytes": 1832
+            },
+            {
+              "type": "BIN\u0000",
+              "bytes": 882984
+            }
+          ]
+        },
+        "generator": "Tripo",
+        "extensions_used": [],
+        "extensions_required": [],
+        "scene": {
+          "active_scene_index": 0,
+          "active_nodes": 1,
+          "active_meshes": 1,
+          "triangles": 1936,
+          "vertices": 2028,
+          "render_primitive_instances": 1,
+          "bounds": {
+            "min": [
+              -0.4888916611671448,
+              0.0,
+              -0.2169037163257599
+            ],
+            "max": [
+              0.4889221787452698,
+              0.88214111328125,
+              0.2174530327320099
+            ],
+            "size": [
+              0.9778138399124146,
+              0.88214111328125,
+              0.4343567490577698
+            ]
+          },
+          "bounds_note": "glTF coordinate units; static node transforms only; no animation/skin deformation or verified real-world scale"
+        },
+        "node_count": 1,
+        "skins": {
+          "count": 0,
+          "items": []
+        },
+        "animations": {
+          "count": 0,
+          "items": []
+        },
+        "materials": {
+          "count": 1,
+          "used_count": 1,
+          "unused_indices": [],
+          "names": [
+            "tripo_mat_b810ccca-29e7-4c27-ab35-357a0e5776b4"
+          ]
+        },
+        "textures": {
+          "count": 3,
+          "image_count": 3,
+          "images": [
+            {
+              "index": 0,
+              "embedded": true,
+              "width": 1024,
+              "height": 1024,
+              "name": "TL02-optimized_normal",
+              "mime_type": "image/jpeg",
+              "bytes": 211474,
+              "format": "JPEG"
+            },
+            {
+              "index": 1,
+              "embedded": true,
+              "width": 1024,
+              "height": 1024,
+              "name": "TL02-optimized_basecolor",
+              "mime_type": "image/jpeg",
+              "bytes": 289308,
+              "format": "JPEG"
+            },
+            {
+              "index": 2,
+              "embedded": true,
+              "width": 1024,
+              "height": 1024,
+              "name": "TL02-optimized_rm",
+              "mime_type": "image/jpeg",
+              "bytes": 305687,
+              "format": "JPEG"
+            }
+          ],
+          "max_edge": 1024,
+          "verification": "Image headers/dimensions only; full pixel integrity/material appearance not assessed"
+        },
+        "geometry": {
+          "mesh_count": 1,
+          "triangles": 1936,
+          "vertices": 2028,
+          "unique_position_accessor_vertices": 2028,
+          "primitive_count": 1,
+          "meshes": [
+            {
+              "index": 0,
+              "name": "tripo_mesh_b810ccca-29e7-4c27-ab35-357a0e5776b4",
+              "triangles": 1936,
+              "vertices": 2028,
+              "primitives": [
+                {
+                  "index": 0,
+                  "mode": 4,
+                  "triangles": 1936,
+                  "vertices": 2028,
+                  "attributes": [
+                    "NORMAL",
+                    "POSITION",
+                    "TEXCOORD_0"
+                  ],
+                  "material": 0,
+                  "morph_targets": 0
+                }
+              ],
+              "bounds_local": {
+                "min": [
+                  -0.4889069199562073,
+                  0.0,
+                  -0.2171783745288849
+                ],
+                "max": [
+                  0.4889069199562073,
+                  0.88214111328125,
+                  0.2171783745288849
+                ],
+                "size": [
+                  0.9778138399124146,
+                  0.88214111328125,
+                  0.4343567490577698
+                ]
+              }
+            }
+          ],
+          "count_note": "Stored mesh totals, including unused meshes; vertices sum primitive POSITION counts, not welded unique vertices. Scene totals include node instances."
+        },
+        "structural_status": "no_errors_detected",
+        "errors": [],
+        "warnings": [],
+        "incomplete_checks": []
+      },
+      "budget": {
+        "status": "within",
+        "checks": [
+          {
+            "metric": "triangles",
+            "actual": 1936,
+            "limit": 2000,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          },
+          {
+            "metric": "materials",
+            "actual": 1,
+            "limit": 1,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          },
+          {
+            "metric": "texture_max_edge",
+            "actual": 1024,
+            "limit": 1024,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          }
+        ],
+        "note": "Proposed prototype budgets only; triangle excess up to 5% remains explicitly over the strict limit but is a warning, not a batch failure. Meeting budgets does not establish game readiness."
+      }
+    },
+    {
+      "id": "TL03",
+      "title": "Ремонтный мультитул",
+      "category": "tools",
+      "job_status": "downloaded",
+      "local_file": "downloads/TL03.glb",
+      "game_ready": "not_assessed",
+      "status": "inspected",
+      "audit": {
+        "path": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\downloads\\TL03.glb",
+        "game_ready": "not_assessed",
+        "file_bytes": 913420,
+        "container": {
+          "magic": "glTF",
+          "version": 2,
+          "declared_length": 913420,
+          "chunks": [
+            {
+              "type": "JSON",
+              "bytes": 1836
+            },
+            {
+              "type": "BIN\u0000",
+              "bytes": 911556
+            }
+          ]
+        },
+        "generator": "Tripo",
+        "extensions_used": [],
+        "extensions_required": [],
+        "scene": {
+          "active_scene_index": 0,
+          "active_nodes": 1,
+          "active_meshes": 1,
+          "triangles": 1832,
+          "vertices": 1911,
+          "render_primitive_instances": 1,
+          "bounds": {
+            "min": [
+              -0.4906616806983948,
+              0.0,
+              -0.1717376559972763
+            ],
+            "max": [
+              0.4896851181983948,
+              0.3011932373046875,
+              0.17167668044567108
+            ],
+            "size": [
+              0.9803467988967896,
+              0.3011932373046875,
+              0.3434143364429474
+            ]
+          },
+          "bounds_note": "glTF coordinate units; static node transforms only; no animation/skin deformation or verified real-world scale"
+        },
+        "node_count": 1,
+        "skins": {
+          "count": 0,
+          "items": []
+        },
+        "animations": {
+          "count": 0,
+          "items": []
+        },
+        "materials": {
+          "count": 1,
+          "used_count": 1,
+          "unused_indices": [],
+          "names": [
+            "tripo_mat_8f4a50dc-189a-43cc-9795-20f80a20c454"
+          ]
+        },
+        "textures": {
+          "count": 3,
+          "image_count": 3,
+          "images": [
+            {
+              "index": 0,
+              "embedded": true,
+              "width": 1024,
+              "height": 1024,
+              "name": "TL03-optimized_normal",
+              "mime_type": "image/jpeg",
+              "bytes": 229857,
+              "format": "JPEG"
+            },
+            {
+              "index": 1,
+              "embedded": true,
+              "width": 1024,
+              "height": 1024,
+              "name": "TL03-optimized_basecolor",
+              "mime_type": "image/jpeg",
+              "bytes": 340950,
+              "format": "JPEG"
+            },
+            {
+              "index": 2,
+              "embedded": true,
+              "width": 1024,
+              "height": 1024,
+              "name": "TL03-optimized_rm",
+              "mime_type": "image/jpeg",
+              "bytes": 268600,
+              "format": "JPEG"
+            }
+          ],
+          "max_edge": 1024,
+          "verification": "Image headers/dimensions only; full pixel integrity/material appearance not assessed"
+        },
+        "geometry": {
+          "mesh_count": 1,
+          "triangles": 1832,
+          "vertices": 1911,
+          "unique_position_accessor_vertices": 1911,
+          "primitive_count": 1,
+          "meshes": [
+            {
+              "index": 0,
+              "name": "tripo_mesh_8f4a50dc-189a-43cc-9795-20f80a20c454",
+              "triangles": 1832,
+              "vertices": 1911,
+              "primitives": [
+                {
+                  "index": 0,
+                  "mode": 4,
+                  "triangles": 1832,
+                  "vertices": 1911,
+                  "attributes": [
+                    "NORMAL",
+                    "POSITION",
+                    "TEXCOORD_0"
+                  ],
+                  "material": 0,
+                  "morph_targets": 0
+                }
+              ],
+              "bounds_local": {
+                "min": [
+                  -0.4901733994483948,
+                  0.0,
+                  -0.1717071682214737
+                ],
+                "max": [
+                  0.4901733994483948,
+                  0.3011932373046875,
+                  0.1717071682214737
+                ],
+                "size": [
+                  0.9803467988967896,
+                  0.3011932373046875,
+                  0.3434143364429474
+                ]
+              }
+            }
+          ],
+          "count_note": "Stored mesh totals, including unused meshes; vertices sum primitive POSITION counts, not welded unique vertices. Scene totals include node instances."
+        },
+        "structural_status": "no_errors_detected",
+        "errors": [],
+        "warnings": [],
+        "incomplete_checks": []
+      },
+      "budget": {
+        "status": "within",
+        "checks": [
+          {
+            "metric": "triangles",
+            "actual": 1832,
+            "limit": 2000,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          },
+          {
+            "metric": "materials",
+            "actual": 1,
+            "limit": 1,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          },
+          {
+            "metric": "texture_max_edge",
+            "actual": 1024,
+            "limit": 1024,
+            "status": "within",
+            "strict_limit_exceeded": false,
+            "over_by": 0
+          }
+        ],
+        "note": "Proposed prototype budgets only; triangle excess up to 5% remains explicitly over the strict limit but is a warning, not a batch failure. Meeting budgets does not establish game readiness."
+      }
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+Use case: precise-object-edit.
+Asset type: isolated single-object image-to-3D modeling reference.
+Input image: edit target. It contains three devices. Isolate ONLY the LARGE C-SHAPED SCANNER on the LEFT, removing the wrist device and short multitool entirely.
+Preserve this scanner's exact design: horizontal rounded rectangular ivory body with a graphite lower/side layer, large recessed dark display with a simple cyan measurement curve, large circular gray physical dial with a short orange arc, very thin orange lower seam, and the thick C-shaped open sensor jaws at the left. Keep the C opening genuinely empty and clearly readable. Keep the two small cyan sensor contact faces on the jaw tips. This is a measuring instrument, with no pistol grip, trigger, barrel, gun shape or added parts.
+Reframe the same scanner as one complete object in a clean front-side three-quarter product view; preserve the reference angle as closely as possible while making the existing housing and jaws' real thickness clear. Do not flatten it into an icon, redesign its proportions, invent new controls or add extra texture.
+Backdrop: plain very light neutral gray, soft even product lighting, faint contact shadow. Single complete object centered with clear margins; no other equipment, no hands, no inset, no extra view, no text, no label, no watermark.
