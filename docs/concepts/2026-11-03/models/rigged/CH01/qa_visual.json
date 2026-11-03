@@ -1,0 +1,21 @@
+{
+  "blend_sha256": "50a8a905a4661fc85ce4d599ee27b81fef6ff0ddb2a60c9c6be1a350fecaefa2",
+  "reviewed_stills": [
+    "motion_qa/Demo_front_0058.png",
+    "motion_qa/Demo_front_0190.png",
+    "motion_qa/Demo_front_0280.png",
+    "motion_qa/Demo_side_0280.png"
+  ],
+  "verdict": "ready_for_demo_render_with_notes",
+  "observations": [
+    "Actual animated wave palm is visible from the front; no obvious arm corkscrew in front/side stills.",
+    "Support feet look connected to the floor in the reviewed poses; numerical deformed-sole contact QA is reported separately.",
+    "No obvious detached limbs or catastrophic joint collapse in these four stills."
+  ],
+  "notes": [
+    "Glove fingers are not independently articulated.",
+    "Ankle cuff can compress in deeper bends; reviewed demonstration poses remain moderate.",
+    "Closing-step swing R target is unreachable by up to 29 mm near frame 182; the actual support foot remains planted."
+  ],
+  "scope": "Four rendered pose stills only; motion smoothness and final video have not yet been visually reviewed. No game-ready certification."
+}

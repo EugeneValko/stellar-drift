@@ -1,0 +1,25 @@
+CH01 PILOT — RIG / WALK / WAVE
+03.11.2026
+
+Target: the existing CH01 astronaut, smooth believable human movement on a 1g studio floor.
+Source: ../../downloads/CH01.glb, preserved unchanged (18,694 triangles, one material, 2K maps).
+Height: approximately 1.82 metres including helmet, feet at floor; no backpack.
+Design: preserve the supplied mesh, proportions, suit, visor and textures. No new decorative geometry.
+
+Rig: named humanoid deform hierarchy, one root, articulated torso/neck/head, clavicles and arms,
+legs with IK targets and pole controls, feet/toes; maximum four normalized weights per vertex.
+No facial rig: the face is enclosed by the helmet. Editable controls remain in Blender.
+Deformation QA: neutral, raised arm/wave, bent knees and walking extremes; inspect shoulders, hips,
+elbows, knees and boot contacts. Source mesh is not overwritten; corrections affect derived files only.
+
+Motion: authored smooth walk with heel-to-toe roll, stable stance contacts, toe clearance,
+pelvis weight shift and small bob, counter-rotating shoulders and relaxed opposing arm swing.
+Video: several complete cycles, smooth deceleration into standing, friendly hand wave, settle.
+Aim for 12–16 seconds, 30 fps, 1280x720 or better. Neutral studio and soft contact shadows.
+Prefer natural timing and deformation over decorative cinematic complexity.
+
+Deliverables: editable rigged/animated .blend, baked skeletal GLB with named clips, MP4 demonstration,
+representative QA stills, reusable scripts and a factual validation note.
+Active workflows: blender-director → rigging → authored animation → asset-optimization/export → qa-review.
+Execution: installed Blender 5.2 via background CLI; no Blender MCP tool is available in this session.
+No main-game gameplay changes or imports are required for this demonstration.

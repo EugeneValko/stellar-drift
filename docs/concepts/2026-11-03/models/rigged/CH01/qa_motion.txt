@@ -1,0 +1,86 @@
+CH01 INDEPENDENT RIG / MOTION QA
+Blend: D:\UnityProjects\stellar-drift\docs\concepts\2026-11-03\models\rigged\CH01\animated.blend
+Source SHA unchanged: True
+Weights: {"vertices": 21947, "max_deform_influences": 3, "weight_sum_range": [0.9999999701976776, 1.0000000298023224], "unweighted_count": 0, "more_than_four_count": 0, "normalization_error_count": 0, "invalid_weight_count": 0, "weighted_nondeform_groups": [], "helmet_above_1_60m_nonrigid_vertices": 0, "bad_vertex_examples": {"unweighted": [], "normalization": [], "over_four": []}, "status": "checked"}
+Verdict: numeric_checks_completed_visual_review_required
+
+{
+  "action": "Walk_Cycle",
+  "frame_range": [
+    1,
+    34
+  ],
+  "duration_s": 1.1,
+  "sampled_frames": 34,
+  "minimum_deformed_boot_z_m": -0.0017616533441469073,
+  "max_penetration_below_ground_m": 0.0017616533441469073,
+  "max_ik_ankle_error_m": 3.4258719123525454e-05,
+  "max_flat_stance_horizontal_drift_m": 9.575790416171704e-06,
+  "flat_stance_minimum_sole_z_range_m": [
+    -3.3442942367400974e-05,
+    -7.673370419070125e-06
+  ],
+  "root_displacement_m": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "root_reverse_forward_motion_frames": [],
+  "walk_loop": {
+    "root_relative_mesh_endpoint_max_difference_m": 0.0,
+    "root_relative_bone_endpoint_position_max_difference_m": 0.0,
+    "root_relative_bone_endpoint_rotation_max_difference_rad": 0.0
+  },
+  "sliding_coordinate_frame": "Actual mesh world coordinates minus virtual root Y=1m/s for in-place Walk_Cycle ONLY"
+}
+{
+  "action": "Wave",
+  "frame_range": [
+    1,
+    181
+  ],
+  "duration_s": 6.0,
+  "sampled_frames": 181,
+  "minimum_deformed_boot_z_m": -2.0614756977010984e-06,
+  "max_penetration_below_ground_m": 2.0614756977010984e-06,
+  "max_ik_ankle_error_m": 2.180284826470508e-06,
+  "max_flat_stance_horizontal_drift_m": 1.0018191524727112e-06,
+  "flat_stance_minimum_sole_z_range_m": [
+    -2.0614756977010984e-06,
+    -1.5682217053836212e-06
+  ],
+  "root_displacement_m": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "root_reverse_forward_motion_frames": [],
+  "walk_loop": null,
+  "sliding_coordinate_frame": "Actual deformed mesh world coordinates, no correction"
+}
+{
+  "action": "Demo",
+  "frame_range": [
+    1,
+    403
+  ],
+  "duration_s": 13.4,
+  "sampled_frames": 403,
+  "minimum_deformed_boot_z_m": -0.0018686754629015923,
+  "max_penetration_below_ground_m": 0.0018686754629015923,
+  "max_ik_ankle_error_m": 0.029123363279180307,
+  "max_flat_stance_horizontal_drift_m": 1.0480295047002063e-05,
+  "flat_stance_minimum_sole_z_range_m": [
+    -3.0887924367561936e-05,
+    -1.4696363450639183e-06
+  ],
+  "root_displacement_m": [
+    0.0,
+    -4.949999809265137,
+    0.0
+  ],
+  "root_reverse_forward_motion_frames": [],
+  "walk_loop": null,
+  "sliding_coordinate_frame": "Actual deformed mesh world coordinates, no correction"
+}
+Not assessed: wave palm appearance; natural artistic timing; joint silhouette/cloth compression; exported skin/clip equivalence; Godot skeletal import

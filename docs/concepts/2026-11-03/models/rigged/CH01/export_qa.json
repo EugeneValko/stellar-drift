@@ -1,0 +1,338 @@
+{
+  "created_utc": "2026-11-03T19:26:24.064990+00:00",
+  "blender": "5.2.0 LTS",
+  "input_blend": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\rigged\\CH01\\animated.blend",
+  "output": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\rigged\\CH01\\CH01_rigged_animated.glb",
+  "sampling_fps": 30,
+  "protected_input_hashes": {
+    "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\rigged\\CH01\\animated.blend": "50a8a905a4661fc85ce4d599ee27b81fef6ff0ddb2a60c9c6be1a350fecaefa2",
+    "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\downloads\\CH01.glb": "c4bdd0af39953de811c6ba70aaced50cee74ac6663b43a18665b31c67ed15cf9",
+    "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\rigged\\CH01\\rig.blend": "3999ad90dd1190e944102b584aac8c0178168e0fb2301f4a4ee470dc67b5b4c3"
+  },
+  "status": "exported_independently_checked_with_runtime_note",
+  "limitations": [
+    "Engine import/playback QA remains independent; no production/game-ready certification"
+  ],
+  "visual_bake_comparison": {
+    "Walk_Cycle": {
+      "maximum_bone_position_error_m": 1.8225898932687798e-05,
+      "maximum_bone_rotation_error_degrees": 1.0017912669061661e-05,
+      "maximum_skinned_vertex_error_m": 1.9158918467586276e-05,
+      "mesh_probe_count": 4
+    },
+    "Wave": {
+      "maximum_bone_position_error_m": 6.062338550968536e-06,
+      "maximum_bone_rotation_error_degrees": 1.0017912669061661e-05,
+      "maximum_skinned_vertex_error_m": 9.247456909720442e-06,
+      "mesh_probe_count": 4
+    },
+    "Demo": {
+      "maximum_bone_position_error_m": 1.8204913961065386e-05,
+      "maximum_bone_rotation_error_degrees": 1.0017912669061661e-05,
+      "maximum_skinned_vertex_error_m": 1.917428014658907e-05,
+      "mesh_probe_count": 4
+    }
+  },
+  "source_clips": {
+    "Walk_Cycle": {
+      "duration": 1.1,
+      "source_frame_range": [
+        1.0,
+        34.0
+      ],
+      "source_slot": "OBARM_CH01",
+      "maximum_baked_scale_deviation": 2.8371810913085938e-05
+    },
+    "Wave": {
+      "duration": 6.0,
+      "source_frame_range": [
+        1.0,
+        181.0
+      ],
+      "source_slot": "OBARM_CH01",
+      "maximum_baked_scale_deviation": 2.8848648071289062e-05
+    },
+    "Demo": {
+      "duration": 13.4,
+      "source_frame_range": [
+        1.0,
+        403.0
+      ],
+      "source_slot": "OBARM_CH01",
+      "maximum_baked_scale_deviation": 2.9206275939941406e-05
+    }
+  },
+  "export_attempts": [
+    {
+      "mode": "ACTIONS",
+      "status": "exported_structurally_checked_engine_review_pending",
+      "errors": []
+    }
+  ],
+  "validation": {
+    "status": "exported_structurally_checked_engine_review_pending",
+    "errors": [],
+    "warnings": [],
+    "joint_names": [
+      "root",
+      "pelvis",
+      "spine_01",
+      "spine_02",
+      "chest",
+      "clavicle.L",
+      "upper_arm.L",
+      "forearm.L",
+      "hand.L",
+      "clavicle.R",
+      "upper_arm.R",
+      "forearm.R",
+      "hand.R",
+      "neck",
+      "head",
+      "thigh.L",
+      "shin.L",
+      "foot.L",
+      "toe.L",
+      "thigh.R",
+      "shin.R",
+      "foot.R",
+      "toe.R"
+    ],
+    "joint_count": 23,
+    "skin_count": 1,
+    "animations": [
+      {
+        "name": "Demo",
+        "duration_seconds": 13.399999618530273,
+        "channels": 69,
+        "minimum_sampler_keys": 403,
+        "maximum_sampler_keys": 403,
+        "root_translation_delta_gltf": [
+          0.0,
+          0.0,
+          4.949999809265137
+        ],
+        "root_motion_distance_m": 4.949999809265137
+      },
+      {
+        "name": "Walk_Cycle",
+        "duration_seconds": 1.100000023841858,
+        "channels": 69,
+        "minimum_sampler_keys": 34,
+        "maximum_sampler_keys": 34,
+        "root_translation_delta_gltf": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "root_motion_distance_m": 0.0
+      },
+      {
+        "name": "Wave",
+        "duration_seconds": 6.0,
+        "channels": 69,
+        "minimum_sampler_keys": 181,
+        "maximum_sampler_keys": 181,
+        "root_translation_delta_gltf": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "root_motion_distance_m": 0.0
+      }
+    ],
+    "maximum_influences": 3,
+    "maximum_weight_normalization_error": 7.450580596923828e-08,
+    "pbr_texture_roles_preserved": true,
+    "glb_audit": {
+      "path": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\rigged\\CH01\\CH01_rigged_animated.glb",
+      "game_ready": "not_assessed",
+      "file_bytes": 11637016,
+      "container": {
+        "magic": "glTF",
+        "version": 2,
+        "declared_length": 11637016,
+        "chunks": [
+          {
+            "type": "JSON",
+            "bytes": 53496
+          },
+          {
+            "type": "BIN\u0000",
+            "bytes": 11583492
+          }
+        ]
+      },
+      "generator": "Khronos glTF Blender I/O v5.2.39",
+      "extensions_used": [],
+      "extensions_required": [],
+      "scene": {
+        "active_scene_index": 0,
+        "active_nodes": 25,
+        "active_meshes": 1,
+        "triangles": 18694,
+        "vertices": 21982,
+        "render_primitive_instances": 1,
+        "bounds": {
+          "min": [
+            -0.9208118915557861,
+            0.0,
+            -0.16398020088672638
+          ],
+          "max": [
+            0.9208118915557861,
+            1.8199999332427979,
+            0.16398020088672638
+          ],
+          "size": [
+            1.8416237831115723,
+            1.8199999332427979,
+            0.32796040177345276
+          ]
+        },
+        "bounds_note": "glTF coordinate units; static node transforms only; no animation/skin deformation or verified real-world scale"
+      },
+      "node_count": 25,
+      "skins": {
+        "count": 1,
+        "items": [
+          {
+            "name": "ARM_CH01",
+            "joints": 23
+          }
+        ]
+      },
+      "animations": {
+        "count": 3,
+        "items": [
+          {
+            "name": "Demo",
+            "samplers": 69,
+            "channels": 69
+          },
+          {
+            "name": "Walk_Cycle",
+            "samplers": 69,
+            "channels": 69
+          },
+          {
+            "name": "Wave",
+            "samplers": 69,
+            "channels": 69
+          }
+        ]
+      },
+      "materials": {
+        "count": 1,
+        "used_count": 1,
+        "unused_indices": [],
+        "names": [
+          "tripo_mat_bb8c2c2a-271c-46fd-8545-a400eb45eb47"
+        ]
+      },
+      "textures": {
+        "count": 3,
+        "image_count": 3,
+        "images": [
+          {
+            "index": 0,
+            "embedded": true,
+            "width": null,
+            "height": null,
+            "name": "tripo_image_bb8c2c2a-271c-46fd-8545-a400eb45eb47_0_3",
+            "mime_type": "image/jpeg",
+            "bytes": 1637623
+          },
+          {
+            "index": 1,
+            "embedded": true,
+            "width": null,
+            "height": null,
+            "name": "tripo_image_bb8c2c2a-271c-46fd-8545-a400eb45eb47_0_0",
+            "mime_type": "image/jpeg",
+            "bytes": 2025550
+          },
+          {
+            "index": 2,
+            "embedded": true,
+            "width": null,
+            "height": null,
+            "name": "CH01-optimized_metallic-CH01-optimized_roughness",
+            "mime_type": "image/png",
+            "bytes": 5749559
+          }
+        ],
+        "max_edge": null,
+        "verification": "Image headers/dimensions only; full pixel integrity/material appearance not assessed"
+      },
+      "geometry": {
+        "mesh_count": 1,
+        "triangles": 18694,
+        "vertices": 21982,
+        "unique_position_accessor_vertices": 21982,
+        "primitive_count": 1,
+        "meshes": [
+          {
+            "index": 0,
+            "name": "SM_CH01_RenderMesh.001",
+            "triangles": 18694,
+            "vertices": 21982,
+            "primitives": [
+              {
+                "index": 0,
+                "mode": 4,
+                "triangles": 18694,
+                "vertices": 21982,
+                "attributes": [
+                  "JOINTS_0",
+                  "NORMAL",
+                  "POSITION",
+                  "TANGENT",
+                  "TEXCOORD_0",
+                  "WEIGHTS_0"
+                ],
+                "material": 0,
+                "morph_targets": 0
+              }
+            ],
+            "bounds_local": {
+              "min": [
+                -0.9208118915557861,
+                0.0,
+                -0.16398020088672638
+              ],
+              "max": [
+                0.9208118915557861,
+                1.8199999332427979,
+                0.16398020088672638
+              ],
+              "size": [
+                1.8416237831115723,
+                1.8199999332427979,
+                0.32796040177345276
+              ]
+            }
+          }
+        ],
+        "count_note": "Stored mesh totals, including unused meshes; vertices sum primitive POSITION counts, not welded unique vertices. Scene totals include node instances."
+      },
+      "structural_status": "incomplete",
+      "errors": [],
+      "warnings": [],
+      "incomplete_checks": [
+        "images[0]: Pillow unavailable; image dimensions not read",
+        "images[1]: Pillow unavailable; image dimensions not read",
+        "images[2]: Pillow unavailable; image dimensions not read"
+      ]
+    }
+  },
+  "protected_inputs_unchanged": true,
+  "output_sha256": "ecd565db07a31dec1bb8b61406add393b5ac4c0ffd8dcd4b7e02a1a732d08d4f",
+  "output_bytes": 11637016,
+  "independent_qa": {
+    "structural_skin_clip_report": "qa_skeletal_glb.json",
+    "godot_import_playback_report": "qa_engine_import.json",
+    "result": "Both independent checks completed without errors; Godot 4.7.2 import and skeletal playback verified",
+    "runtime_integration_note": "Godot may omit constant root tracks for Walk_Cycle/Wave; reset skeleton bone poses when switching from root-motion Demo to an in-place clip, or explicitly manage root motion in the runtime."
+  }
+}

@@ -1,0 +1,31 @@
+CH01 — MOTION VISUAL QA / 2026-11-03
+
+Artifact: animated.blend
+SHA256: 50a8a905a4661fc85ce4d599ee27b81fef6ff0ddb2a60c9c6be1a350fecaefa2
+Scene action: Demo, frames 1–403, 30 fps, 13.4 seconds.
+Reusable actions: Walk_Cycle 1–34 (1.1 second loop); Wave 1–181 (6 seconds).
+
+Selected previews in motion_qa, generated from the actual skinned GLB-derived mesh:
+Front three-quarter: 1, 52, 58, 67, 79, 190, 250, 280.
+Side: 46, 49, 52, 55, 58, 61, 64, 67, 70, 73, 76, 79, 280.
+Render: 960×720, EEVEE, motion blur disabled to expose contacts/deformation.
+The preview renderer imports studio setup from render_demo.py and saves no Blender file.
+
+Reviewed front stand, contact/passing, closing step and raised-hand poses; side
+contact/down/passing phases across the same stride, plus the wave silhouette.
+The first conservative fixed-height version was too crouched. Current phase height
+raises the pelvis during passing, with 3 cm vertical range and automatic reach margin.
+Current baseline pelvis delta is -0.0449163 m; standing delta is -0.003 m.
+Helmet stays rigid, with small body counter-rotation and no neck collapse.
+Knees bend forward without a visible side flip; representative supporting legs keep
+a soft bend. Boot roll is limited to -10°/+15° to avoid the source ankle-cuff crush.
+Arm lift follows a spherical direction arc. Greeting palm faces the front, fingers
+are separated in the actual render, and the sleeve has no wrist-only 180° twist.
+
+Contact measurement is recorded independently in qa_motion.json/txt. Its artifact
+hash must match the blend above; a previous-hash report is not final validation.
+Still images assess pose, silhouette and deformation. Timing and perceived walking
+naturalness remain subject to viewing the complete MP4 sequence.
+
+Source rig.blend, mesh topology, materials, weights and original GLB are unchanged
+by motion.py. Controls stay editable; deform-bone baking/export is a separate step.

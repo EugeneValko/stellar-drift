@@ -1,0 +1,7 @@
+__pycache__/
+frames/
+preview_frames/
+*.blend1
+*.blend2
+qa_export_rna.*
+qa_media_tools.json

@@ -1,0 +1,18 @@
+{
+  "fps": 30,
+  "walk_period_seconds": 1.1,
+  "steps_per_minute": 109.09090909090908,
+  "step_length_m": 0.55,
+  "stance_fraction": 0.6,
+  "walk_pelvis_offset_m": -0.04491626743310114,
+  "demo_seconds": 13.4,
+  "demo_root_distance_m": 4.95,
+  "actions": [
+    "Walk_Cycle",
+    "Wave",
+    "Demo"
+  ],
+  "rig_source": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\rigged\\CH01\\rig.blend",
+  "output": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\rigged\\CH01\\animated.blend",
+  "note": "Authored control animation. Visual contact/deformation QA and export baking remain separate."
+}

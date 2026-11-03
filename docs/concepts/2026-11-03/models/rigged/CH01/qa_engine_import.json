@@ -1,0 +1,370 @@
+{
+  "append_error": 0,
+  "append_error_name": "OK",
+  "bone_poses_reset_before_each_clip": true,
+  "clips": [
+    {
+      "duration_s": 13.3999996185303,
+      "name": "Demo",
+      "samples": [
+        {
+          "bone_positions_world": {
+            "foot.L": [
+              0.140000760555267,
+              0.115000009536743,
+              -0.0400036089122295
+            ],
+            "foot.R": [
+              -0.140000760555267,
+              0.114999920129776,
+              -0.0400035567581654
+            ],
+            "hand.R": [
+              -0.275965929031372,
+              0.920467793941498,
+              0.00998251885175705
+            ],
+            "pelvis": [
+              3.47758826206571e-16,
+              0.937000036239624,
+              -0.0349999777972698
+            ],
+            "root": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "time_s": 0.0
+        },
+        {
+          "bone_positions_world": {
+            "foot.L": [
+              0.140000805258751,
+              0.114999800920486,
+              4.90999555587769
+            ],
+            "foot.R": [
+              -0.140000760555267,
+              0.114999860525131,
+              4.90999555587769
+            ],
+            "hand.R": [
+              -0.275965929031372,
+              0.919548451900482,
+              4.95998239517212
+            ],
+            "pelvis": [
+              2.3224598175056e-14,
+              0.936080634593964,
+              4.91499948501587
+            ],
+            "root": [
+              0.0,
+              0.0,
+              4.94999980926514
+            ]
+          },
+          "time_s": 6.69999980926514
+        },
+        {
+          "bone_positions_world": {
+            "foot.L": [
+              0.14000079035759,
+              0.114999741315842,
+              4.90999603271484
+            ],
+            "foot.R": [
+              -0.140000820159912,
+              0.114999771118164,
+              4.90999603271484
+            ],
+            "hand.R": [
+              -0.275965958833694,
+              0.919285953044891,
+              4.95998239517212
+            ],
+            "pelvis": [
+              -1.1633287716928e-14,
+              0.935818195343018,
+              4.91499996185303
+            ],
+            "root": [
+              0.0,
+              0.0,
+              4.94999980926514
+            ]
+          },
+          "time_s": 13.3999996185303
+        }
+      ],
+      "tracks": 29,
+      "root_delta_godot_m": [
+        0.0,
+        0.0,
+        4.94999980926514
+      ]
+    },
+    {
+      "duration_s": 1.10000002384186,
+      "name": "Walk_Cycle",
+      "samples": [
+        {
+          "bone_positions_world": {
+            "foot.L": [
+              0.139998450875282,
+              0.124013513326645,
+              0.269081890583038
+            ],
+            "foot.R": [
+              -0.140002474188805,
+              0.128671914339066,
+              -0.252737998962402
+            ],
+            "hand.R": [
+              -0.276979148387909,
+              0.900532603263855,
+              0.161181479692459
+            ],
+            "pelvis": [
+              -0.00556230545043945,
+              0.881137073040009,
+              -0.0349999777972698
+            ],
+            "root": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "time_s": 0.0
+        },
+        {
+          "bone_positions_world": {
+            "foot.L": [
+              0.140005871653557,
+              0.128002613782883,
+              -0.25300520658493
+            ],
+            "foot.R": [
+              -0.139968708157539,
+              0.124118447303772,
+              0.26739564538002
+            ],
+            "hand.R": [
+              -0.265955924987793,
+              0.865242660045624,
+              -0.13520123064518
+            ],
+            "pelvis": [
+              0.00553711876273155,
+              0.881389081478119,
+              -0.0349999815225601
+            ],
+            "root": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "time_s": 0.550000011920929
+        },
+        {
+          "bone_positions_world": {
+            "foot.L": [
+              0.139998450875282,
+              0.124013513326645,
+              0.269081890583038
+            ],
+            "foot.R": [
+              -0.140002474188805,
+              0.128671914339066,
+              -0.252737998962402
+            ],
+            "hand.R": [
+              -0.276979148387909,
+              0.900532603263855,
+              0.161181479692459
+            ],
+            "pelvis": [
+              -0.00556230545043945,
+              0.881137073040009,
+              -0.0349999777972698
+            ],
+            "root": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "time_s": 1.10000002384186
+        }
+      ],
+      "tracks": 27,
+      "root_delta_godot_m": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "duration_s": 6.0,
+      "name": "Wave",
+      "samples": [
+        {
+          "bone_positions_world": {
+            "foot.L": [
+              0.140000760555267,
+              0.115000039339066,
+              -0.0400036014616489
+            ],
+            "foot.R": [
+              -0.140000760555267,
+              0.114999920129776,
+              -0.0400035567581654
+            ],
+            "hand.R": [
+              -0.275965929031372,
+              0.920467793941498,
+              0.00998252630233765
+            ],
+            "pelvis": [
+              3.47758826206571e-16,
+              0.937000036239624,
+              -0.0349999777972698
+            ],
+            "root": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "time_s": 0.0
+        },
+        {
+          "bone_positions_world": {
+            "foot.L": [
+              0.140000641345978,
+              0.114999890327454,
+              -0.0400039628148079
+            ],
+            "foot.R": [
+              -0.140000879764557,
+              0.114999949932098,
+              -0.0400038026273251
+            ],
+            "hand.R": [
+              -0.45408695936203,
+              1.59380745887756,
+              0.0218742750585079
+            ],
+            "pelvis": [
+              0.01999999769032,
+              0.93596076965332,
+              -0.0349999889731407
+            ],
+            "root": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "time_s": 3.0
+        },
+        {
+          "bone_positions_world": {
+            "foot.L": [
+              0.140000760555267,
+              0.114999920129776,
+              -0.0400039479136467
+            ],
+            "foot.R": [
+              -0.140000805258751,
+              0.114999681711197,
+              -0.0400039479136467
+            ],
+            "hand.R": [
+              -0.275965958833694,
+              0.919428527355194,
+              0.0099823847413063
+            ],
+            "pelvis": [
+              -1.45822465812001e-16,
+              0.93596076965332,
+              -0.0349999889731407
+            ],
+            "root": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "time_s": 6.0
+        }
+      ],
+      "tracks": 21,
+      "root_delta_godot_m": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "engine": {
+    "build": "official",
+    "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+    "hex": 263938,
+    "major": 4,
+    "minor": 7,
+    "patch": 2,
+    "status": "stable",
+    "string": "4.7.2-stable (official)",
+    "timestamp": 0
+  },
+  "errors": [],
+  "file": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\rigged\\CH01\\CH01_rigged_animated.glb",
+  "materials": 1,
+  "mesh_instances": 1,
+  "qa_project": "C:/Users/admin/.codex/visualizations/2026/11/03/01a1a23c-dd9b-7a11-8ed8-86d5a0707fd7/model-qa/",
+  "scope": "Headless GLTFDocument import, generated skeletal scene and sampled bone pose playback; no image/render/FPS/gameplay certification",
+  "skeletal_scenes": [
+    {
+      "bone_count": 23,
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "chest",
+        "clavicle.L",
+        "upper_arm.L",
+        "forearm.L",
+        "hand.L",
+        "clavicle.R",
+        "upper_arm.R",
+        "forearm.R",
+        "hand.R",
+        "neck",
+        "head",
+        "thigh.L",
+        "shin.L",
+        "foot.L",
+        "toe.L",
+        "thigh.R",
+        "shin.R",
+        "foot.R",
+        "toe.R"
+      ],
+      "name": "Skeleton3D"
+    }
+  ],
+  "skin_bind_counts": [
+    23
+  ],
+  "status": "imported_sampled_engine_review_complete",
+  "source_sha256": "ecd565db07a31dec1bb8b61406add393b5ac4c0ffd8dcd4b7e02a1a732d08d4f",
+  "source_unchanged": true,
+  "godot_exit_code": 0,
+  "console": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\n\n[SKELETAL QA] imported_sampled_engine_review_complete clips=3 skeletons=1\n",
+  "runtime_note": "Godot may omit constant rest-pose tracks. These samples reset all bone poses before each clip; application animation transitions need their own reset/blending policy."
+}

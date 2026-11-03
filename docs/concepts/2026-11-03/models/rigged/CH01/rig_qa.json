@@ -1,0 +1,298 @@
+{
+  "source": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\downloads\\CH01.glb",
+  "source_sha256": "c4bdd0af39953de811c6ba70aaced50cee74ac6663b43a18665b31c67ed15cf9",
+  "normalization": {
+    "original_bounds": {
+      "min": [
+        -0.49250566959381104,
+        -0.08766458183526993,
+        0.0
+      ],
+      "max": [
+        0.49229204654693604,
+        0.08771035820245743,
+        0.9732345342636108
+      ],
+      "size": [
+        0.9847977161407471,
+        0.17537494003772736,
+        0.9732345342636108
+      ]
+    },
+    "uniform_scale_to_meters": 1.870052835082642,
+    "center_and_floor_offset": [
+      -0.0001068115234375,
+      2.288818359375e-05,
+      0.0
+    ]
+  },
+  "heat_weights": {
+    "proxy_vertices": 9362,
+    "render_vertices": 21947,
+    "weld_threshold_m": 1e-05,
+    "render_mesh_welded": false,
+    "heat_solver_success": true,
+    "render_vertices_missing_heat_weights": 0
+  },
+  "weight_regions": {
+    "boot_sole_toe": 2410,
+    "ankle": 871,
+    "shin": 1374,
+    "knee": 1511,
+    "thigh": 1689,
+    "hip": 1177,
+    "waist": 1121,
+    "thorax": 438,
+    "abdomen": 1077,
+    "glove": 2291,
+    "wrist": 782,
+    "elbow_forearm": 1733,
+    "shoulder": 1418,
+    "shoulder_plate": 66,
+    "chest": 1217,
+    "neck": 826,
+    "helmet": 1131,
+    "knee_plate": 38,
+    "chest_plate": 777
+  },
+  "ik": {
+    "L": {
+      "pole_angle_radians": -1.0515608743265836,
+      "rest_knee_error_m": 0.012638050201427288,
+      "crouch_pole_plane_error_m": 8.530197415320252e-05,
+      "target": [
+        0.14000000059604645,
+        0.03999999165534973,
+        0.11500000208616257
+      ]
+    },
+    "R": {
+      "pole_angle_radians": -2.0900317792632097,
+      "rest_knee_error_m": 0.012638033793443198,
+      "crouch_pole_plane_error_m": 8.523583124780001e-05,
+      "target": [
+        -0.14000000059604645,
+        0.03999999165534973,
+        0.11500000208616257
+      ]
+    }
+  },
+  "weights": {
+    "maximum_influences": 3,
+    "maximum_normalization_error": 2.9802322387695312e-08,
+    "unweighted_vertices": 0,
+    "nondeform_influences": 0,
+    "helmet_vertices_not_rigid_head": 0
+  },
+  "triangles": 18694,
+  "vertices": 21947,
+  "materials": 1,
+  "uv_preserved": true,
+  "source_unchanged": true,
+  "topology_preserved": true,
+  "poses": {
+    "neutral": {
+      "bounds": {
+        "min": [
+          -0.9208118319511414,
+          -0.16398511826992035,
+          -1.8013297449215315e-06
+        ],
+        "max": [
+          0.9208118319511414,
+          0.16398020088672638,
+          1.8199999332427979
+        ],
+        "size": [
+          1.8416236639022827,
+          0.32796531915664673,
+          1.8200017345725428
+        ]
+      },
+      "nonfinite_vertices": 0,
+      "feet": {
+        "L": {
+          "ankle": [
+            0.13999980688095093,
+            0.03999914228916168,
+            0.11499989032745361
+          ],
+          "knee": [
+            0.12283697724342346,
+            0.011609852313995361,
+            0.5344634056091309
+          ]
+        },
+        "R": {
+          "ankle": [
+            -0.13999982178211212,
+            0.03999917581677437,
+            0.11499986052513123
+          ],
+          "knee": [
+            -0.12283698469400406,
+            0.011609887704253197,
+            0.5344634056091309
+          ]
+        }
+      },
+      "image": "rig_qa_neutral.png"
+    },
+    "arms_down": {
+      "bounds": {
+        "min": [
+          -0.3249044418334961,
+          -0.16398511826992035,
+          -1.8013297449215315e-06
+        ],
+        "max": [
+          0.32490456104278564,
+          0.16398020088672638,
+          1.8199999332427979
+        ],
+        "size": [
+          0.6498090028762817,
+          0.32796531915664673,
+          1.8200017345725428
+        ]
+      },
+      "nonfinite_vertices": 0,
+      "feet": {
+        "L": {
+          "ankle": [
+            0.13999980688095093,
+            0.03999914228916168,
+            0.11499989032745361
+          ],
+          "knee": [
+            0.12283697724342346,
+            0.011609852313995361,
+            0.5344634056091309
+          ]
+        },
+        "R": {
+          "ankle": [
+            -0.13999982178211212,
+            0.03999917581677437,
+            0.11499986052513123
+          ],
+          "knee": [
+            -0.12283698469400406,
+            0.011609887704253197,
+            0.5344634056091309
+          ]
+        }
+      },
+      "image": "rig_qa_arms_down.png"
+    },
+    "wave": {
+      "bounds": {
+        "min": [
+          -0.5086909532546997,
+          -0.16398511826992035,
+          -1.8013297449215315e-06
+        ],
+        "max": [
+          0.32490456104278564,
+          0.16398020088672638,
+          1.8199999332427979
+        ],
+        "size": [
+          0.8335955142974854,
+          0.32796531915664673,
+          1.8200017345725428
+        ]
+      },
+      "nonfinite_vertices": 0,
+      "feet": {
+        "L": {
+          "ankle": [
+            0.13999980688095093,
+            0.03999914228916168,
+            0.11499989032745361
+          ],
+          "knee": [
+            0.12283697724342346,
+            0.011609852313995361,
+            0.5344634056091309
+          ]
+        },
+        "R": {
+          "ankle": [
+            -0.13999982178211212,
+            0.03999917581677437,
+            0.11499986052513123
+          ],
+          "knee": [
+            -0.12283698469400406,
+            0.011609887704253197,
+            0.5344634056091309
+          ]
+        }
+      },
+      "image": "rig_qa_wave.png"
+    },
+    "crouch": {
+      "bounds": {
+        "min": [
+          -0.3249044418334961,
+          -0.35744044184684753,
+          -2.8681148251052946e-05
+        ],
+        "max": [
+          0.32490456104278564,
+          0.12836429476737976,
+          1.6078773736953735
+        ],
+        "size": [
+          0.6498090028762817,
+          0.4858047366142273,
+          1.6079060548436246
+        ]
+      },
+      "nonfinite_vertices": 0,
+      "feet": {
+        "L": {
+          "ankle": [
+            0.13999833166599274,
+            0.04000292718410492,
+            0.11497220396995544
+          ],
+          "knee": [
+            0.1325966715812683,
+            -0.2449592500925064,
+            0.42446812987327576
+          ]
+        },
+        "R": {
+          "ankle": [
+            -0.13999834656715393,
+            0.04000292718410492,
+            0.11497211456298828
+          ],
+          "knee": [
+            -0.13259676098823547,
+            -0.2449592798948288,
+            0.4244680404663086
+          ]
+        }
+      },
+      "image": "rig_qa_crouch.png",
+      "side_image": "rig_qa_crouch_side.png"
+    }
+  },
+  "limitations": [
+    "No finger/facial controls; gloves move as hands, helmet is rigid",
+    "Automatic heat solve is only a starting point; anatomical envelopes/rigid plate cleanup authored afterwards",
+    "Deformation and contacts need visual review; no production/animation-export PASS implied",
+    "Deep crouch compresses the boot/ankle cuff; prefer moderate ankle roll for demo and verify walking extremes in motion QA."
+  ],
+  "status": "demo_rig_reviewed_with_limitations",
+  "visual_review": {
+    "neutral": "Reviewed: source form and helmet preserved; boots at floor.",
+    "arms_down": "Reviewed: shoulders/arms settle without visible gross tearing.",
+    "wave": "Reviewed: raised forearm/hand silhouette readable, helmet rigid, elbow bends without gross tearing.",
+    "crouch": "Reviewed front three-quarter and side: knees now bend in forward pole plane; soles remain at floor. Deep ankle cuff compression visible, not approved as a close-up production crouch.",
+    "scope": "Static deformation tests, not a full walk-cycle/export/engine certification."
+  }
+}

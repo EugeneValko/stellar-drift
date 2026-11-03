@@ -1,0 +1,35 @@
+CH01 — AUTHORED MOTION PLAN / 2026-11-03
+
+Scope: animate the derived, editable CH01 rig; preserve rig.blend and the original GLB.
+Workflow: rigging + blender-director. Blender 5.2 background CLI, no interactive windows.
+Frame rate: 30 fps. Forward -Y, up Z, anatomical left +X. Human movement under 1g.
+
+Walk_Cycle: 33-frame / 1.10-second loop, approximately 109 steps per minute.
+Step length 0.55 m, full stride 1.10 m. Stance 60%, swing 40%.
+The stance anchor remains fixed in world space during the translating demonstration.
+Heel contact -> flat foot -> ball/toe pivot; articulated toe counter-roll.
+Swing uses a Hermite path with zero world contact velocity and a rounded clearance arc.
+Pelvis: phase-calibrated walking height for safe knee flexion, 3.0 cm bob range,
+small lateral weight shift and yaw, opposing chest yaw, stable helmet.
+Relaxed elbows, opposing arm swing and wrist follow-through. No leg scale/stretch keys.
+
+Wave: anticipation, gradual shoulder/elbow lift, palm toward front, about 2.75 small
+friendly waves with lag in the wrist, lowered arm and settled stance. Weight shifts
+slightly onto the opposite leg; the boots remain planted.
+Actual generated-glove orientation was checked against its mesh section: palm-down
+rest orientation. Greeting turn is spread through upper arm/forearm/hand (30/60/90
+degrees), leaving a 30-degree wrist contribution rather than a wrist-only twist.
+
+Demo: 13.4 seconds. Stand, first short step with smooth acceleration, four complete
+steady cycles, shortened closing step/deceleration, settle, wave, lower arm, settle.
+The root translates approximately 4.95 m along -Y; camera tracking belongs to render setup.
+First/last steps use explicit world anchors instead of blending planted feet through the floor.
+Root acceleration/deceleration integrate smooth nonnegative speed profiles, with no backward stop drift.
+
+Actions: Walk_Cycle (in-place), Wave (stationary), Demo (root-motion sequence).
+Dense pose keys are smoothed with shared tangent slopes for continuous interpolation.
+Editable IK/FK controls remain; deform-bone export baking is a later task.
+
+QA: inspect contact/down/passing/up and raised-arm stills. Numerically report stance
+anchor error and low-boot height, then compare rendered boot contacts and suit deformation.
+Numerical target accuracy alone does not certify the skinned mesh or natural motion.

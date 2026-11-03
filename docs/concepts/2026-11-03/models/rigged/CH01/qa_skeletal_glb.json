@@ -1,0 +1,157 @@
+{
+  "file": "D:\\UnityProjects\\stellar-drift\\docs\\concepts\\2026-11-03\\models\\rigged\\CH01\\CH01_rigged_animated.glb",
+  "scope": "Selected local GLB skin/weight/clip checks; engine import and visual deformation are separate",
+  "structural_status": "no_errors_detected",
+  "skins": 1,
+  "file_bytes": 11637016,
+  "source_sha256": "ecd565db07a31dec1bb8b61406add393b5ac4c0ffd8dcd4b7e02a1a732d08d4f",
+  "source_unchanged": true,
+  "scene": {
+    "active_scene_index": 0,
+    "active_nodes": 25,
+    "active_meshes": 1,
+    "triangles": 18694,
+    "vertices": 21982,
+    "render_primitive_instances": 1,
+    "bounds": {
+      "min": [
+        -0.9208118915557861,
+        0.0,
+        -0.16398020088672638
+      ],
+      "max": [
+        0.9208118915557861,
+        1.8199999332427979,
+        0.16398020088672638
+      ],
+      "size": [
+        1.8416237831115723,
+        1.8199999332427979,
+        0.32796040177345276
+      ]
+    },
+    "bounds_note": "glTF coordinate units; static node transforms only; no animation/skin deformation or verified real-world scale"
+  },
+  "materials": {
+    "count": 1,
+    "used_count": 1,
+    "unused_indices": [],
+    "names": [
+      "tripo_mat_bb8c2c2a-271c-46fd-8545-a400eb45eb47"
+    ]
+  },
+  "textures": {
+    "count": 3,
+    "image_count": 3,
+    "images": [
+      {
+        "index": 0,
+        "embedded": true,
+        "width": 2048,
+        "height": 2048,
+        "name": "tripo_image_bb8c2c2a-271c-46fd-8545-a400eb45eb47_0_3",
+        "mime_type": "image/jpeg",
+        "bytes": 1637623,
+        "format": "JPEG"
+      },
+      {
+        "index": 1,
+        "embedded": true,
+        "width": 2048,
+        "height": 2048,
+        "name": "tripo_image_bb8c2c2a-271c-46fd-8545-a400eb45eb47_0_0",
+        "mime_type": "image/jpeg",
+        "bytes": 2025550,
+        "format": "JPEG"
+      },
+      {
+        "index": 2,
+        "embedded": true,
+        "width": 2048,
+        "height": 2048,
+        "name": "CH01-optimized_metallic-CH01-optimized_roughness",
+        "mime_type": "image/png",
+        "bytes": 5749559,
+        "format": "PNG"
+      }
+    ],
+    "max_edge": 2048,
+    "verification": "Image headers/dimensions only; full pixel integrity/material appearance not assessed"
+  },
+  "skin_joint_counts": [
+    23
+  ],
+  "skin_joint_names": [
+    [
+      "root",
+      "pelvis",
+      "spine_01",
+      "spine_02",
+      "chest",
+      "clavicle.L",
+      "upper_arm.L",
+      "forearm.L",
+      "hand.L",
+      "clavicle.R",
+      "upper_arm.R",
+      "forearm.R",
+      "hand.R",
+      "neck",
+      "head",
+      "thigh.L",
+      "shin.L",
+      "foot.L",
+      "toe.L",
+      "thigh.R",
+      "shin.R",
+      "foot.R",
+      "toe.R"
+    ]
+  ],
+  "control_nodes": [],
+  "primitives": [
+    {
+      "mesh": 0,
+      "primitive": 0,
+      "vertices": 21982,
+      "max_influences": 3,
+      "unweighted": 0,
+      "unnormalized": 0,
+      "invalid_joint_indices": 0,
+      "invalid_weights": 0,
+      "weight_sum_range": [
+        0.9999999701976776,
+        1.000000074505806
+      ]
+    }
+  ],
+  "clips": [
+    {
+      "name": "Demo",
+      "channels": 69,
+      "samplers": 69,
+      "start_s": 0.0,
+      "end_s": 13.399999618530273,
+      "duration_s": 13.399999618530273
+    },
+    {
+      "name": "Walk_Cycle",
+      "channels": 69,
+      "samplers": 69,
+      "start_s": 0.0,
+      "end_s": 1.100000023841858,
+      "duration_s": 1.100000023841858
+    },
+    {
+      "name": "Wave",
+      "channels": 69,
+      "samplers": 69,
+      "start_s": 0.0,
+      "end_s": 6.0,
+      "duration_s": 6.0
+    }
+  ],
+  "errors": [],
+  "warnings": [],
+  "status": "local_skin_clip_checks_completed"
+}

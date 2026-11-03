@@ -1,0 +1,8 @@
+CH01 READ-ONLY MESH PROBE
+Height: 1.82 m; scale: 1.870052835082642
+Scaled XYZ bounds: {'min': [-0.9208118915557861, -0.16393740475177765, 0.0], 'max': [0.9208118915557861, 0.1640229970216751, 1.8200000524520874], 'size': [1.8416237831115723, 0.32796040177345276, 1.8200000524520874], 'mid': [0.0, 4.279613494873047e-05, 0.9100000262260437], 'samples': 9375}
+Imported topology: {'vertices': 9375, 'edges': 28078, 'faces': 18694, 'connected_components': 1, 'components_under_8_vertices': 0, 'non_manifold_edges': 74, 'boundary_edges': 74, 'zero_area_faces_1e_12_m2': 2, 'loose_vertices': 0, 'loose_edges': 0}
+Diagnostic merged-copy topology: {'vertices': 9362, 'edges': 28062, 'faces': 18694, 'connected_components': 1, 'components_under_8_vertices': 0, 'non_manifold_edges': 62, 'boundary_edges': 52, 'zero_area_faces_1e_12_m2': 2, 'loose_vertices': 0, 'loose_edges': 0}
+Surface cross-section bounds/midpoints only; internal joint centres require rigging judgment and deformation tests.
+Coincident merge occurs only on an in-memory diagnostic bmesh copy; never written to the source or rig. It approximates topology behind glTF normal/UV split vertices, not an asset repair.
+Source unchanged: True
