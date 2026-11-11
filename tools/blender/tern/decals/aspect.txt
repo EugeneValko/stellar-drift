@@ -1,0 +1,16 @@
+txt_st7 1.69565
+txt_tern 2.27647
+txt_07 0.88128
+txt_reg 2.87446
+lbl_nostep 2.58252
+lbl_fuel 2.95385
+lbl_spec 2.63014
+lbl_spec2 3.18750
+lbl_jack 3.51553
+lbl_lift 3.06211
+lbl_rescue 3.96500
+lbl_exit 7.99500
+lbl_caution 4.00000
+emblem 1.00000
+hazard_strip 8.00000
+chevrons 3.00000
