@@ -1,0 +1,91 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scenes/test/tern_test.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/tern/tern_lod0.gltf" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/tern/tern_lod1.gltf" id="3"]
+[ext_resource type="PackedScene" path="res://assets/models/tern/tern_lod2.gltf" id="4"]
+
+[sub_resource type="ProceduralSkyMaterial" id="skymat"]
+sky_top_color = Color(0.16, 0.19, 0.25, 1)
+sky_horizon_color = Color(0.42, 0.44, 0.48, 1)
+sky_curve = 0.12
+sky_energy_multiplier = 0.9
+ground_bottom_color = Color(0.05, 0.05, 0.055, 1)
+ground_horizon_color = Color(0.3, 0.31, 0.33, 1)
+sun_angle_max = 8.0
+
+[sub_resource type="Sky" id="sky"]
+sky_material = SubResource("skymat")
+radiance_size = 3
+
+[sub_resource type="Environment" id="env"]
+background_mode = 2
+sky = SubResource("sky")
+ambient_light_source = 3
+ambient_light_energy = 0.7
+reflected_light_source = 2
+tonemap_mode = 4
+tonemap_exposure = 1.0
+ssao_enabled = true
+ssao_radius = 0.8
+ssao_intensity = 1.4
+glow_enabled = true
+glow_levels/1 = 0.0
+glow_levels/2 = 0.6
+glow_levels/3 = 1.0
+glow_levels/4 = 0.8
+glow_levels/5 = 0.5
+glow_intensity = 0.8
+glow_strength = 1.0
+glow_bloom = 0.02
+glow_blend_mode = 1
+glow_hdr_threshold = 3.0
+
+[sub_resource type="StandardMaterial3D" id="floormat"]
+albedo_color = Color(0.11, 0.115, 0.125, 1)
+roughness = 0.42
+
+[sub_resource type="PlaneMesh" id="floormesh"]
+material = SubResource("floormat")
+size = Vector2(400, 400)
+
+[node name="TernTest" type="Node3D"]
+script = ExtResource("1")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="Key" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.7, 0.7, 0, -0.7, 0.7, 0, 10, 0)
+light_energy = 2.4
+shadow_enabled = true
+shadow_bias = 0.03
+shadow_normal_bias = 1.0
+directional_shadow_mode = 0
+directional_shadow_max_distance = 160.0
+
+[node name="Fill" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.7, -0.7, 0, 0.7, 0.7, 0, 10, 0)
+light_color = Color(0.62, 0.74, 1, 1)
+light_energy = 0.55
+light_specular = 0.3
+sky_mode = 1
+
+[node name="LOD0" parent="." instance=ExtResource("2")]
+
+[node name="LOD1" parent="." instance=ExtResource("3")]
+visible = false
+
+[node name="LOD2" parent="." instance=ExtResource("4")]
+visible = false
+
+[node name="Floor" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.601, 0)
+mesh = SubResource("floormesh")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 30)
+current = true
+fov = 38.0
+near = 0.05
+far = 4000.0
