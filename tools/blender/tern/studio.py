@@ -19,6 +19,7 @@ VIEWS = {  # direction from the target towards the eye (ship space: +Y is the no
     "bottom34": (0.6, 0.8, -0.75),
     "left34": (-0.62, 1.0, 0.36),
     "rearleft34": (-0.72, -1.0, 0.40),
+    "door34": (-0.75, 0.45, 0.85),
 }
 
 

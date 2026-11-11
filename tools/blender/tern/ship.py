@@ -328,8 +328,10 @@ def setup_fuselage(b):
 
     # dorsal deck
     b.reg(top, crect(0.84, 0.98, 0.14, 0.0, 0.80), offset=0.008, gap=0.014, name="dorsal_hatch")
-    b.mount(top, (0.25, 1.29), "hinge", rot=90)
-    b.mount(top, (-0.25, 1.29), "hinge", rot=90)
+    b.mount(top, (0.25, 1.29), "hinge")
+    b.mount(top, (-0.25, 1.29), "hinge")
+    for sx in (1, -1):
+        b.mount(top, (sx * 0.52, 7.00), "pitot")
     b.mount(top, (0.0, 0.50), "handle", rot=90)
     b.mount(top, (0.0, 1.50), "sensor_dome", radius=0.10)
     b.reg(top, crect(1.30, 1.10, 0.10, 0.0, -1.55), offset=0.006, fasteners=0.14, name="spine_a")
@@ -351,10 +353,10 @@ def setup_fuselage(b):
         b.mount(up, (5.00, -0.60), "vent", rot=90, width=0.42, height=0.16, slats=4)
         if side < 0:   # port: crew door
             b.reg(up, crect(1.00, 1.50, 0.16, -1.25, -0.03), facing=0.45, gap=0.020, offset=-0.003, name="crew_door")
-            b.mount(up, (-0.72, 0.42), "hinge", rot=90, length=0.16)
-            b.mount(up, (-0.72, -0.48), "hinge", rot=90, length=0.16)
+            b.mount(up, (-0.72, 0.42), "hinge", length=0.16)
+            b.mount(up, (-0.72, -0.48), "hinge", length=0.16)
             b.mount(up, (-1.62, -0.05), "handle", rot=90)
-            b.mount(lo, (-1.25, 0.30), "step")
+            b.mount(lo, (-1.25, 0.30), "step", rot=-90)
         else:          # starboard: equipment bay
             b.reg(up, crect(1.30, 0.84, 0.10, -1.30, -0.12), facing=0.45, offset=0.006, fasteners=0.14, name="equip_bay")
             for k in (-0.4, 0.0, 0.4):
@@ -497,6 +499,8 @@ def setup_wing(b, side):
     b.reg(top, crect(0.46, 0.62, 0.07, 5.02, -2.98), facing=0.5, offset=0.004, gap=0.009, fasteners=0.11)
     b.mount(top, (4.88, -1.80), "fuel_port", radius=0.08)
     b.mount(top, (5.86, -3.45), "light_strip", rot=75, length=0.46)
+    for wx, wy in ((4.90, -4.61), (5.60, -4.35), (6.25, -4.11)):
+        b.mount(top, (wx, wy), "static_wick")
     b.reg(bot, crect(0.50, 0.70, 0.07, 5.05, -2.60), facing=0.5, offset=0.004, gap=0.009, fasteners=0.11)
     b.mount(bot, (5.20, -3.25), "hardpoint", rot=180)
     b.decal(top, (5.02, -4.22), 0.46, "lbl_nostep", 0.0)
